@@ -36,6 +36,10 @@
             color: #34d399 !important;
             text-decoration: underline;
         }
+        .active-thread-highlight {
+            border-color: #a855f7 !important;
+            background-color: #1e1b4b !important;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col justify-between overflow-x-hidden font-sans">
@@ -262,6 +266,9 @@
 
         let dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
         let studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+        
+        // Track the actively selected local video thread ID globally
+        let currentActiveVideoThreadId = ""; 
 
         requestDB.onupgradeneeded = function(e) {
             let database = e.target.result;
@@ -285,13 +292,14 @@
             renderSheetsGrid();
             renderLearningModules();
             renderDeepLinkHistoryLogs();
-            renderVideoThreadsList();
             setupPlaybackStateListeners();
             setupInteractivePanEngine();
             setupGlobalKeyboardShortcutHooks();
             
-            // Checks for auto-jump targets on base initialization
-            checkUrlParametersForDeepLinkNavigation();
+            // First load the thread options, then verify if URL parameters ask us to open a specific one
+            renderVideoThreadsList(() => {
+                checkUrlParametersForDeepLinkNavigation();
+            });
         }
 
         function evaluateRoleRouting() {
@@ -361,13 +369,14 @@
                     alert("Video Thread successfully published.");
                     titleInput.value = "";
                     fileInput.value = "";
-                    renderVideoThreadsList();
-                    loadActiveVideoFromThread(threadId);
+                    renderVideoThreadsList(() => {
+                        loadActiveVideoFromThread(threadId);
+                    });
                 });
             });
         }
 
-        function renderVideoThreadsList() {
+        function renderVideoThreadsList(callback) {
             getAllFromStore("video_threads", (threads) => {
                 const container = document.getElementById('videoThreadLinksContainer');
                 const currentEmail = document.getElementById('userEmailSession').value.trim();
@@ -375,31 +384,40 @@
 
                 if(threads.length === 0) {
                     container.innerHTML = `<p class="text-[10px] text-zinc-600 italic">No alternative video tracks mapped.</p>`;
+                    if(callback) callback();
                     return;
                 }
 
                 container.innerHTML = threads.map(t => `
-                    <div class="bg-zinc-950 border border-zinc-900 p-2 rounded flex justify-between items-center hover:border-purple-900 transition">
+                    <div id="card_${t.id}" class="bg-zinc-950 border border-zinc-900 p-2 rounded flex justify-between items-center hover:border-purple-900 transition">
                         <button onclick="loadActiveVideoFromThread('${t.id}')" class="text-xs font-mono text-zinc-300 hover:text-purple-400 font-bold text-left truncate flex-1">
                             🎬 ${t.title}
                         </button>
                         ${isAuthorizedAdmin ? `<button onclick="purgeVideoThreadEngine('${t.id}')" class="text-zinc-600 hover:text-red-500 text-[10px] uppercase tracking-tighter ml-2 font-mono">Delete</button>` : ''}
                     </div>
                 `).join('');
+                
+                if(callback) callback();
             });
         }
 
         function purgeVideoThreadEngine(id) {
             removeFromStore("video_threads", id, () => {
                 removeFromStore("blobs", id, () => {
+                    if (currentActiveVideoThreadId === id) {
+                        currentActiveVideoThreadId = "";
+                        document.getElementById('dashboardVideoPlayer').src = "";
+                        document.getElementById('studioVideoPlayer').src = "";
+                    }
                     renderVideoThreadsList();
                 });
             });
         }
 
-        function loadActiveVideoFromThread(id) {
+        function loadActiveVideoFromThread(id, targetTime = null) {
             getFromStore("blobs", id, (blob) => {
                 if(blob) {
+                    currentActiveVideoThreadId = id;
                     const blobUrl = URL.createObjectURL(blob);
                     const dashVideo = document.getElementById('dashboardVideoPlayer');
                     const studioVideo = document.getElementById('studioVideoPlayer');
@@ -410,8 +428,25 @@
                     resetDashboardZoom();
                     resetStudioZoom();
 
-                    // If a deep link parameter exists, apply it to newly swapped content files
-                    checkUrlParametersForDeepLinkNavigation();
+                    // Style selected video card queue item
+                    document.querySelectorAll('[id^="card_"]').forEach(el => el.classList.remove('active-thread-highlight'));
+                    const selectedGuiCard = document.getElementById(`card_${id}`);
+                    if(selectedGuiCard) selectedGuiCard.classList.add('active-thread-highlight');
+
+                    // If we passed an explicit timestamp target during load pipeline execution
+                    if (targetTime !== null) {
+                        const jumpLogic = (videoEl) => {
+                            if (videoEl.readyState >= 1) {
+                                videoEl.currentTime = targetTime;
+                            } else {
+                                videoEl.addEventListener('loadedmetadata', () => { videoEl.currentTime = targetTime; }, { once: true });
+                            }
+                        };
+                        jumpLogic(dashVideo);
+                        jumpLogic(studioVideo);
+                    }
+                } else {
+                    alert("The required video file segment is missing from local IndexedDB storage. Make sure the video is uploaded on this machine.");
                 }
             });
         }
@@ -702,9 +737,15 @@
                 if(document.getElementById(outputTextId)) {
                     document.getElementById(outputTextId).innerText = `TS: ${cleanTimestamp}`;
                 }
+                
+                // MULTI-PARAMETER INJECTION (Appends video asset id along with timestamps)
                 if(outputInputId) {
                     const stableBaseUrl = window.location.origin + window.location.pathname;
-                    document.getElementById(outputInputId).value = `${stableBaseUrl}?t=${time.toFixed(3)}`;
+                    if (currentActiveVideoThreadId) {
+                        document.getElementById(outputInputId).value = `${stableBaseUrl}?v=${currentActiveVideoThreadId}&t=${time.toFixed(3)}`;
+                    } else {
+                        document.getElementById(outputInputId).value = `${stableBaseUrl}?t=${time.toFixed(3)}`;
+                    }
                 }
             };
 
@@ -733,7 +774,6 @@
 
         function setStudioSpeed(rate) { document.getElementById('studioVideoPlayer').playbackRate = rate; }
         
-        // Exact frame stepping using full frame math (1/24 fps)
         function stepVideoFrame(dir) { 
             const player = document.getElementById('studioVideoPlayer');
             player.pause(); 
@@ -742,9 +782,12 @@
 
         function copyStudioDeepLinkMetadata() {
             const linkInput = document.getElementById('studioDeepLinkExportUrl');
+            if(!linkInput.value) return alert("Load a video file track first.");
             linkInput.select();
             document.execCommand('copy');
-            alert(`Deep-link copy successful! Mapped Time: ${parseFloat(new URL(linkInput.value).searchParams.get('t')).toFixed(2)}s`);
+            
+            const params = new URLSearchParams(new URL(linkInput.value).search);
+            alert(`Deep Link Copied! Target Video Thread ID: [${params.get('v')}] at [${parseFloat(params.get('t')).toFixed(2)}s]`);
         }
 
         function savePasteInputLinkToGlobalStorage() {
@@ -754,6 +797,7 @@
             try {
                 const urlObj = new URL(rawUrl);
                 const timeParam = urlObj.searchParams.get('t') || "0";
+                const videoParam = urlObj.searchParams.get('v') || "Unknown Video Track";
                 const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS'));
                 
                 links.unshift({ id: Date.now().toString(), fullUrl: rawUrl, timestampMarker: parseFloat(timeParam).toFixed(2) + "s", loggedAt: new Date().toLocaleTimeString() });
@@ -772,34 +816,36 @@
         }
 
         /**
-         * FIXED DEEP-LINK METADATA SYNCHRONIZATION ENGINE
-         * Ensures video jumps to the exact timestamp once content layers load.
+         * MULTI-PARAMETER DEEP LINK PARSER
+         * Extracts target video id + frame timestamp offset safely.
          */
         function checkUrlParametersForDeepLinkNavigation() {
-            const timeJumpTarget = new URLSearchParams(window.location.search).get('t');
-            if (!timeJumpTarget) return;
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetVideoId = urlParams.get('v');
+            const timeJumpTarget = urlParams.get('t');
 
-            const targetSeconds = parseFloat(timeJumpTarget);
-            const dashVideo = document.getElementById('dashboardVideoPlayer');
-            const studioVideo = document.getElementById('studioVideoPlayer');
+            if (!targetVideoId && !timeJumpTarget) return;
 
-            const executionPipeline = (videoEl) => {
-                if (!videoEl || !videoEl.src) return;
+            const targetSeconds = timeJumpTarget ? parseFloat(timeJumpTarget) : 0;
 
-                const applyJump = () => {
-                    videoEl.currentTime = targetSeconds;
+            // Step 1: If a distinct video ID key was specified in the sheet link, load it first
+            if (targetVideoId) {
+                loadActiveVideoFromThread(targetVideoId, targetSeconds);
+            } else if (timeJumpTarget) {
+                // Fallback baseline for older individual time links
+                const dashVideo = document.getElementById('dashboardVideoPlayer');
+                const studioVideo = document.getElementById('studioVideoPlayer');
+                const runDirectJump = (videoEl) => {
+                    if(!videoEl.src) return;
+                    if (videoEl.readyState >= 1) {
+                        videoEl.currentTime = targetSeconds;
+                    } else {
+                        videoEl.addEventListener('loadedmetadata', () => { videoEl.currentTime = targetSeconds; }, { once: true });
+                    }
                 };
-
-                // If metadata is already loaded, jump instantly. Otherwise, hook into the load event.
-                if (videoEl.readyState >= 1) {
-                    applyJump();
-                } else {
-                    videoEl.addEventListener('loadedmetadata', applyJump, { once: true });
-                }
-            };
-
-            executionPipeline(dashVideo);
-            executionPipeline(studioVideo);
+                runDirectJump(dashVideo);
+                runDirectJump(studioVideo);
+            }
         }
 
         function runClientCleanExportPipeline() {
