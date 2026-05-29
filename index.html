@@ -149,7 +149,7 @@
             <div class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
                 <div class="col-span-8 flex flex-col justify-center bg-zinc-950 border border-zinc-800 rounded p-4 relative">
                     <div id="studioVideoViewport" class="zoom-viewport w-full max-h-[65vh] flex-1 rounded bg-black flex items-center justify-center" onwheel="handleStudioZoom(event)">
-                        <video id="studioVideoPlayer" class="zoom-canvas object-contain h-full w-full"></video>
+                        <video id="studioVideoPlayer" controls class="zoom-canvas object-contain h-full w-full"></video>
                     </div>
                     
                     <div class="grid grid-cols-4 gap-4 mt-4 bg-zinc-900 p-3 rounded border border-zinc-800">
@@ -289,6 +289,8 @@
             setupPlaybackStateListeners();
             setupInteractivePanEngine();
             setupGlobalKeyboardShortcutHooks();
+            
+            // Checks for auto-jump targets on base initialization
             checkUrlParametersForDeepLinkNavigation();
         }
 
@@ -399,10 +401,17 @@
             getFromStore("blobs", id, (blob) => {
                 if(blob) {
                     const blobUrl = URL.createObjectURL(blob);
-                    document.getElementById('dashboardVideoPlayer').src = blobUrl;
-                    document.getElementById('studioVideoPlayer').src = blobUrl;
+                    const dashVideo = document.getElementById('dashboardVideoPlayer');
+                    const studioVideo = document.getElementById('studioVideoPlayer');
+                    
+                    dashVideo.src = blobUrl;
+                    studioVideo.src = blobUrl;
+                    
                     resetDashboardZoom();
                     resetStudioZoom();
+
+                    // If a deep link parameter exists, apply it to newly swapped content files
+                    checkUrlParametersForDeepLinkNavigation();
                 }
             });
         }
@@ -447,7 +456,6 @@
             applyMatrixTransform(video, studioZoom);
         }
 
-        // RESET HANDLING
         function resetDashboardZoom() {
             dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
             document.getElementById('dashZoomIndicator').innerText = `Zoom: 100%`;
@@ -680,7 +688,6 @@
             renderSheetsGrid();
         }
 
-        // CUSTOM DOMAIN ADAPTIVE TRACKER
         function setupPlaybackStateListeners() {
             const dashVideo = document.getElementById('dashboardVideoPlayer');
             const studioVideo = document.getElementById('studioVideoPlayer');
@@ -696,9 +703,8 @@
                     document.getElementById(outputTextId).innerText = `TS: ${cleanTimestamp}`;
                 }
                 if(outputInputId) {
-                    // Strips custom context domains cleanly to map raw parameter values safely
                     const stableBaseUrl = window.location.origin + window.location.pathname;
-                    document.getElementById(outputInputId).value = `${stableBaseUrl}?t=${Math.floor(time)}`;
+                    document.getElementById(outputInputId).value = `${stableBaseUrl}?t=${time.toFixed(3)}`;
                 }
             };
 
@@ -726,12 +732,19 @@
         }
 
         function setStudioSpeed(rate) { document.getElementById('studioVideoPlayer').playbackRate = rate; }
-        function stepVideoFrame(dir) { document.getElementById('studioVideoPlayer').pause(); document.getElementById('studioVideoPlayer').currentTime += (dir * (1 / 24)); }
+        
+        // Exact frame stepping using full frame math (1/24 fps)
+        function stepVideoFrame(dir) { 
+            const player = document.getElementById('studioVideoPlayer');
+            player.pause(); 
+            player.currentTime = Math.max(0, player.currentTime + (dir * (1 / 24))); 
+        }
 
         function copyStudioDeepLinkMetadata() {
-            document.getElementById('studioDeepLinkExportUrl').select();
+            const linkInput = document.getElementById('studioDeepLinkExportUrl');
+            linkInput.select();
             document.execCommand('copy');
-            alert("Deep-link parameter saved to clipboard.");
+            alert(`Deep-link copy successful! Mapped Time: ${parseFloat(new URL(linkInput.value).searchParams.get('t')).toFixed(2)}s`);
         }
 
         function savePasteInputLinkToGlobalStorage() {
@@ -743,7 +756,7 @@
                 const timeParam = urlObj.searchParams.get('t') || "0";
                 const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS'));
                 
-                links.unshift({ id: Date.now().toString(), fullUrl: rawUrl, timestampMarker: timeParam, loggedAt: new Date().toLocaleTimeString() });
+                links.unshift({ id: Date.now().toString(), fullUrl: rawUrl, timestampMarker: parseFloat(timeParam).toFixed(2) + "s", loggedAt: new Date().toLocaleTimeString() });
                 localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(links));
                 
                 document.getElementById('internalDeepLinkPasteInput').value = "";
@@ -755,16 +768,38 @@
             const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS'));
             const container = document.getElementById('deepLinkContainerHistory');
             if(links.length === 0) { container.innerHTML = `<p class="text-[10px] text-zinc-600 italic">No target logs recorded.</p>`; return; }
-            container.innerHTML = links.map(l => `<div class="bg-zinc-950 border border-zinc-900 p-2 rounded flex flex-col gap-1"><div class="flex justify-between items-center text-[10px] text-purple-400"><span>⏱️ Offset Location: ${l.timestampMarker}s</span></div><a href="${l.fullUrl}" class="text-[10px] text-zinc-500 truncate hover:text-white underline font-mono">${l.fullUrl}</a></div>`).join('');
+            container.innerHTML = links.map(l => `<div class="bg-zinc-950 border border-zinc-900 p-2 rounded flex flex-col gap-1"><div class="flex justify-between items-center text-[10px] text-purple-400"><span>⏱️ Offset Location: ${l.timestampMarker}</span></div><a href="${l.fullUrl}" class="text-[10px] text-zinc-500 truncate hover:text-white underline font-mono">${l.fullUrl}</a></div>`).join('');
         }
 
+        /**
+         * FIXED DEEP-LINK METADATA SYNCHRONIZATION ENGINE
+         * Ensures video jumps to the exact timestamp once content layers load.
+         */
         function checkUrlParametersForDeepLinkNavigation() {
             const timeJumpTarget = new URLSearchParams(window.location.search).get('t');
-            if(timeJumpTarget) {
-                const applyTime = (el) => { el.addEventListener('loadedmetadata', () => { el.currentTime = parseFloat(timeJumpTarget); }, { once: true }); };
-                applyTime(document.getElementById('dashboardVideoPlayer'));
-                applyTime(document.getElementById('studioVideoPlayer'));
-            }
+            if (!timeJumpTarget) return;
+
+            const targetSeconds = parseFloat(timeJumpTarget);
+            const dashVideo = document.getElementById('dashboardVideoPlayer');
+            const studioVideo = document.getElementById('studioVideoPlayer');
+
+            const executionPipeline = (videoEl) => {
+                if (!videoEl || !videoEl.src) return;
+
+                const applyJump = () => {
+                    videoEl.currentTime = targetSeconds;
+                };
+
+                // If metadata is already loaded, jump instantly. Otherwise, hook into the load event.
+                if (videoEl.readyState >= 1) {
+                    applyJump();
+                } else {
+                    videoEl.addEventListener('loadedmetadata', applyJump, { once: true });
+                }
+            };
+
+            executionPipeline(dashVideo);
+            executionPipeline(studioVideo);
         }
 
         function runClientCleanExportPipeline() {
