@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R.C AI CONFIG Workspace Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #000000; color: #ffffff; }
+        .flame-effect {
+            box-shadow: 0 0 25px #ff4500, 0 0 50px #ff8c00;
+            animation: flicker 0.4s infinite alternate;
+        }
+        @keyframes flicker {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.01); box-shadow: 0 0 35px #ff3300, 0 0 60px #ffaa00; }
+        }
+        /* Fully Unrestricted Zoom & Pan Workspace Viewport */
+        .zoom-viewport {
+            position: relative;
+            overflow: hidden;
+            background: #000;
+            cursor: grab;
+        }
+        .zoom-viewport:active { cursor: grabbing; }
+        .zoom-canvas {
+            transform-origin: center center;
+            transition: transform 0.03s ease-out;
+            width: 100%;
+            height: 100%;
+        }
+        .clickable-timestamp {
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .clickable-timestamp:hover {
+            color: #34d399 !important;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col justify-between overflow-x-hidden font-sans">
+
+    <div id="dynamicViewRouter" class="flex-1 flex flex-col justify-between">
+        
+        <div id="mainDashboardView" class="flex-1 flex flex-col justify-between">
+            <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <span class="text-zinc-400 text-sm">User Context Identity:</span>
+                    <input type="email" id="userEmailSession" value="antonymbali96@gmail.com" class="bg-black text-white px-3 py-1 text-sm rounded border border-zinc-700 focus:outline-none focus:border-white w-64" onchange="evaluateRoleRouting()">
+                    
+                    <select id="roleSelector" onchange="toggleViewMode()" class="bg-zinc-800 text-xs text-white border border-zinc-700 rounded px-2 py-1 focus:outline-none">
+                        <option value="admin">Admin System Control</option>
+                        <option value="coworker">Coworker Workspace Mode</option>
+                    </select>
+                </div>
+                <div id="adminBadge" class="bg-green-900 text-green-300 text-xs px-2.5 py-1 rounded-full border border-green-500 font-mono tracking-widest">
+                    SYSTEM ADMIN CONTROL
+                </div>
+            </header>
+
+            <main class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
+                
+                <section class="col-span-3 border-r border-zinc-800 pr-4 flex flex-col justify-between overflow-y-auto">
+                    <div class="space-y-6">
+                        <div>
+                            <h1 class="text-2xl font-black tracking-tighter uppercase text-purple-500">Welcome to <br><span class="text-zinc-400">R.C Team</span></h1>
+                            <p class="text-[11px] text-zinc-500">Internal workspace data processing and tracking.</p>
+                        </div>
+
+                        <div id="adminVideoUploadSection" class="p-4 bg-zinc-900 rounded border border-zinc-800">
+                            <h3 class="text-xs font-bold uppercase tracking-wider mb-2 text-purple-400">Publish Customer Video</h3>
+                            <input type="text" id="videoThreadTitleInput" placeholder="Video Document Thread Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
+                            <input type="file" id="videoFileInput" accept="video/*" class="w-full text-xs text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-3">
+                            <button onclick="processVideoUploadEngine()" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 rounded uppercase tracking-wide transition">Publish Video Thread</button>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400">Active Workspace Video</h3>
+                                <span id="dashZoomIndicator" class="text-[10px] text-zinc-500 font-mono">Zoom: 100%</span>
+                            </div>
+                            <div id="videoContainer" class="p-1 rounded bg-zinc-950 border border-zinc-800 zoom-viewport h-56" onwheel="handleDashboardZoom(event)">
+                                <video id="dashboardVideoPlayer" controls class="zoom-canvas object-contain bg-black h-full w-full"></video>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="setPlayerVisualFX('normal')" class="flex-1 text-[11px] bg-zinc-800 py-1 rounded hover:bg-zinc-700">Normal</button>
+                                <button onclick="setPlayerVisualFX('flames')" class="flex-1 text-[11px] bg-orange-600 text-black font-bold py-1 rounded hover:bg-orange-500">Flames FX</button>
+                                <button onclick="resetDashboardZoom()" class="text-[11px] bg-zinc-900 px-2 rounded border border-zinc-700 hover:bg-zinc-800">Reset View</button>
+                            </div>
+                            <div class="flex gap-2 bg-zinc-900 p-2 rounded border border-zinc-800 items-center justify-between">
+                                <span id="dashTimestampDisplay" onclick="copyRawTimestampText(this.innerText)" title="Click to copy raw timestamp text" class="font-mono text-xs text-emerald-400 clickable-timestamp">TS: 00:00:00</span>
+                                <button onclick="copyDashboardScreenshotToClipboard()" class="bg-white text-black text-xs font-bold px-3 py-1 rounded uppercase tracking-tight hover:bg-zinc-200">Take Screenshot</button>
+                            </div>
+                            <button onclick="launchDedicatedVideoEnvironment()" class="w-full bg-zinc-100 hover:bg-white text-black font-bold text-xs py-2 rounded uppercase tracking-wider text-center block">Launch Full-Screen Studio</button>
+                        </div>
+
+                        <div class="pt-4 border-t border-zinc-800">
+                            <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Active Video Target Queues</h4>
+                            <div id="videoThreadLinksContainer" class="space-y-1.5 max-h-40 overflow-y-auto text-xs font-mono"></div>
+                        </div>
+
+                        <div class="pt-4 border-t border-zinc-800">
+                            <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Deep-Link Logs History</h4>
+                            <div id="deepLinkContainerHistory" class="space-y-1.5 max-h-32 overflow-y-auto text-xs font-mono"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="col-span-6 px-2 flex flex-col h-full overflow-hidden">
+                    <div class="flex justify-between items-center mb-6 flex-shrink-0">
+                        <h2 class="text-lg font-black tracking-tight uppercase text-blue-500">R.C Target Sheets Workspace</h2>
+                        <div class="flex gap-2">
+                            <button id="adminAddSheetBtn" onclick="toggleModal(true)" class="text-xs bg-white text-black px-3 py-1.5 font-bold rounded hover:bg-zinc-200">Add Sheet Link</button>
+                            <button id="adminExportBtn" onclick="runClientCleanExportPipeline()" class="text-xs bg-blue-600 text-white px-3 py-1.5 font-bold rounded hover:bg-blue-500 transition">Export Client Sheet</button>
+                        </div>
+                    </div>
+
+                    <div id="coworkerClaimBanner" class="hidden mb-4 p-3 bg-zinc-900 border border-emerald-800 text-emerald-400 rounded text-xs flex-shrink-0">
+                        <strong>System Notice:</strong> Select an assigned work card below to open your targeted task workspace.
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto pr-1 pb-6">
+                        <div id="sheetsDisplayGrid" class="grid grid-cols-2 gap-4"></div>
+                    </div>
+                </section>
+
+                <section class="col-span-3 border-l border-zinc-800 pl-4 flex flex-col justify-between overflow-y-auto">
+                    <div>
+                        <h2 class="text-xs font-black tracking-widest uppercase mb-4 text-purple-500">Learning Modules</h2>
+                        
+                        <div id="adminModuleUploadSection" class="mb-4 p-4 bg-zinc-900 rounded border border-zinc-800">
+                            <input type="text" id="moduleTitleInput" placeholder="Module Document Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
+                            <input type="file" id="moduleFileInput" class="block w-full text-[10px] text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-2">
+                            <button onclick="processModuleUploadEngine()" class="w-full bg-purple-600 text-white text-xs font-bold py-1.5 rounded hover:bg-purple-500 transition">Add Module</button>
+                        </div>
+
+                        <div id="modulesListOutput" class="space-y-2"></div>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <div id="dedicatedVideoStudioView" class="hidden fixed inset-0 bg-black z-50 flex flex-col justify-between">
+            <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
+                <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C CONFIG VIDEO TEAM EXPERT</h1>
+                <button onclick="exitDedicatedStudioEnvironment()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-1.5 rounded uppercase">Close Video Studio</button>
+            </header>
+
+            <div class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
+                <div class="col-span-8 flex flex-col justify-center bg-zinc-950 border border-zinc-800 rounded p-4 relative">
+                    <div id="studioVideoViewport" class="zoom-viewport w-full max-h-[65vh] flex-1 rounded bg-black flex items-center justify-center" onwheel="handleStudioZoom(event)">
+                        <video id="studioVideoPlayer" class="zoom-canvas object-contain h-full w-full"></video>
+                    </div>
+                    
+                    <div class="grid grid-cols-4 gap-4 mt-4 bg-zinc-900 p-3 rounded border border-zinc-800">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[10px] uppercase font-bold text-zinc-400">Frame Regulation</span>
+                            <div class="flex gap-1">
+                                <button onclick="stepVideoFrame(-1)" class="flex-1 bg-zinc-800 text-white text-xs py-1.5 rounded font-mono hover:bg-zinc-700">&lt; Frame</button>
+                                <button onclick="stepVideoFrame(1)" class="flex-1 bg-zinc-800 text-white text-xs py-1.5 rounded font-mono hover:bg-zinc-700">Frame &gt;</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[10px] uppercase font-bold text-zinc-400">Playback Speed Regulation</span>
+                            <div class="grid grid-cols-4 gap-1">
+                                <button onclick="setStudioSpeed(0.5)" class="bg-zinc-800 text-[10px] font-mono py-1 rounded hover:bg-zinc-700">0.5x</button>
+                                <button onclick="setStudioSpeed(1.0)" class="bg-zinc-800 text-[10px] font-mono py-1 rounded hover:bg-zinc-700">1.0x</button>
+                                <button onclick="setStudioSpeed(1.5)" class="bg-zinc-800 text-[10px] font-mono py-1 rounded hover:bg-zinc-700">1.5x</button>
+                                <button onclick="setStudioSpeed(2.0)" class="bg-zinc-800 text-[10px] font-mono py-1 rounded hover:bg-zinc-700">2.0x</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1 justify-center items-center">
+                            <span id="studioZoomIndicator" class="text-[10px] text-zinc-400 font-mono">Zoom Scale: 100%</span>
+                            <button onclick="resetStudioZoom()" class="bg-zinc-800 text-[10px] w-full text-zinc-300 py-1 rounded hover:bg-zinc-700">Reset Viewport</button>
+                        </div>
+                        <div class="flex flex-col gap-1 justify-end">
+                            <button onclick="copyStudioScreenshotToClipboard()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-black font-black text-xs py-2.5 rounded uppercase tracking-wider transition">Take Screenshot</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-4 bg-zinc-900 p-4 rounded border border-zinc-800 flex flex-col justify-between overflow-y-auto">
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-800 pb-2">Analysis Tool Link Output</h3>
+                        <div class="bg-black p-3 rounded border border-zinc-800 space-y-2">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-zinc-400">Active Location Stamp</span>
+                                <span id="studioTimestampCounter" onclick="copyRawTimestampText(this.innerText)" title="Click to copy raw timestamp text" class="font-mono text-emerald-400 font-bold clickable-timestamp">TS: 00:00:00</span>
+                            </div>
+                            <input type="text" id="studioDeepLinkExportUrl" class="w-full bg-zinc-900 text-white font-mono text-[11px] p-2 rounded border border-zinc-700 focus:outline-none" readonly>
+                            <button onclick="copyStudioDeepLinkMetadata()" class="w-full bg-white text-black font-bold text-xs py-1.5 rounded hover:bg-zinc-200 uppercase">Copy deep link parameter</button>
+                        </div>
+                        
+                        <div class="p-3 bg-zinc-950 border border-zinc-800 rounded text-[11px] text-zinc-400 space-y-1">
+                            <span class="text-xs font-bold block text-white uppercase tracking-tight">Extension Capture Shortcut Panel</span>
+                            <p class="text-amber-400 font-bold">Press Alt + S for Custom Crosshair Screenshots.</p>
+                            <p>This prints a hardcoded timestamp directly onto the image canvas layer before copying, rendering flawlessly on highlight tools.</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-zinc-800 mt-4">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">Paste Link To Permanent Global Log</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="internalDeepLinkPasteInput" placeholder="Paste links here..." class="flex-1 bg-black text-white text-xs p-2 rounded border border-zinc-700 focus:outline-none">
+                            <button onclick="savePasteInputLinkToGlobalStorage()" class="bg-emerald-600 text-black text-xs font-black px-3 rounded uppercase">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="standaloneModuleReaderView" class="hidden flex-1 flex flex-col justify-between bg-black text-white">
+            <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
+                <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C LEARNING MODULE</h1>
+                <button onclick="exitStandaloneModuleView()" class="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold px-4 py-1.5 rounded uppercase">Return to Main Terminal</button>
+            </header>
+            <div class="flex-1 p-8 flex flex-col items-center justify-center max-w-4xl mx-auto w-full">
+                <h2 id="standaloneModuleHeaderTitle" class="text-2xl font-black uppercase mb-6 tracking-wide text-purple-400">Loading Document Target Engine...</h2>
+                <div class="w-full bg-zinc-900 border border-zinc-800 rounded p-6 text-center space-y-4">
+                    <p class="text-sm text-zinc-400 font-mono">Your asset is secure and structured for delivery.</p>
+                    <a id="standaloneModuleDownloadTrigger" href="#" download="" class="inline-block bg-white text-black font-black text-xs px-6 py-3 rounded uppercase tracking-wider hover:bg-zinc-200">Download and Open Workspace Resource</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sheetCardCreationModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-zinc-950 border border-zinc-800 p-6 rounded-lg w-full max-w-md">
+            <h3 class="text-sm font-black uppercase tracking-wider text-white mb-4">Register R.C Target Card Sheet</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[10px] uppercase text-zinc-400 font-bold mb-1">Work Sheet Name Header</label>
+                    <input type="text" id="modalSheetTitle" placeholder="e.g., Project Cohort 4 Track" class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-sm text-white focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase text-zinc-400 font-bold mb-1">Target Document Sheet URL</label>
+                    <input type="url" id="modalSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-sm text-white focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase text-zinc-400 font-bold mb-1">Assigned Emails (Comma separated)</label>
+                    <textarea id="modalSheetEmails" placeholder="antonymbali96@gmail.com, coworker@team.com" class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-sm text-white h-20 focus:outline-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="toggleModal(false)" class="bg-zinc-800 text-white px-4 py-2 text-xs rounded hover:bg-zinc-700 uppercase">Cancel</button>
+                    <button onclick="saveSheetAssetCardEngine()" class="bg-white text-black px-4 py-2 text-xs font-bold rounded hover:bg-zinc-200 uppercase">Save System Card</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="w-full bg-black border-t border-zinc-900 py-1.5 overflow-hidden flex items-center shadow-lg">
+        <div class="whitespace-nowrap flex text-[11px] font-black tracking-widest text-emerald-500 w-full uppercase">
+            <marquee scrollamount="6" behavior="scroll" direction="left">
+                +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG
+            </marquee>
+        </div>
+    </footer>
+
+    <script>
+        let dbInstance = null;
+        const requestDB = indexedDB.open("RCAI_SystemStorage_v2", 1);
+
+        // Advanced Unrestricted Multi-Axis Zoom States
+        let dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+        let studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+
+        requestDB.onupgradeneeded = function(e) {
+            let database = e.target.result;
+            if(!database.objectStoreNames.contains("blobs")) { database.createObjectStore("blobs", { keyPath: "id" }); }
+            if(!database.objectStoreNames.contains("video_threads")) { database.createObjectStore("video_threads", { keyPath: "id" }); }
+        };
+
+        requestDB.onsuccess = function(e) {
+            dbInstance = e.target.result;
+            initWorkspaceCore();
+        };
+
+        if(!localStorage.getItem('RC_SHEETS')) localStorage.setItem('RC_SHEETS', JSON.stringify([]));
+        if(!localStorage.getItem('RC_MODULES_METADATA')) localStorage.setItem('RC_MODULES_METADATA', JSON.stringify([]));
+        if(!localStorage.getItem('RC_PASTED_LINKS')) localStorage.setItem('RC_PASTED_LINKS', JSON.stringify([]));
+
+        const SYSTEM_ADMIN_EMAIL = "antonymbali96@gmail.com";
+
+        function initWorkspaceCore() {
+            evaluateRoleRouting();
+            renderSheetsGrid();
+            renderLearningModules();
+            renderDeepLinkHistoryLogs();
+            renderVideoThreadsList();
+            setupPlaybackStateListeners();
+            setupInteractivePanEngine();
+            setupGlobalKeyboardShortcutHooks();
+            checkUrlParametersForDeepLinkNavigation();
+        }
+
+        function evaluateRoleRouting() {
+            const currentEmail = document.getElementById('userEmailSession').value.trim();
+            const roleSelector = document.getElementById('roleSelector');
+            
+            if (currentEmail === SYSTEM_ADMIN_EMAIL) {
+                document.getElementById('adminBadge').style.display = "block";
+                document.getElementById('adminBadge').innerText = "SYSTEM ADMIN CONTROL";
+                document.getElementById('adminBadge').className = "bg-green-900 text-green-300 text-xs px-2.5 py-1 rounded-full border border-green-500 font-mono tracking-widest";
+            } else {
+                document.getElementById('adminBadge').style.display = "block";
+                document.getElementById('adminBadge').innerText = "COWORKER ACCESS MODE";
+                document.getElementById('adminBadge').className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest";
+                roleSelector.value = "coworker";
+            }
+            toggleViewMode();
+        }
+
+        function toggleViewMode() {
+            const role = document.getElementById('roleSelector').value;
+            const currentEmail = document.getElementById('userEmailSession').value.trim();
+            const displaysAdminTools = (role === 'admin' && currentEmail === SYSTEM_ADMIN_EMAIL);
+            
+            document.getElementById('adminVideoUploadSection').style.display = displaysAdminTools ? 'block' : 'none';
+            document.getElementById('adminModuleUploadSection').style.display = displaysAdminTools ? 'block' : 'none';
+            document.getElementById('adminAddSheetBtn').style.display = displaysAdminTools ? 'block' : 'none';
+            document.getElementById('adminExportBtn').style.display = displaysAdminTools ? 'block' : 'none';
+            document.getElementById('coworkerClaimBanner').style.display = (role === 'coworker') ? 'block' : 'none';
+            
+            renderSheetsGrid();
+        }
+
+        function writeToStore(storeName, payload, callback) {
+            let tx = dbInstance.transaction([storeName], "readwrite");
+            tx.objectStore(storeName).put(payload).onsuccess = () => callback();
+        }
+
+        function getAllFromStore(storeName, callback) {
+            let tx = dbInstance.transaction([storeName], "readonly");
+            let req = tx.objectStore(storeName).getAll();
+            req.onsuccess = (e) => callback(e.target.result || []);
+        }
+
+        function getFromStore(storeName, id, callback) {
+            let tx = dbInstance.transaction([storeName], "readonly");
+            let req = tx.objectStore(storeName).get(id);
+            req.onsuccess = (e) => callback(e.target.result ? e.target.result.data : null);
+        }
+
+        function removeFromStore(storeName, id, callback) {
+            let tx = dbInstance.transaction([storeName], "readwrite");
+            tx.objectStore(storeName).delete(id).onsuccess = () => callback();
+        }
+
+        function processVideoUploadEngine() {
+            const titleInput = document.getElementById('videoThreadTitleInput');
+            const fileInput = document.getElementById('videoFileInput');
+            const file = fileInput.files[0];
+            const title = titleInput.value.trim() || (file ? file.name : "");
+
+            if(!file || !title) return alert('Provide a specific reference header name and attach a workspace video.');
+
+            const threadId = "video_" + Date.now();
+            writeToStore("blobs", { id: threadId, data: file }, () => {
+                writeToStore("video_threads", { id: threadId, title: title }, () => {
+                    alert("Video Thread successfully published.");
+                    titleInput.value = "";
+                    fileInput.value = "";
+                    renderVideoThreadsList();
+                    loadActiveVideoFromThread(threadId);
+                });
+            });
+        }
+
+        function renderVideoThreadsList() {
+            getAllFromStore("video_threads", (threads) => {
+                const container = document.getElementById('videoThreadLinksContainer');
+                const currentEmail = document.getElementById('userEmailSession').value.trim();
+                const isAuthorizedAdmin = (document.getElementById('roleSelector').value === 'admin' && currentEmail === SYSTEM_ADMIN_EMAIL);
+
+                if(threads.length === 0) {
+                    container.innerHTML = `<p class="text-[10px] text-zinc-600 italic">No alternative video tracks mapped.</p>`;
+                    return;
+                }
+
+                container.innerHTML = threads.map(t => `
+                    <div class="bg-zinc-950 border border-zinc-900 p-2 rounded flex justify-between items-center hover:border-purple-900 transition">
+                        <button onclick="loadActiveVideoFromThread('${t.id}')" class="text-xs font-mono text-zinc-300 hover:text-purple-400 font-bold text-left truncate flex-1">
+                            🎬 ${t.title}
+                        </button>
+                        ${isAuthorizedAdmin ? `<button onclick="purgeVideoThreadEngine('${t.id}')" class="text-zinc-600 hover:text-red-500 text-[10px] uppercase tracking-tighter ml-2 font-mono">Delete</button>` : ''}
+                    </div>
+                `).join('');
+            });
+        }
+
+        function purgeVideoThreadEngine(id) {
+            removeFromStore("video_threads", id, () => {
+                removeFromStore("blobs", id, () => {
+                    renderVideoThreadsList();
+                });
+            });
+        }
+
+        function loadActiveVideoFromThread(id) {
+            getFromStore("blobs", id, (blob) => {
+                if(blob) {
+                    const blobUrl = URL.createObjectURL(blob);
+                    document.getElementById('dashboardVideoPlayer').src = blobUrl;
+                    document.getElementById('studioVideoPlayer').src = blobUrl;
+                    resetDashboardZoom();
+                    resetStudioZoom();
+                }
+            });
+        }
+
+        // STABILIZED MATRIX TRANSFORM ENGINE
+        function applyMatrixTransform(element, state) {
+            element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scaleX}, ${state.scaleY})`;
+        }
+
+        function handleDashboardZoom(e) {
+            e.preventDefault();
+            const video = document.getElementById('dashboardVideoPlayer');
+            const factor = e.deltaY < 0 ? 1.08 : 0.92;
+            
+            if (e.shiftKey) {
+                dashZoom.scaleX = Math.max(0.1, Math.min(dashZoom.scaleX * factor, 20));
+            } else if (e.ctrlKey) {
+                dashZoom.scaleY = Math.max(0.1, Math.min(dashZoom.scaleY * factor, 20));
+            } else {
+                dashZoom.scaleX = Math.max(0.1, Math.min(dashZoom.scaleX * factor, 20));
+                dashZoom.scaleY = Math.max(0.1, Math.min(dashZoom.scaleY * factor, 20));
+            }
+            
+            document.getElementById('dashZoomIndicator').innerText = `Zoom X:${Math.round(dashZoom.scaleX*100)}% Y:${Math.round(dashZoom.scaleY*100)}%`;
+            applyMatrixTransform(video, dashZoom);
+        }
+
+        function handleStudioZoom(e) {
+            e.preventDefault();
+            const video = document.getElementById('studioVideoPlayer');
+            const factor = e.deltaY < 0 ? 1.08 : 0.92;
+
+            if (e.shiftKey) {
+                studioZoom.scaleX = Math.max(0.1, Math.min(studioZoom.scaleX * factor, 20));
+            } else if (e.ctrlKey) {
+                studioZoom.scaleY = Math.max(0.1, Math.min(studioZoom.scaleY * factor, 20));
+            } else {
+                studioZoom.scaleX = Math.max(0.1, Math.min(studioZoom.scaleX * factor, 20));
+                studioZoom.scaleY = Math.max(0.1, Math.min(studioZoom.scaleY * factor, 20));
+            }
+
+            document.getElementById('studioZoomIndicator').innerText = `Zoom Scale X:${Math.round(studioZoom.scaleX*100)}% Y:${Math.round(studioZoom.scaleY*100)}%`;
+            applyMatrixTransform(video, studioZoom);
+        }
+
+        function resetDashboardZoom() {
+            dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+            document.getElementById('dashZoomIndicator').innerText = `Zoom: 100%`;
+            applyMatrixTransform(document.getElementById('dashboardVideoPlayer'), dashZoom);
+        }
+
+        function resetStudioZoom() {
+            studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+            document.getElementById('studioZoomIndicator').innerText = `Zoom Scale: 100%`;
+            applyMatrixTransform(document.getElementById('studioVideoPlayer'), studioZoom);
+        }
+
+        function setupInteractivePanEngine() {
+            const setupPanContainer = (viewportId, elementId, zoomState) => {
+                const viewport = document.getElementById(viewportId);
+                const el = document.getElementById(elementId);
+
+                viewport.addEventListener('mousedown', (e) => {
+                    zoomState.isDragging = true;
+                    zoomState.startX = e.clientX - zoomState.x;
+                    zoomState.startY = e.clientY - zoomState.y;
+                });
+                window.addEventListener('mousemove', (e) => {
+                    if (!zoomState.isDragging) return;
+                    zoomState.x = e.clientX - zoomState.startX;
+                    zoomState.y = e.clientY - zoomState.startY;
+                    applyMatrixTransform(el, zoomState);
+                });
+                window.addEventListener('mouseup', () => { zoomState.isDragging = false; });
+            };
+
+            setupPanContainer('videoContainer', 'dashboardVideoPlayer', dashZoom);
+            setupPanContainer('studioVideoViewport', 'studioVideoPlayer', studioZoom);
+        }
+
+        // ONE-CLICK RAW TIMESTAMPS GENERATOR
+        function copyRawTimestampText(rawString) {
+            const pureTimestamp = rawString.replace('TS: ', '').trim();
+            navigator.clipboard.writeText(pureTimestamp).then(() => {
+                alert(`Copied clean frame timestamp: ${pureTimestamp}`);
+            }).catch(() => {
+                alert("Clipboard transaction blocked.");
+            });
+        }
+
+        // HIGH-RESOLUTION EXTENSION SCREENSHOT OVERLAY ENGINE
+        function copyVideoElementToClipboard(videoElement) {
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            
+            const time = videoElement.currentTime;
+            const hrs = Math.floor(time / 3600).toString().padStart(2, '0');
+            const mins = Math.floor((time % 3600) / 60).toString().padStart(2, '0');
+            const secs = Math.floor(time % 60).toString().padStart(2, '0');
+            const stampText = `${hrs}:${mins}:${secs}`;
+
+            // Overlay panel configuration optimized for highlighting extensions
+            ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
+            ctx.fillRect(canvas.width - 250, 20, 230, 55);
+            
+            ctx.font = "bold 26px monospace";
+            ctx.fillStyle = "#34d399";
+            ctx.textAlign = "center";
+            ctx.fillText(`TS: ${stampText}`, canvas.width - 135, 56);
+            
+            canvas.toBlob((blob) => {
+                if(!blob) return;
+                const dynamicClipboardItem = new ClipboardItem({ "image/png": blob });
+                navigator.clipboard.write([dynamicClipboardItem]).then(() => {
+                    alert(`Screenshot layer with stamp metadata [${stampText}] saved to clipboard.`);
+                });
+            }, 'image/png');
+        }
+
+        function copyDashboardScreenshotToClipboard() { copyVideoElementToClipboard(document.getElementById('dashboardVideoPlayer')); }
+        function copyStudioScreenshotToClipboard() { copyVideoElementToClipboard(document.getElementById('studioVideoPlayer')); }
+
+        function setupGlobalKeyboardShortcutHooks() {
+            window.addEventListener('keydown', (e) => {
+                const targetNode = e.target.tagName.toLowerCase();
+                if (targetNode === 'input' || targetNode === 'textarea') return;
+
+                const dashVideo = document.getElementById('dashboardVideoPlayer');
+                const studioVideo = document.getElementById('studioVideoPlayer');
+                const activeVideo = document.getElementById('mainDashboardView').classList.contains('hidden') ? studioVideo : dashVideo;
+
+                if (e.code === "Space") {
+                    e.preventDefault();
+                    if(activeVideo.paused) activeVideo.play(); else activeVideo.pause();
+                }
+
+                // Extension specialized screenshot hotkey combo (Alt + S)
+                if (e.altKey && e.code === "KeyS") {
+                    e.preventDefault();
+                    copyVideoElementToClipboard(activeVideo);
+                }
+            });
+        }
+
+        // MODULE LEARNING UTILS
+        function processModuleUploadEngine() {
+            const title = document.getElementById('moduleTitleInput').value.trim();
+            const file = document.getElementById('moduleFileInput').files[0];
+            if(!title || !file) return alert('Missing fields or document attachment targets.');
+
+            const moduleId = "module_" + Date.now();
+            writeToStore("blobs", { id: moduleId, data: file }, () => {
+                let modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA'));
+                modules.push({ id: moduleId, title: title, fileName: file.name });
+                localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(modules));
+
+                document.getElementById('moduleTitleInput').value = "";
+                document.getElementById('moduleFileInput').value = "";
+                renderLearningModules();
+            });
+        }
+
+        function renderLearningModules() {
+            const modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA'));
+            const container = document.getElementById('modulesListOutput');
+            const currentEmail = document.getElementById('userEmailSession').value.trim();
+            const isAuthorizedAdmin = (document.getElementById('roleSelector').value === 'admin' && currentEmail === SYSTEM_ADMIN_EMAIL);
+
+            if(modules.length === 0) {
+                container.innerHTML = `<p class="text-[11px] text-zinc-600 font-mono italic">No modules posted.</p>`;
+                return;
+            }
+
+            container.innerHTML = modules.map(m => `
+                <div class="bg-zinc-950 border border-zinc-800 p-3 rounded flex justify-between items-center group hover:border-zinc-500 transition">
+                    <button onclick="launchStandaloneModuleEnvironment('${m.id}')" class="text-xs truncate font-mono text-zinc-300 hover:text-purple-400 text-left flex-1 font-bold tracking-tight">
+                        📘 ${m.title}
+                    </button>
+                    ${isAuthorizedAdmin ? `<button onclick="deleteModuleAssetEngine('${m.id}')" class="text-zinc-500 hover:text-red-500 text-[10px] uppercase font-mono tracking-wider transition ml-2">Delete</button>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function deleteModuleAssetEngine(id) {
+            let modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA'));
+            modules = modules.filter(m => m.id !== id);
+            localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(modules));
+            removeFromStore("blobs", id, () => { renderLearningModules(); });
+        }
+
+        function launchStandaloneModuleEnvironment(id) {
+            let modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA'));
+            let activeModule = modules.find(m => m.id === id);
+            if(!activeModule) return;
+
+            getFromStore("blobs", id, (blob) => {
+                if(blob) {
+                    const downloadUrl = URL.createObjectURL(blob);
+                    document.getElementById('standaloneModuleHeaderTitle').innerText = activeModule.title;
+                    
+                    const triggerBtn = document.getElementById('standaloneModuleDownloadTrigger');
+                    triggerBtn.href = downloadUrl;
+                    triggerBtn.download = activeModule.fileName;
+
+                    document.getElementById('mainDashboardView').classList.add('hidden');
+                    document.getElementById('standaloneModuleReaderView').classList.replace('hidden', 'flex');
+                }
+            });
+        }
+
+        function exitStandaloneModuleView() {
+            document.getElementById('standaloneModuleReaderView').classList.replace('flex', 'hidden');
+            document.getElementById('mainDashboardView').classList.remove('hidden');
+        }
+
+        function toggleModal(open) {
+            document.getElementById('sheetCardCreationModal').classList.toggle('hidden', !open);
+            document.getElementById('sheetCardCreationModal').classList.toggle('flex', open);
+        }
+
+        function saveSheetAssetCardEngine() {
+            const title = document.getElementById('modalSheetTitle').value.trim();
+            const url = document.getElementById('modalSheetUrl').value.trim();
+            const emailsText = document.getElementById('modalSheetEmails').value.trim();
+
+            if(!title || !url) return alert('Missing workspace URL parameters.');
+            const allowedEmails = emailsText.split(',').map(e => e.trim().toLowerCase());
+
+            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS'));
+            sheets.push({ id: Date.now().toString(), title, url, allowedEmails });
+            localStorage.setItem('RC_SHEETS', JSON.stringify(sheets));
+
+            document.getElementById('modalSheetTitle').value = "";
+            document.getElementById('modalSheetUrl').value = "";
+            document.getElementById('modalSheetEmails').value = "";
+            toggleModal(false);
+            renderSheetsGrid();
+        }
+
+        function renderSheetsGrid() {
+            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS'));
+            const container = document.getElementById('sheetsDisplayGrid');
+            const currentEmail = document.getElementById('userEmailSession').value.trim().toLowerCase();
+            const activeRole = document.getElementById('roleSelector').value;
+            const isAuthorizedAdmin = (activeRole === 'admin' && currentEmail === SYSTEM_ADMIN_EMAIL);
+
+            const viewableSheets = sheets.filter(s => isAuthorizedAdmin || s.allowedEmails.includes(currentEmail));
+
+            if(viewableSheets.length === 0) {
+                container.innerHTML = `<div class="col-span-2 text-center p-8 border border-dashed border-zinc-800 rounded font-mono text-xs text-zinc-600">No active tracking sheets mapped yet.</div>`;
+                return;
+            }
+
+            container.innerHTML = viewableSheets.map(s => `
+                <div class="bg-zinc-950 border border-zinc-800 p-4 rounded flex flex-col justify-between h-36 hover:border-zinc-700 transition relative">
+                    <div>
+                        <h4 class="text-sm font-bold tracking-tight text-white truncate max-w-[220px]">${s.title}</h4>
+                        <p class="text-[10px] text-zinc-500 font-mono mt-1">Clearance Nodes: ${s.allowedEmails.length}</p>
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <a href="${s.url}" target="_blank" class="text-center flex-1 bg-white text-black text-xs font-bold py-1.5 rounded hover:bg-zinc-200 transition">Open Workspace</a>
+                        ${isAuthorizedAdmin ? `
+                            <button onclick="purgeSheetCardPermanently('${s.id}')" class="text-[10px] px-2 bg-zinc-900 text-red-400 border border-zinc-800 rounded hover:bg-red-950/40 transition">
+                                Remove
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function purgeSheetCardPermanently(id) {
+            let sheets = JSON.parse(localStorage.getItem('RC_SHEETS'));
+            sheets = sheets.filter(s => s.id !== id);
+            localStorage.setItem('RC_SHEETS', JSON.stringify(sheets));
+            renderSheetsGrid();
+        }
+
+        function setupPlaybackStateListeners() {
+            const dashVideo = document.getElementById('dashboardVideoPlayer');
+            const studioVideo = document.getElementById('studioVideoPlayer');
+
+            const trackingTimelineHook = (videoEl, outputTextId, outputInputId) => {
+                const time = videoEl.currentTime;
+                const hrs = Math.floor(time / 3600).toString().padStart(2, '0');
+                const mins = Math.floor((time % 3600) / 60).toString().padStart(2, '0');
+                const secs = Math.floor(time % 60).toString().padStart(2, '0');
+                const cleanTimestamp = `${hrs}:${mins}:${secs}`;
+                
+                if(document.getElementById(outputTextId)) {
+                    document.getElementById(outputTextId).innerText = `TS: ${cleanTimestamp}`;
+                }
+                if(outputInputId) {
+                    document.getElementById(outputInputId).value = `${window.location.href.split('?')[0]}?t=${Math.floor(time)}`;
+                }
+            };
+
+            dashVideo.addEventListener('timeupdate', () => trackingTimelineHook(dashVideo, 'dashTimestampDisplay', null));
+            studioVideo.addEventListener('timeupdate', () => trackingTimelineHook(studioVideo, 'studioTimestampCounter', 'studioDeepLinkExportUrl'));
+        }
+
+        function setPlayerVisualFX(mode) {
+            document.getElementById('videoContainer').className = (mode === 'flames') ? 'p-1 rounded bg-zinc-950 border border-zinc-800 zoom-viewport h-56 flame-effect' : 'p-1 rounded bg-zinc-950 border border-zinc-800 zoom-viewport h-56';
+        }
+
+        function launchDedicatedVideoEnvironment() {
+            document.getElementById('mainDashboardView').classList.add('hidden');
+            document.getElementById('dedicatedVideoStudioView').classList.replace('hidden', 'flex');
+            document.getElementById('studioVideoPlayer').src = document.getElementById('dashboardVideoPlayer').src;
+            document.getElementById('studioVideoPlayer').currentTime = document.getElementById('dashboardVideoPlayer').currentTime;
+            resetStudioZoom();
+        }
+
+        function exitDedicatedStudioEnvironment() {
+            document.getElementById('dedicatedVideoStudioView').classList.replace('flex', 'hidden');
+            document.getElementById('mainDashboardView').classList.remove('hidden');
+            document.getElementById('dashboardVideoPlayer').currentTime = document.getElementById('studioVideoPlayer').currentTime;
+            resetDashboardZoom();
+        }
+
+        function setStudioSpeed(rate) { document.getElementById('studioVideoPlayer').playbackRate = rate; }
+        function stepVideoFrame(dir) { document.getElementById('studioVideoPlayer').pause(); document.getElementById('studioVideoPlayer').currentTime += (dir * (1 / 24)); }
+
+        function copyStudioDeepLinkMetadata() {
+            document.getElementById('studioDeepLinkExportUrl').select();
+            document.execCommand('copy');
+            alert("Deep-link parameter saved to clipboard.");
+        }
+
+        function savePasteInputLinkToGlobalStorage() {
+            const rawUrl = document.getElementById('internalDeepLinkPasteInput').value.trim();
+            if(!rawUrl) return;
+
+            try {
+                const urlObj = new URL(rawUrl);
+                const timeParam = urlObj.searchParams.get('t') || "0";
+                const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS'));
+                
+                links.unshift({ id: Date.now().toString(), fullUrl: rawUrl, timestampMarker: timeParam, loggedAt: new Date().toLocaleTimeString() });
+                localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(links));
+                
+                document.getElementById('internalDeepLinkPasteInput').value = "";
+                renderDeepLinkHistoryLogs();
+            } catch(e) { alert("Invalid URL log structure."); }
+        }
+
+        function renderDeepLinkHistoryLogs() {
+            const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS'));
+            const container = document.getElementById('deepLinkContainerHistory');
+            if(links.length === 0) { container.innerHTML = `<p class="text-[10px] text-zinc-600 italic">No target logs recorded.</p>`; return; }
+            container.innerHTML = links.map(l => `<div class="bg-zinc-950 border border-zinc-900 p-2 rounded flex flex-col gap-1"><div class="flex justify-between items-center text-[10px] text-purple-400"><span>⏱️ Offset Location: ${l.timestampMarker}s</span></div><a href="${l.fullUrl}" class="text-[10px] text-zinc-500 truncate hover:text-white underline font-mono">${l.fullUrl}</a></div>`).join('');
+        }
+
+        function checkUrlParametersForDeepLinkNavigation() {
+            const timeJumpTarget = new URLSearchParams(window.location.search).get('t');
+            if(timeJumpTarget) {
+                const applyTime = (el) => { el.addEventListener('loadedmetadata', () => { el.currentTime = parseFloat(timeJumpTarget); }, { once: true }); };
+                applyTime(document.getElementById('dashboardVideoPlayer'));
+                applyTime(document.getElementById('studioVideoPlayer'));
+            }
+        }
+
+        function runClientCleanExportPipeline() {
+            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS'));
+            const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS'));
+            if(sheets.length === 0) return alert("No active data targets available.");
+
+            let csv = "CLEAN CUSTOMER WORK EXPORT REPORT\n";
+            csv += `Export Timestamp Matrix,${new Date().toLocaleString()}\n`;
+            csv += "STATUS,CLEAN DATA RECORDS ONLY\n\n";
+            csv += "Sheet Card Reference,Destination Link Track,Assigned Workforce Parameters,Audit Scan Flag\n";
+
+            sheets.forEach(s => {
+                let syntaxErrorFlags = [];
+                if(s.title.match(/[^a-zA-Z0-9\s-_]/)) syntaxErrorFlags.push("Irregular Grammar Characters Detected in Workspace Title");
+                
+                const matchingLinksCount = links.filter(l => l.fullUrl.includes(`id=${s.id}`) || false).length;
+                if(matchingLinksCount === 0 && links.length > 0) syntaxErrorFlags.push("Warning: Missing Active Link Reference Maps");
+
+                const cleanTitle = s.title.replace(/[,"]/g, ""); 
+                const cleanUrl = s.url; 
+                const cleanEmails = s.allowedEmails.join('; ');
+                const auditStatus = syntaxErrorFlags.length > 0 ? `AUDIT WARNING: ${syntaxErrorFlags.join(' | ')}` : "VERIFIED EXPORT COMPLIANT";
+
+                csv += `"${cleanTitle}","${cleanUrl}","${cleanEmails}","${auditStatus}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const anchor = document.createElement('a');
+            anchor.href = URL.createObjectURL(blob);
+            anchor.setAttribute('download', `RC_CLEAN_CUSTOMER_EXPORT_${Date.now()}.csv`);
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+        }
+    </script>
+</body>
+</html>
