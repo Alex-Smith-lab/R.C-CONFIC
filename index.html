@@ -130,12 +130,12 @@
 
                 <section class="col-span-3 border-l border-zinc-800 pl-4 flex flex-col justify-between overflow-y-auto">
                     <div>
-                        <h2 class="text-xs font-black tracking-widest uppercase mb-4 text-purple-500">Learning Modules</h2>
+                        <h2 class="text-xs font-black tracking-widest uppercase mb-4 text-purple-500">Learning Modules Engine</h2>
                         
                         <div id="adminModuleUploadSection" class="mb-4 p-4 bg-zinc-900 rounded border border-zinc-800">
                             <input type="text" id="moduleTitleInput" placeholder="Module Document Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
                             <input type="file" id="moduleFileInput" class="block w-full text-[10px] text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-2">
-                            <button onclick="processModuleUploadEngine()" class="w-full bg-purple-600 text-white text-xs font-bold py-1.5 rounded hover:bg-purple-500 transition">Add Module</button>
+                            <button onclick="processModuleUploadEngine()" class="w-full bg-purple-600 text-white text-xs font-bold py-1.5 rounded hover:bg-purple-500 transition">Save Asset Module</button>
                         </div>
 
                         <div id="modulesListOutput" class="space-y-2"></div>
@@ -161,7 +161,7 @@
                             <span class="text-[10px] uppercase font-bold text-zinc-400">Frame Regulation</span>
                             <div class="flex gap-1">
                                 <button onclick="stepVideoFrame(-1)" class="flex-1 bg-zinc-800 text-white text-xs py-1.5 rounded font-mono hover:bg-zinc-700">&lt; Frame</button>
-                                <button onclick="stepVideoFrame(1)" class="flex-1 bg-zinc-800 text-white text-xs py-1.5 rounded font-mono hover:bg-zinc-700">Frame &gt;</button>
+                                <button onclick="stepVideoFrame(1)" class="flex-1 bg-zinc-800 text-white text-xs py-1.5 rounded font-mono hover:bg-zinc-700 font-bold">Frame &gt;</button>
                             </div>
                         </div>
                         <div class="flex flex-col gap-1">
@@ -280,6 +280,11 @@
             initWorkspaceCore();
         };
 
+        requestDB.onerror = function(e) {
+            console.error("IndexedDB critical handshake failure:", e);
+            initWorkspaceCore(); // Fallback baseline initiation
+        };
+
         if(!localStorage.getItem('RC_SHEETS')) localStorage.setItem('RC_SHEETS', JSON.stringify([]));
         if(!localStorage.getItem('RC_MODULES_METADATA')) localStorage.setItem('RC_MODULES_METADATA', JSON.stringify([]));
         if(!localStorage.getItem('RC_PASTED_LINKS')) localStorage.setItem('RC_PASTED_LINKS', JSON.stringify([]));
@@ -332,23 +337,29 @@
         }
 
         function writeToStore(storeName, payload, callback) {
+            if (!dbInstance) return alert("Database processing system offline. Reload page.");
             let tx = dbInstance.transaction([storeName], "readwrite");
             tx.objectStore(storeName).put(payload).onsuccess = () => callback();
         }
 
         function getAllFromStore(storeName, callback) {
+            if (!dbInstance) { callback([]); return; }
             let tx = dbInstance.transaction([storeName], "readonly");
             let req = tx.objectStore(storeName).getAll();
             req.onsuccess = (e) => callback(e.target.result || []);
+            req.onerror = () => callback([]);
         }
 
         function getFromStore(storeName, id, callback) {
+            if (!dbInstance) { callback(null); return; }
             let tx = dbInstance.transaction([storeName], "readonly");
             let req = tx.objectStore(storeName).get(id);
             req.onsuccess = (e) => callback(e.target.result ? e.target.result.data : null);
+            req.onerror = () => callback(null);
         }
 
         function removeFromStore(storeName, id, callback) {
+            if (!dbInstance) return;
             let tx = dbInstance.transaction([storeName], "readwrite");
             tx.objectStore(storeName).delete(id).onsuccess = () => callback();
         }
@@ -412,9 +423,6 @@
             });
         }
 
-        /**
-         * UPDATED TO DIRECTLY ROUTE TO THE FULL SCREEN ENVIRONMENT WHEN REQUESTED BY DEEP-LINK
-         */
         function loadActiveVideoFromThread(id, targetTime = null, forceFullScreenStudio = false) {
             getFromStore("blobs", id, (blob) => {
                 if(blob) {
@@ -446,13 +454,19 @@
                     jumpLogic(dashVideo);
                     jumpLogic(studioVideo);
 
-                    // CRITICAL FIX: If flagged by the deep-link execution pipeline, open Full Screen environment instantly
                     if (forceFullScreenStudio) {
                         document.getElementById('mainDashboardView').classList.add('hidden');
                         document.getElementById('dedicatedVideoStudioView').classList.replace('hidden', 'flex');
                     }
                 } else {
-                    alert("The required video file segment is missing from local IndexedDB storage. Make sure the video is uploaded on this machine.");
+                    // Fallback execution tracking block: prevent blank rendering blackscreen state
+                    console.warn(`Target thread asset [${id}] not registered inside IndexedDB local store segment.`);
+                    if (forceFullScreenStudio) {
+                        // Keep the workspace layout open even if video file requires a local upload map
+                        document.getElementById('mainDashboardView').classList.remove('hidden');
+                        document.getElementById('dedicatedVideoStudioView').classList.replace('flex', 'hidden');
+                        alert("Deep-link Target Found! However, the matching raw video file must be published on this machine before streaming can load.");
+                    }
                 }
             });
         }
@@ -461,7 +475,6 @@
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scaleX}, ${state.scaleY})`;
         }
 
-        // Dashboard Zoom Handlers
         function handleDashboardZoom(e) {
             e.preventDefault();
             const video = document.getElementById('dashboardVideoPlayer');
@@ -476,7 +489,6 @@
             applyMatrixTransform(video, dashZoom);
         }
 
-        // Studio Zoom Handlers
         function handleStudioZoom(e) {
             e.preventDefault();
             const video = document.getElementById('studioVideoPlayer');
@@ -534,6 +546,7 @@
         }
 
         function copyVideoElementToClipboard(videoElement) {
+            if(!videoElement || !videoElement.videoWidth) return;
             const canvas = document.createElement('canvas');
             canvas.width = videoElement.videoWidth;
             canvas.height = videoElement.videoHeight;
@@ -550,8 +563,9 @@
             ctx.fillRect(canvas.width - 250, 20, 230, 55);
             ctx.font = "bold 26px monospace";
             ctx.fillStyle = "#34d399";
+            ctx.textBaseline = "middle";
             ctx.textAlign = "center";
-            ctx.fillText(`TS: ${stampText}`, canvas.width - 135, 56);
+            ctx.fillText(`TS: ${stampText}`, canvas.width - 135, 48);
             
             canvas.toBlob((blob) => {
                 if(!blob) return;
@@ -770,10 +784,15 @@
             const linkInput = document.getElementById('studioDeepLinkExportUrl');
             if(!linkInput.value) return alert("Load a video file track first.");
             linkInput.select();
-            document.execCommand('copy');
             
-            const params = new URLSearchParams(new URL(linkInput.value).search);
-            alert(`Deep Link Copied! Target Video Thread ID: [${params.get('v')}] at [${parseFloat(params.get('t')).toFixed(2)}s]`);
+            try {
+                navigator.clipboard.writeText(linkInput.value).then(() => {
+                    const params = new URLSearchParams(new URL(linkInput.value).search);
+                    alert(`Deep Link Copied! Target Video Thread ID: [${params.get('v')}] at [${parseFloat(params.get('t')).toFixed(2)}s]`);
+                });
+            } catch(err) {
+                document.execCommand('copy');
+            }
         }
 
         function savePasteInputLinkToGlobalStorage() {
@@ -797,10 +816,6 @@
             container.innerHTML = links.map(l => `<div class="bg-zinc-950 border border-zinc-900 p-2 rounded flex flex-col gap-1"><div class="flex justify-between items-center text-[10px] text-purple-400"><span>⏱️ Offset Location: ${l.timestampMarker}</span></div><a href="${l.fullUrl}" class="text-[10px] text-zinc-500 truncate hover:text-white underline font-mono">${l.fullUrl}</a></div>`).join('');
         }
 
-        /**
-         * ENHANCED ROUTING ENGINE
-         * Parses URL parameters and sets the app state directly to Full-Screen Studio view
-         */
         function checkUrlParametersForDeepLinkNavigation() {
             const urlParams = new URLSearchParams(window.location.search);
             const targetVideoId = urlParams.get('v');
@@ -811,10 +826,8 @@
             const targetSeconds = timeJumpTarget ? parseFloat(timeJumpTarget) : 0;
 
             if (targetVideoId) {
-                // Pass true as third argument to force full screen studio load immediately
                 loadActiveVideoFromThread(targetVideoId, targetSeconds, true);
             } else if (timeJumpTarget) {
-                // Fallback baseline for older individual time links
                 const dashVideo = document.getElementById('dashboardVideoPlayer');
                 const studioVideo = document.getElementById('studioVideoPlayer');
                 const runDirectJump = (videoEl) => {
@@ -828,7 +841,6 @@
                 runDirectJump(dashVideo);
                 runDirectJump(studioVideo);
                 
-                // Route fallback to Full Screen immediately too
                 document.getElementById('mainDashboardView').classList.add('hidden');
                 document.getElementById('dedicatedVideoStudioView').classList.replace('hidden', 'flex');
             }
