@@ -267,7 +267,6 @@
         let dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
         let studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
         
-        // Track the actively selected local video thread ID globally
         let currentActiveVideoThreadId = ""; 
 
         requestDB.onupgradeneeded = function(e) {
@@ -296,7 +295,6 @@
             setupInteractivePanEngine();
             setupGlobalKeyboardShortcutHooks();
             
-            // First load the thread options, then verify if URL parameters ask us to open a specific one
             renderVideoThreadsList(() => {
                 checkUrlParametersForDeepLinkNavigation();
             });
@@ -414,7 +412,10 @@
             });
         }
 
-        function loadActiveVideoFromThread(id, targetTime = null) {
+        /**
+         * UPDATED TO DIRECTLY ROUTE TO THE FULL SCREEN ENVIRONMENT WHEN REQUESTED BY DEEP-LINK
+         */
+        function loadActiveVideoFromThread(id, targetTime = null, forceFullScreenStudio = false) {
             getFromStore("blobs", id, (blob) => {
                 if(blob) {
                     currentActiveVideoThreadId = id;
@@ -428,22 +429,27 @@
                     resetDashboardZoom();
                     resetStudioZoom();
 
-                    // Style selected video card queue item
                     document.querySelectorAll('[id^="card_"]').forEach(el => el.classList.remove('active-thread-highlight'));
                     const selectedGuiCard = document.getElementById(`card_${id}`);
                     if(selectedGuiCard) selectedGuiCard.classList.add('active-thread-highlight');
 
-                    // If we passed an explicit timestamp target during load pipeline execution
-                    if (targetTime !== null) {
-                        const jumpLogic = (videoEl) => {
-                            if (videoEl.readyState >= 1) {
-                                videoEl.currentTime = targetTime;
-                            } else {
-                                videoEl.addEventListener('loadedmetadata', () => { videoEl.currentTime = targetTime; }, { once: true });
-                            }
-                        };
-                        jumpLogic(dashVideo);
-                        jumpLogic(studioVideo);
+                    const jumpLogic = (videoEl) => {
+                        if (videoEl.readyState >= 1) {
+                            videoEl.currentTime = targetTime !== null ? targetTime : 0;
+                        } else {
+                            videoEl.addEventListener('loadedmetadata', () => { 
+                                videoEl.currentTime = targetTime !== null ? targetTime : 0; 
+                            }, { once: true });
+                        }
+                    };
+
+                    jumpLogic(dashVideo);
+                    jumpLogic(studioVideo);
+
+                    // CRITICAL FIX: If flagged by the deep-link execution pipeline, open Full Screen environment instantly
+                    if (forceFullScreenStudio) {
+                        document.getElementById('mainDashboardView').classList.add('hidden');
+                        document.getElementById('dedicatedVideoStudioView').classList.replace('hidden', 'flex');
                     }
                 } else {
                     alert("The required video file segment is missing from local IndexedDB storage. Make sure the video is uploaded on this machine.");
@@ -455,38 +461,32 @@
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scaleX}, ${state.scaleY})`;
         }
 
+        // Dashboard Zoom Handlers
         function handleDashboardZoom(e) {
             e.preventDefault();
             const video = document.getElementById('dashboardVideoPlayer');
             const factor = e.deltaY < 0 ? 1.08 : 0.92;
-            
-            if (e.shiftKey) {
-                dashZoom.scaleX = Math.max(0.1, Math.min(dashZoom.scaleX * factor, 20));
-            } else if (e.ctrlKey) {
-                dashZoom.scaleY = Math.max(0.1, Math.min(dashZoom.scaleY * factor, 20));
-            } else {
+            if (e.shiftKey) dashZoom.scaleX = Math.max(0.1, Math.min(dashZoom.scaleX * factor, 20));
+            else if (e.ctrlKey) dashZoom.scaleY = Math.max(0.1, Math.min(dashZoom.scaleY * factor, 20));
+            else {
                 dashZoom.scaleX = Math.max(0.1, Math.min(dashZoom.scaleX * factor, 20));
                 dashZoom.scaleY = Math.max(0.1, Math.min(dashZoom.scaleY * factor, 20));
             }
-            
             document.getElementById('dashZoomIndicator').innerText = `Zoom X:${Math.round(dashZoom.scaleX*100)}% Y:${Math.round(dashZoom.scaleY*100)}%`;
             applyMatrixTransform(video, dashZoom);
         }
 
+        // Studio Zoom Handlers
         function handleStudioZoom(e) {
             e.preventDefault();
             const video = document.getElementById('studioVideoPlayer');
             const factor = e.deltaY < 0 ? 1.08 : 0.92;
-
-            if (e.shiftKey) {
-                studioZoom.scaleX = Math.max(0.1, Math.min(studioZoom.scaleX * factor, 20));
-            } else if (e.ctrlKey) {
-                studioZoom.scaleY = Math.max(0.1, Math.min(studioZoom.scaleY * factor, 20));
-            } else {
+            if (e.shiftKey) studioZoom.scaleX = Math.max(0.1, Math.min(studioZoom.scaleX * factor, 20));
+            else if (e.ctrlKey) studioZoom.scaleY = Math.max(0.1, Math.min(studioZoom.scaleY * factor, 20));
+            else {
                 studioZoom.scaleX = Math.max(0.1, Math.min(studioZoom.scaleX * factor, 20));
                 studioZoom.scaleY = Math.max(0.1, Math.min(studioZoom.scaleY * factor, 20));
             }
-
             document.getElementById('studioZoomIndicator').innerText = `Zoom Scale X:${Math.round(studioZoom.scaleX*100)}% Y:${Math.round(studioZoom.scaleY*100)}%`;
             applyMatrixTransform(video, studioZoom);
         }
@@ -507,7 +507,6 @@
             const setupPanContainer = (viewportId, elementId, zoomState) => {
                 const viewport = document.getElementById(viewportId);
                 const el = document.getElementById(elementId);
-
                 viewport.addEventListener('mousedown', (e) => {
                     zoomState.isDragging = true;
                     zoomState.startX = e.clientX - zoomState.x;
@@ -521,7 +520,6 @@
                 });
                 window.addEventListener('mouseup', () => { zoomState.isDragging = false; });
             };
-
             setupPanContainer('videoContainer', 'dashboardVideoPlayer', dashZoom);
             setupPanContainer('studioVideoViewport', 'studioVideoPlayer', studioZoom);
         }
@@ -540,7 +538,6 @@
             canvas.width = videoElement.videoWidth;
             canvas.height = videoElement.videoHeight;
             const ctx = canvas.getContext('2d');
-            
             ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
             
             const time = videoElement.currentTime;
@@ -551,7 +548,6 @@
 
             ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
             ctx.fillRect(canvas.width - 250, 20, 230, 55);
-            
             ctx.font = "bold 26px monospace";
             ctx.fillStyle = "#34d399";
             ctx.textAlign = "center";
@@ -582,7 +578,6 @@
                     e.preventDefault();
                     if(activeVideo.paused) activeVideo.play(); else activeVideo.pause();
                 }
-
                 if (e.altKey && e.code === "KeyS") {
                     e.preventDefault();
                     copyVideoElementToClipboard(activeVideo);
@@ -600,7 +595,6 @@
                 let modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA'));
                 modules.push({ id: moduleId, title: title, fileName: file.name });
                 localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(modules));
-
                 document.getElementById('moduleTitleInput').value = "";
                 document.getElementById('moduleFileInput').value = "";
                 renderLearningModules();
@@ -617,7 +611,6 @@
                 container.innerHTML = `<p class="text-[11px] text-zinc-600 font-mono italic">No modules posted.</p>`;
                 return;
             }
-
             container.innerHTML = modules.map(m => `
                 <div class="bg-zinc-950 border border-zinc-800 p-3 rounded flex justify-between items-center group hover:border-zinc-500 transition">
                     <button onclick="launchStandaloneModuleEnvironment('${m.id}')" class="text-xs truncate font-mono text-zinc-300 hover:text-purple-400 text-left flex-1 font-bold tracking-tight">
@@ -644,7 +637,6 @@
                 if(blob) {
                     const downloadUrl = URL.createObjectURL(blob);
                     document.getElementById('standaloneModuleHeaderTitle').innerText = activeModule.title;
-                    
                     const triggerBtn = document.getElementById('standaloneModuleDownloadTrigger');
                     triggerBtn.href = downloadUrl;
                     triggerBtn.download = activeModule.fileName;
@@ -697,7 +689,6 @@
                 container.innerHTML = `<div class="col-span-2 text-center p-8 border border-dashed border-zinc-800 rounded font-mono text-xs text-zinc-600">No active tracking sheets mapped yet.</div>`;
                 return;
             }
-
             container.innerHTML = viewableSheets.map(s => `
                 <div class="bg-zinc-950 border border-zinc-800 p-4 rounded flex flex-col justify-between h-36 hover:border-zinc-700 transition relative">
                     <div>
@@ -706,11 +697,7 @@
                     </div>
                     <div class="flex gap-2 mt-4">
                         <a href="${s.url}" target="_blank" class="text-center flex-1 bg-white text-black text-xs font-bold py-1.5 rounded hover:bg-zinc-200 transition">Open Workspace</a>
-                        ${isAuthorizedAdmin ? `
-                            <button onclick="purgeSheetCardPermanently('${s.id}')" class="text-[10px] px-2 bg-zinc-900 text-red-400 border border-zinc-800 rounded hover:bg-red-950/40 transition">
-                                Remove
-                            </button>
-                        ` : ''}
+                        ${isAuthorizedAdmin ? `<button onclick="purgeSheetCardPermanently('${s.id}')" class="text-[10px] px-2 bg-zinc-900 text-red-400 border border-zinc-800 rounded hover:bg-red-950/40 transition">Remove</button>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -738,7 +725,6 @@
                     document.getElementById(outputTextId).innerText = `TS: ${cleanTimestamp}`;
                 }
                 
-                // MULTI-PARAMETER INJECTION (Appends video asset id along with timestamps)
                 if(outputInputId) {
                     const stableBaseUrl = window.location.origin + window.location.pathname;
                     if (currentActiveVideoThreadId) {
@@ -793,16 +779,12 @@
         function savePasteInputLinkToGlobalStorage() {
             const rawUrl = document.getElementById('internalDeepLinkPasteInput').value.trim();
             if(!rawUrl) return;
-
             try {
                 const urlObj = new URL(rawUrl);
                 const timeParam = urlObj.searchParams.get('t') || "0";
-                const videoParam = urlObj.searchParams.get('v') || "Unknown Video Track";
                 const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS'));
-                
                 links.unshift({ id: Date.now().toString(), fullUrl: rawUrl, timestampMarker: parseFloat(timeParam).toFixed(2) + "s", loggedAt: new Date().toLocaleTimeString() });
                 localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(links));
-                
                 document.getElementById('internalDeepLinkPasteInput').value = "";
                 renderDeepLinkHistoryLogs();
             } catch(e) { alert("Invalid URL log structure."); }
@@ -816,8 +798,8 @@
         }
 
         /**
-         * MULTI-PARAMETER DEEP LINK PARSER
-         * Extracts target video id + frame timestamp offset safely.
+         * ENHANCED ROUTING ENGINE
+         * Parses URL parameters and sets the app state directly to Full-Screen Studio view
          */
         function checkUrlParametersForDeepLinkNavigation() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -828,9 +810,9 @@
 
             const targetSeconds = timeJumpTarget ? parseFloat(timeJumpTarget) : 0;
 
-            // Step 1: If a distinct video ID key was specified in the sheet link, load it first
             if (targetVideoId) {
-                loadActiveVideoFromThread(targetVideoId, targetSeconds);
+                // Pass true as third argument to force full screen studio load immediately
+                loadActiveVideoFromThread(targetVideoId, targetSeconds, true);
             } else if (timeJumpTarget) {
                 // Fallback baseline for older individual time links
                 const dashVideo = document.getElementById('dashboardVideoPlayer');
@@ -845,6 +827,10 @@
                 };
                 runDirectJump(dashVideo);
                 runDirectJump(studioVideo);
+                
+                // Route fallback to Full Screen immediately too
+                document.getElementById('mainDashboardView').classList.add('hidden');
+                document.getElementById('dedicatedVideoStudioView').classList.replace('hidden', 'flex');
             }
         }
 
@@ -861,7 +847,6 @@
             sheets.forEach(s => {
                 let syntaxErrorFlags = [];
                 if(s.title.match(/[^a-zA-Z0-9\s-_]/)) syntaxErrorFlags.push("Irregular Grammar Characters Detected in Workspace Title");
-                
                 const matchingLinksCount = links.filter(l => l.fullUrl.includes(`id=${s.id}`) || false).length;
                 if(matchingLinksCount === 0 && links.length > 0) syntaxErrorFlags.push("Warning: Missing Active Link Reference Maps");
 
