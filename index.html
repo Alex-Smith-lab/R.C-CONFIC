@@ -15,7 +15,6 @@
             0% { transform: scale(1); }
             100% { transform: scale(1.01); box-shadow: 0 0 35px #ff3300, 0 0 60px #ffaa00; }
         }
-        /* Fully Unrestricted Zoom & Pan Workspace Viewport */
         .zoom-viewport {
             position: relative;
             overflow: hidden;
@@ -261,7 +260,6 @@
         let dbInstance = null;
         const requestDB = indexedDB.open("RCAI_SystemStorage_v2", 1);
 
-        // Advanced Unrestricted Multi-Axis Zoom States
         let dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
         let studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
 
@@ -409,7 +407,6 @@
             });
         }
 
-        // STABILIZED MATRIX TRANSFORM ENGINE
         function applyMatrixTransform(element, state) {
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scaleX}, ${state.scaleY})`;
         }
@@ -450,6 +447,7 @@
             applyMatrixTransform(video, studioZoom);
         }
 
+        // RESET HANDLING
         function resetDashboardZoom() {
             dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
             document.getElementById('dashZoomIndicator').innerText = `Zoom: 100%`;
@@ -485,7 +483,6 @@
             setupPanContainer('studioVideoViewport', 'studioVideoPlayer', studioZoom);
         }
 
-        // ONE-CLICK RAW TIMESTAMPS GENERATOR
         function copyRawTimestampText(rawString) {
             const pureTimestamp = rawString.replace('TS: ', '').trim();
             navigator.clipboard.writeText(pureTimestamp).then(() => {
@@ -495,7 +492,6 @@
             });
         }
 
-        // HIGH-RESOLUTION EXTENSION SCREENSHOT OVERLAY ENGINE
         function copyVideoElementToClipboard(videoElement) {
             const canvas = document.createElement('canvas');
             canvas.width = videoElement.videoWidth;
@@ -510,7 +506,6 @@
             const secs = Math.floor(time % 60).toString().padStart(2, '0');
             const stampText = `${hrs}:${mins}:${secs}`;
 
-            // Overlay panel configuration optimized for highlighting extensions
             ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
             ctx.fillRect(canvas.width - 250, 20, 230, 55);
             
@@ -545,7 +540,6 @@
                     if(activeVideo.paused) activeVideo.play(); else activeVideo.pause();
                 }
 
-                // Extension specialized screenshot hotkey combo (Alt + S)
                 if (e.altKey && e.code === "KeyS") {
                     e.preventDefault();
                     copyVideoElementToClipboard(activeVideo);
@@ -553,7 +547,6 @@
             });
         }
 
-        // MODULE LEARNING UTILS
         function processModuleUploadEngine() {
             const title = document.getElementById('moduleTitleInput').value.trim();
             const file = document.getElementById('moduleFileInput').files[0];
@@ -687,6 +680,7 @@
             renderSheetsGrid();
         }
 
+        // CUSTOM DOMAIN ADAPTIVE TRACKER
         function setupPlaybackStateListeners() {
             const dashVideo = document.getElementById('dashboardVideoPlayer');
             const studioVideo = document.getElementById('studioVideoPlayer');
@@ -702,7 +696,9 @@
                     document.getElementById(outputTextId).innerText = `TS: ${cleanTimestamp}`;
                 }
                 if(outputInputId) {
-                    document.getElementById(outputInputId).value = `${window.location.href.split('?')[0]}?t=${Math.floor(time)}`;
+                    // Strips custom context domains cleanly to map raw parameter values safely
+                    const stableBaseUrl = window.location.origin + window.location.pathname;
+                    document.getElementById(outputInputId).value = `${stableBaseUrl}?t=${Math.floor(time)}`;
                 }
             };
 
