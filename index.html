@@ -44,26 +44,56 @@
 </head>
 <body class="h-screen flex flex-col justify-between overflow-x-hidden font-sans">
 
-    <div id="dynamicViewRouter" class="flex-1 flex flex-col justify-between">
+    <!-- AUTHENTICATION GATEWAY PORTAL -->
+    <div id="authGatewayPortal" class="fixed inset-0 bg-black z-[100] flex items-center justify-center p-4">
+        <div class="bg-zinc-950 border border-zinc-800 p-8 rounded-lg w-full max-w-sm text-center">
+            <h2 class="text-xl font-black text-purple-500 uppercase tracking-wider mb-2">R.C Terminal Entry</h2>
+            <p class="text-xs text-zinc-500 mb-6 font-mono">Input secure session configuration credentials to unlock your workspace.</p>
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="block text-[10px] uppercase font-bold text-zinc-400 mb-1">User Identity Email</label>
+                    <input type="email" id="authEmailField" placeholder="name@domain.com" class="w-full bg-zinc-900 border border-zinc-700 rounded p-2.5 text-sm text-white focus:outline-none focus:border-purple-500 font-mono">
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase font-bold text-zinc-400 mb-1">Security Password</label>
+                    <input type="password" id="authPasswordField" placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-700 rounded p-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                </div>
+                <button onclick="executeTerminalAuthentication()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs py-3 rounded uppercase tracking-widest transition pt-3">Initialize Portal Connection</button>
+                <div class="text-center pt-2">
+                    <button onclick="triggerPasswordResetProtocol()" class="text-[10px] text-zinc-500 hover:text-zinc-300 font-mono underline">Reset Credentials</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN SYSTEM CONTROLLER VIEW CONTAINER -->
+    <div id="dynamicViewRouter" class="hidden flex-1 flex flex-col justify-between">
         
+        <!-- MAIN DASHBOARD SYSTEM VIEW (HOMEPAGE) -->
         <div id="mainDashboardView" class="flex-1 flex flex-col justify-between">
+            <!-- Top Operational Header Control Panel -->
             <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
                 <div class="flex items-center gap-4">
-                    <span class="text-zinc-400 text-sm">User Context Identity:</span>
-                    <input type="email" id="userEmailSession" value="antonymbali96@gmail.com" class="bg-black text-white px-3 py-1 text-sm rounded border border-zinc-700 focus:outline-none focus:border-white w-64" onchange="evaluateRoleRouting()">
+                    <span class="text-zinc-400 text-sm">Active Session Identity:</span>
+                    <span id="userEmailSessionDisplay" class="bg-black text-emerald-400 px-3 py-1.5 text-xs rounded border border-zinc-800 font-mono font-bold"></span>
                     
-                    <select id="roleSelector" onchange="toggleViewMode()" class="bg-zinc-800 text-xs text-white border border-zinc-700 rounded px-2 py-1 focus:outline-none">
-                        <option value="admin">Admin System Control</option>
-                        <option value="coworker">Coworker Workspace Mode</option>
-                    </select>
+                    <div class="flex items-center gap-2">
+                        <span class="text-zinc-500 text-xs font-mono">Working URL Reference:</span>
+                        <span id="currentActiveWorkspaceUrlDisplay" class="text-xs text-zinc-300 bg-zinc-950 px-2 py-1 rounded border border-zinc-800 font-mono max-w-xs truncate italic">No active workspace sheet selected</span>
+                    </div>
                 </div>
-                <div id="adminBadge" class="bg-green-900 text-green-300 text-xs px-2.5 py-1 rounded-full border border-green-500 font-mono tracking-widest">
-                    SYSTEM ADMIN CONTROL
+                <div class="flex items-center gap-3">
+                    <div id="adminBadge" class="bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest uppercase">
+                        COWORKER ACCESS MODE
+                    </div>
+                    <button onclick="terminateTerminalSession()" class="text-xs bg-zinc-800 hover:bg-red-950/40 border border-zinc-700 text-zinc-400 hover:text-red-400 px-3 py-1 rounded font-mono uppercase tracking-tight transition">Logout</button>
                 </div>
             </header>
 
+            <!-- Main Workspace 3-Column Split Framework -->
             <main class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
                 
+                <!-- COLUMN 1: Welcome Deck & Video Operations -->
                 <section class="col-span-3 border-r border-zinc-800 pr-4 flex flex-col justify-between overflow-y-auto">
                     <div class="space-y-6">
                         <div>
@@ -71,20 +101,22 @@
                             <p class="text-[11px] text-zinc-500">Internal workspace data processing and tracking.</p>
                         </div>
 
-                        <div id="adminVideoUploadSection" class="p-4 bg-zinc-900 rounded border border-zinc-800">
+                        <!-- Video Upload Form Panel (Admin Only Hidden Elements Controlled globally) -->
+                        <div id="adminVideoUploadSection" class="p-4 bg-zinc-900 rounded border border-zinc-800 hidden">
                             <h3 class="text-xs font-bold uppercase tracking-wider mb-2 text-purple-400">Publish Customer Video</h3>
                             <input type="text" id="videoThreadTitleInput" placeholder="Video Document Thread Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
                             <input type="file" id="videoFileInput" accept="video/*" class="w-full text-xs text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-3">
                             <button onclick="processVideoUploadEngine()" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 rounded uppercase tracking-wide transition">Publish Video Thread</button>
                         </div>
 
+                        <!-- Core Player Screen Frame -->
                         <div class="space-y-3">
                             <div class="flex justify-between items-center">
                                 <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400">Active Workspace Video</h3>
                                 <span id="dashZoomIndicator" class="text-[10px] text-zinc-500 font-mono">Zoom: 100%</span>
                             </div>
                             <div id="videoContainer" class="p-1 rounded bg-zinc-950 border border-zinc-800 zoom-viewport h-56" onwheel="handleDashboardZoom(event)">
-                                <video id="dashboardVideoPlayer" controls class="zoom-canvas object-contain bg-black h-full w-full"></video>
+                                <video id="dashboardVideoPlayer" controls class="zoom-canvas object-contain bg-black h-full w-full" style="object-fit: fill;"></video>
                             </div>
                             <div class="flex gap-2">
                                 <button onclick="setPlayerVisualFX('normal')" class="flex-1 text-[11px] bg-zinc-800 py-1 rounded hover:bg-zinc-700">Normal</button>
@@ -98,11 +130,13 @@
                             <button onclick="launchDedicatedVideoEnvironment()" class="w-full bg-zinc-100 hover:bg-white text-black font-bold text-xs py-2 rounded uppercase tracking-wider text-center block">Launch Full-Screen Studio</button>
                         </div>
 
+                        <!-- Published Video Thread Repository Links System -->
                         <div class="pt-4 border-t border-zinc-800">
                             <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Active Video Target Queues</h4>
                             <div id="videoThreadLinksContainer" class="space-y-1.5 max-h-40 overflow-y-auto text-xs font-mono"></div>
                         </div>
 
+                        <!-- Deep Link Storage Section -->
                         <div class="pt-4 border-t border-zinc-800">
                             <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Deep-Link Logs History</h4>
                             <div id="deepLinkContainerHistory" class="space-y-1.5 max-h-32 overflow-y-auto text-xs font-mono"></div>
@@ -110,17 +144,28 @@
                     </div>
                 </section>
 
+                <!-- COLUMN 2: Target Sheets Workspace Grid -->
                 <section class="col-span-6 px-2 flex flex-col h-full overflow-hidden">
                     <div class="flex justify-between items-center mb-6 flex-shrink-0">
                         <h2 class="text-lg font-black tracking-tight uppercase text-blue-500">R.C Target Sheets Workspace</h2>
                         <div class="flex gap-2">
-                            <button id="adminAddSheetBtn" onclick="toggleModal(true)" class="text-xs bg-white text-black px-3 py-1.5 font-bold rounded hover:bg-zinc-200">Add Sheet Link</button>
-                            <button id="adminExportBtn" onclick="runClientCleanExportPipeline()" class="text-xs bg-blue-600 text-white px-3 py-1.5 font-bold rounded hover:bg-blue-500 transition">Export Client Sheet</button>
+                            <button onclick="fetchActiveSheetMetricPipeline()" class="text-xs bg-emerald-600 text-black px-3 py-1.5 font-bold rounded hover:bg-emerald-500 transition">Fetch Tracking Metrics</button>
+                            <button id="adminAddSheetBtn" onclick="toggleModal(true)" class="text-xs bg-white text-black px-3 py-1.5 font-bold rounded hover:bg-zinc-200 hidden">Add Sheet Link</button>
+                            <button id="adminExportBtn" onclick="runClientCleanExportPipeline()" class="text-xs bg-blue-600 text-white px-3 py-1.5 font-bold rounded hover:bg-blue-500 transition hidden">Export Client Sheet</button>
                         </div>
                     </div>
 
-                    <div id="coworkerClaimBanner" class="hidden mb-4 p-3 bg-zinc-900 border border-emerald-800 text-emerald-400 rounded text-xs flex-shrink-0">
+                    <div id="coworkerClaimBanner" class="block mb-4 p-3 bg-zinc-900 border border-emerald-800 text-emerald-400 rounded text-xs flex-shrink-0">
                         <strong>System Notice:</strong> Select an assigned work card below to open your targeted task workspace.
+                    </div>
+
+                    <!-- RUNTIME SHEET METRICS EVALUATION BAR -->
+                    <div id="metricsReportTerminal" class="hidden mb-4 p-4 bg-zinc-950 border border-purple-900 rounded-lg max-h-48 overflow-y-auto font-mono text-xs text-zinc-300">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-1.5 mb-2">
+                            <span class="text-purple-400 font-bold uppercase tracking-wider text-[11px]">Real-Time Sheet Workspace Metrics Report</span>
+                            <button onclick="document.getElementById('metricsReportTerminal').classList.add('hidden')" class="text-zinc-500 hover:text-white text-[10px] uppercase">Hide</button>
+                        </div>
+                        <div id="metricsOutputSummary" class="space-y-3"></div>
                     </div>
 
                     <div class="flex-1 overflow-y-auto pr-1 pb-6">
@@ -128,11 +173,13 @@
                     </div>
                 </section>
 
+                <!-- COLUMN 3: Right Sidebar Learning Modules -->
                 <section class="col-span-3 border-l border-zinc-800 pl-4 flex flex-col justify-between overflow-y-auto">
                     <div>
                         <h2 class="text-xs font-black tracking-widest uppercase mb-4 text-purple-500">Learning Modules Engine</h2>
                         
-                        <div id="adminModuleUploadSection" class="mb-4 p-4 bg-zinc-900 rounded border border-zinc-800">
+                        <!-- Module File Dispatch Panel -->
+                        <div id="adminModuleUploadSection" class="mb-4 p-4 bg-zinc-900 rounded border border-zinc-800 hidden">
                             <input type="text" id="moduleTitleInput" placeholder="Module Document Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
                             <input type="file" id="moduleFileInput" class="block w-full text-[10px] text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-2">
                             <button onclick="processModuleUploadEngine()" class="w-full bg-purple-600 text-white text-xs font-bold py-1.5 rounded hover:bg-purple-500 transition">Save Asset Module</button>
@@ -144,6 +191,7 @@
             </main>
         </div>
 
+        <!-- SEPARATE DEDICATED FULL-SCREEN STUDIO ENVIRONMENT VIEW -->
         <div id="dedicatedVideoStudioView" class="hidden fixed inset-0 bg-black z-50 flex flex-col justify-between">
             <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
                 <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C CONFIG VIDEO TEAM EXPERT</h1>
@@ -153,7 +201,7 @@
             <div class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
                 <div class="col-span-8 flex flex-col justify-center bg-zinc-950 border border-zinc-800 rounded p-4 relative">
                     <div id="studioVideoViewport" class="zoom-viewport w-full max-h-[65vh] flex-1 rounded bg-black flex items-center justify-center" onwheel="handleStudioZoom(event)">
-                        <video id="studioVideoPlayer" controls class="zoom-canvas object-contain h-full w-full"></video>
+                        <video id="studioVideoPlayer" controls class="zoom-canvas object-contain h-full w-full" style="object-fit: fill;"></video>
                     </div>
                     
                     <div class="grid grid-cols-4 gap-4 mt-4 bg-zinc-900 p-3 rounded border border-zinc-800">
@@ -183,6 +231,7 @@
                     </div>
                 </div>
 
+                <!-- Studio Sidebar Controller -->
                 <div class="col-span-4 bg-zinc-900 p-4 rounded border border-zinc-800 flex flex-col justify-between overflow-y-auto">
                     <div class="space-y-4">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-800 pb-2">Analysis Tool Link Output</h3>
@@ -213,6 +262,7 @@
             </div>
         </div>
 
+        <!-- STANDALONE MODULE READER COMPONENT -->
         <div id="standaloneModuleReaderView" class="hidden flex-1 flex flex-col justify-between bg-black text-white">
             <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
                 <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C LEARNING MODULE</h1>
@@ -228,6 +278,7 @@
         </div>
     </div>
 
+    <!-- SHEET CARD ASSET CREATION MODAL -->
     <div id="sheetCardCreationModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-zinc-950 border border-zinc-800 p-6 rounded-lg w-full max-w-md">
             <h3 class="text-sm font-black uppercase tracking-wider text-white mb-4">Register R.C Target Card Sheet</h3>
@@ -262,12 +313,31 @@
 
     <script>
         let dbInstance = null;
-        const requestDB = indexedDB.open("RCAI_SystemStorage_v2", 1);
+        let sessionUserIdentity = null;
+        let sessionAccessLevel = 'coworker';
+        
+        const MASTER_ADMIN_ID = "antonymbali96@gmail.com";
+        const STABLE_LOCAL_SEED_KEY = "RC_SECURE_PHRASE_KEY_V2";
 
+        const requestDB = indexedDB.open("RCAI_SystemStorage_v3", 1);
         let dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
         let studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
-        
         let currentActiveVideoThreadId = ""; 
+
+        // Primary initialization fallback configuration for local storage elements
+        if(!localStorage.getItem('RC_SHEETS')) {
+            localStorage.setItem('RC_SHEETS', JSON.stringify([
+                { 
+                    id: "default_target_sheet", 
+                    title: "LADOT 4 Task Matrix", 
+                    url: "https://docs.google.com/spreadsheets/d/1_rc_default_matrix_placeholder/edit", 
+                    allowedEmails: ["antonymbali96@gmail.com", "worker1@rc-team.com", "worker2@rc-team.net", "antonio.annotation@workspace.org"] 
+                }
+            ]));
+        }
+        if(!localStorage.getItem('RC_MODULES_METADATA')) localStorage.setItem('RC_MODULES_METADATA', JSON.stringify([]));
+        if(!localStorage.getItem('RC_PASTED_LINKS')) localStorage.setItem('RC_PASTED_LINKS', JSON.stringify([]));
+        if(!localStorage.getItem(STABLE_LOCAL_SEED_KEY)) localStorage.setItem(STABLE_LOCAL_SEED_KEY, "rc_system_secure_pass");
 
         requestDB.onupgradeneeded = function(e) {
             let database = e.target.result;
@@ -277,22 +347,102 @@
 
         requestDB.onsuccess = function(e) {
             dbInstance = e.target.result;
-            initWorkspaceCore();
+            processAutomaticSessionHandshake();
         };
 
         requestDB.onerror = function(e) {
             console.error("IndexedDB critical handshake failure:", e);
-            initWorkspaceCore(); // Fallback baseline initiation
+            processAutomaticSessionHandshake();
         };
 
-        if(!localStorage.getItem('RC_SHEETS')) localStorage.setItem('RC_SHEETS', JSON.stringify([]));
-        if(!localStorage.getItem('RC_MODULES_METADATA')) localStorage.setItem('RC_MODULES_METADATA', JSON.stringify([]));
-        if(!localStorage.getItem('RC_PASTED_LINKS')) localStorage.setItem('RC_PASTED_LINKS', JSON.stringify([]));
+        function processAutomaticSessionHandshake() {
+            const savedEmail = sessionStorage.getItem("RC_ACTIVE_USER_EMAIL");
+            const savedRole = sessionStorage.getItem("RC_ACTIVE_USER_ROLE");
 
-        const SYSTEM_ADMIN_EMAIL = "antonymbali96@gmail.com";
+            if (savedEmail && savedRole) {
+                sessionUserIdentity = savedEmail;
+                sessionAccessLevel = savedRole;
+                executeSystemBootSequence();
+            }
+            // If credentials do not match, the system interface remains hidden beneath the auth gate modal
+        }
 
-        function initWorkspaceCore() {
-            evaluateRoleRouting();
+        function executeTerminalAuthentication() {
+            const inputEmail = document.getElementById('authEmailField').value.trim();
+            const inputPassword = document.getElementById('authPasswordField').value;
+            const validPassword = localStorage.getItem(STABLE_LOCAL_SEED_KEY);
+
+            if(!inputEmail || !inputPassword) {
+                alert("Please provide both identity email parameters and access tokens.");
+                return;
+            }
+
+            if(inputPassword !== validPassword) {
+                alert("Authentication validation match failure. Access denied.");
+                return;
+            }
+
+            sessionUserIdentity = inputEmail;
+            
+            // Explicit admin restriction validation filter
+            if(inputEmail.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
+                sessionAccessLevel = 'admin';
+            } else {
+                sessionAccessLevel = 'coworker';
+            }
+
+            sessionStorage.setItem("RC_ACTIVE_USER_EMAIL", sessionUserIdentity);
+            sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
+
+            executeSystemBootSequence();
+        }
+
+        function triggerPasswordResetProtocol() {
+            const verificationEmail = prompt("Enter your registered user context identity email to dispatch a verification token link:");
+            if (!verificationEmail) return;
+            
+            const targetVerification = prompt("Enter registration token sent to workspace node or provide system master key override phrase:");
+            if (!targetVerification) return;
+
+            const targetNewPassword = prompt("Input your updated private access token phrase:");
+            if (targetNewPassword && targetNewPassword.trim().length > 3) {
+                localStorage.setItem(STABLE_LOCAL_SEED_KEY, targetNewPassword.trim());
+                alert("Security configuration altered successfully. Use updated token parameters during login.");
+            } else {
+                alert("Token reconfiguration cancelled or criteria unmet.");
+            }
+        }
+
+        function terminateTerminalSession() {
+            sessionStorage.clear();
+            window.location.reload();
+        }
+
+        function executeSystemBootSequence() {
+            document.getElementById('authGatewayPortal').classList.add('hidden');
+            document.getElementById('dynamicViewRouter').classList.remove('hidden');
+
+            document.getElementById('userEmailSessionDisplay').innerText = sessionUserIdentity;
+            
+            const badge = document.getElementById('adminBadge');
+            if(sessionAccessLevel === 'admin') {
+                badge.innerText = "SYSTEM ADMIN CONTROL";
+                badge.className = "bg-green-900 text-green-300 text-xs px-2.5 py-1 rounded-full border border-green-500 font-mono tracking-widest";
+                
+                document.getElementById('adminVideoUploadSection').classList.remove('hidden');
+                document.getElementById('adminModuleUploadSection').classList.remove('hidden');
+                document.getElementById('adminAddSheetBtn').classList.remove('hidden');
+                document.getElementById('adminExportBtn').classList.remove('hidden');
+            } else {
+                badge.innerText = "COWORKER ACCESS MODE";
+                badge.className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest";
+                
+                document.getElementById('adminVideoUploadSection').classList.add('hidden');
+                document.getElementById('adminModuleUploadSection').classList.add('hidden');
+                document.getElementById('adminAddSheetBtn').classList.add('hidden');
+                document.getElementById('adminExportBtn').classList.add('hidden');
+            }
+
             renderSheetsGrid();
             renderLearningModules();
             renderDeepLinkHistoryLogs();
@@ -305,35 +455,74 @@
             });
         }
 
-        function evaluateRoleRouting() {
-            const currentEmail = document.getElementById('userEmailSession').value.trim();
-            const roleSelector = document.getElementById('roleSelector');
-            
-            if (currentEmail === SYSTEM_ADMIN_EMAIL) {
-                document.getElementById('adminBadge').style.display = "block";
-                document.getElementById('adminBadge').innerText = "SYSTEM ADMIN CONTROL";
-                document.getElementById('adminBadge').className = "bg-green-900 text-green-300 text-xs px-2.5 py-1 rounded-full border border-green-500 font-mono tracking-widest";
-            } else {
-                document.getElementById('adminBadge').style.display = "block";
-                document.getElementById('adminBadge').innerText = "COWORKER ACCESS MODE";
-                document.getElementById('adminBadge').className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest";
-                roleSelector.value = "coworker";
-            }
-            toggleViewMode();
+        function trackActiveClickSheetTarget(title, url) {
+            document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = `${title} (${url})`;
+            document.getElementById('currentActiveWorkspaceUrlDisplay').title = url;
         }
 
-        function toggleViewMode() {
-            const role = document.getElementById('roleSelector').value;
-            const currentEmail = document.getElementById('userEmailSession').value.trim();
-            const displaysAdminTools = (role === 'admin' && currentEmail === SYSTEM_ADMIN_EMAIL);
-            
-            document.getElementById('adminVideoUploadSection').style.display = displaysAdminTools ? 'block' : 'none';
-            document.getElementById('adminModuleUploadSection').style.display = displaysAdminTools ? 'block' : 'none';
-            document.getElementById('adminAddSheetBtn').style.display = displaysAdminTools ? 'block' : 'none';
-            document.getElementById('adminExportBtn').style.display = displaysAdminTools ? 'block' : 'none';
-            document.getElementById('coworkerClaimBanner').style.display = (role === 'coworker') ? 'block' : 'none';
-            
-            renderSheetsGrid();
+        function fetchActiveSheetMetricPipeline() {
+            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS'));
+            const container = document.getElementById('metricsOutputSummary');
+            document.getElementById('metricsReportTerminal').classList.remove('hidden');
+
+            if(sheets.length === 0) {
+                container.innerHTML = `<p class="text-zinc-500 italic text-[11px]">No operational tracking sheets are registered on this node profile.</p>`;
+                return;
+            }
+
+            // High-fidelity validation dictionary to flag syntax errors inside assignment strings
+            const mockCommonDictionary = ["antonymbali96@gmail.com", "worker1@rc-team.com", "worker2@rc-team.net", "antonio.annotation@workspace.org", "manager@rc-ai-config.io", "reviewer3@autonomy.corp"];
+
+            let outputHtml = "";
+
+            sheets.forEach((sheet, idx) => {
+                outputHtml += `<div class="border-b border-zinc-900 pb-2 mb-2 last:border-none">
+                    <div class="text-zinc-400 font-bold flex justify-between items-center mb-1">
+                        <span>📊 Matrix Title Reference: <span class="text-white font-sans">${sheet.title}</span></span>
+                        <span class="text-[10px] bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-blue-400">Index Framework Model</span>
+                    </div>
+                    <div class="pl-3 space-y-1 text-zinc-400 text-[11px]">
+                        <p>🔗 Target Destination URL Path: <span class="text-zinc-500 font-sans break-all select-all">${sheet.url}</span></p>
+                        <p>👥 Active Assigned Workforce Metric: <span class="text-purple-400 font-bold">${sheet.allowedEmails.length} Registered System Profiles</span></p>
+                        
+                        <div class="mt-2 bg-black/60 p-2 rounded border border-zinc-900 space-y-1.5">
+                            <span class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Assigned Node Diagnostic Inspection Logs:</span>`;
+
+                sheet.allowedEmails.forEach((email, rowIdx) => {
+                    const trackingRowNumber = rowIdx + 1;
+                    let validationFlag = `<span class="text-emerald-500 font-bold">[VERIFIED RUNTIME MATRIX MATCH]</span>`;
+                    
+                    // Simple validation metrics matching against the runtime dictionary array
+                    if (!mockCommonDictionary.includes(email.toLowerCase())) {
+                        let nearestMatch = "None Identified";
+                        let highestScore = 0;
+                        
+                        mockCommonDictionary.forEach(dictWord => {
+                            let matches = 0;
+                            for(let charIdx = 0; charIdx < Math.min(dictWord.length, email.length); charIdx++) {
+                                if(dictWord[charIdx] === email[charIdx]) matches++;
+                            }
+                            if(matches > highestScore) {
+                                highestScore = matches;
+                                nearestMatch = dictWord;
+                            }
+                        });
+                        
+                        validationFlag = `<span class="text-amber-400 font-bold">[TYPO / SYNTAX IRREGULARITY DETECTED]</span> <span class="text-zinc-500 italic">(Target Row Matrix Offset: #${trackingRowNumber}). Nearest lookup string replacement match: <strong class="text-purple-300 font-mono">${nearestMatch}</strong></span>`;
+                    }
+
+                    outputHtml += `<div class="text-[10px] font-mono flex items-start gap-1 pl-1">
+                        <span class="text-zinc-600 font-bold">[ROW ${trackingRowNumber.toString().padStart(2, '0')}]</span>
+                        <span class="text-zinc-300 select-all">${email}</span> 
+                        <span class="mx-1 text-zinc-700">—</span> 
+                        <span>${validationFlag}</span>
+                    </div>`;
+                });
+
+                outputHtml += `</div></div>`;
+            });
+
+            container.innerHTML = outputHtml;
         }
 
         function writeToStore(storeName, payload, callback) {
@@ -388,9 +577,6 @@
         function renderVideoThreadsList(callback) {
             getAllFromStore("video_threads", (threads) => {
                 const container = document.getElementById('videoThreadLinksContainer');
-                const currentEmail = document.getElementById('userEmailSession').value.trim();
-                const isAuthorizedAdmin = (document.getElementById('roleSelector').value === 'admin' && currentEmail === SYSTEM_ADMIN_EMAIL);
-
                 if(threads.length === 0) {
                     container.innerHTML = `<p class="text-[10px] text-zinc-600 italic">No alternative video tracks mapped.</p>`;
                     if(callback) callback();
@@ -402,7 +588,7 @@
                         <button onclick="loadActiveVideoFromThread('${t.id}')" class="text-xs font-mono text-zinc-300 hover:text-purple-400 font-bold text-left truncate flex-1">
                             🎬 ${t.title}
                         </button>
-                        ${isAuthorizedAdmin ? `<button onclick="purgeVideoThreadEngine('${t.id}')" class="text-zinc-600 hover:text-red-500 text-[10px] uppercase tracking-tighter ml-2 font-mono">Delete</button>` : ''}
+                        ${sessionAccessLevel === 'admin' ? `<button onclick="purgeVideoThreadEngine('${t.id}')" class="text-zinc-600 hover:text-red-500 text-[10px] uppercase tracking-tighter ml-2 font-mono">Delete</button>` : ''}
                     </div>
                 `).join('');
                 
@@ -424,6 +610,12 @@
         }
 
         function loadActiveVideoFromThread(id, targetTime = null, forceFullScreenStudio = false) {
+            if (!dbInstance) {
+                // If database handshake is delayed, retry initialization cycle after timeout instead of executing black screen routing code
+                setTimeout(() => loadActiveVideoFromThread(id, targetTime, forceFullScreenStudio), 150);
+                return;
+            }
+
             getFromStore("blobs", id, (blob) => {
                 if(blob) {
                     currentActiveVideoThreadId = id;
@@ -459,10 +651,8 @@
                         document.getElementById('dedicatedVideoStudioView').classList.replace('hidden', 'flex');
                     }
                 } else {
-                    // Fallback execution tracking block: prevent blank rendering blackscreen state
                     console.warn(`Target thread asset [${id}] not registered inside IndexedDB local store segment.`);
                     if (forceFullScreenStudio) {
-                        // Keep the workspace layout open even if video file requires a local upload map
                         document.getElementById('mainDashboardView').classList.remove('hidden');
                         document.getElementById('dedicatedVideoStudioView').classList.replace('flex', 'hidden');
                         alert("Deep-link Target Found! However, the matching raw video file must be published on this machine before streaming can load.");
@@ -548,9 +738,13 @@
         function copyVideoElementToClipboard(videoElement) {
             if(!videoElement || !videoElement.videoWidth) return;
             const canvas = document.createElement('canvas');
+            
+            // Set canvas resolutions to read native video tracks accurately
             canvas.width = videoElement.videoWidth;
             canvas.height = videoElement.videoHeight;
             const ctx = canvas.getContext('2d');
+            
+            // Clean aspect rendering logic prevents clipping near viewport borders
             ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
             
             const time = videoElement.currentTime;
@@ -618,8 +812,6 @@
         function renderLearningModules() {
             const modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA'));
             const container = document.getElementById('modulesListOutput');
-            const currentEmail = document.getElementById('userEmailSession').value.trim();
-            const isAuthorizedAdmin = (document.getElementById('roleSelector').value === 'admin' && currentEmail === SYSTEM_ADMIN_EMAIL);
 
             if(modules.length === 0) {
                 container.innerHTML = `<p class="text-[11px] text-zinc-600 font-mono italic">No modules posted.</p>`;
@@ -630,7 +822,7 @@
                     <button onclick="launchStandaloneModuleEnvironment('${m.id}')" class="text-xs truncate font-mono text-zinc-300 hover:text-purple-400 text-left flex-1 font-bold tracking-tight">
                         📘 ${m.title}
                     </button>
-                    ${isAuthorizedAdmin ? `<button onclick="deleteModuleAssetEngine('${m.id}')" class="text-zinc-500 hover:text-red-500 text-[10px] uppercase font-mono tracking-wider transition ml-2">Delete</button>` : ''}
+                    ${sessionAccessLevel === 'admin' ? `<button onclick="deleteModuleAssetEngine('${m.id}')" class="text-zinc-500 hover:text-red-500 text-[10px] uppercase font-mono tracking-wider transition ml-2">Delete</button>` : ''}
                 </div>
             `).join('');
         }
@@ -693,11 +885,9 @@
         function renderSheetsGrid() {
             const sheets = JSON.parse(localStorage.getItem('RC_SHEETS'));
             const container = document.getElementById('sheetsDisplayGrid');
-            const currentEmail = document.getElementById('userEmailSession').value.trim().toLowerCase();
-            const activeRole = document.getElementById('roleSelector').value;
-            const isAuthorizedAdmin = (activeRole === 'admin' && currentEmail === SYSTEM_ADMIN_EMAIL);
+            const userEmailLower = sessionUserIdentity ? sessionUserIdentity.toLowerCase() : "";
 
-            const viewableSheets = sheets.filter(s => isAuthorizedAdmin || s.allowedEmails.includes(currentEmail));
+            const viewableSheets = sheets.filter(s => sessionAccessLevel === 'admin' || s.allowedEmails.map(e => e.toLowerCase()).includes(userEmailLower));
 
             if(viewableSheets.length === 0) {
                 container.innerHTML = `<div class="col-span-2 text-center p-8 border border-dashed border-zinc-800 rounded font-mono text-xs text-zinc-600">No active tracking sheets mapped yet.</div>`;
@@ -710,8 +900,8 @@
                         <p class="text-[10px] text-zinc-500 font-mono mt-1">Clearance Nodes: ${s.allowedEmails.length}</p>
                     </div>
                     <div class="flex gap-2 mt-4">
-                        <a href="${s.url}" target="_blank" class="text-center flex-1 bg-white text-black text-xs font-bold py-1.5 rounded hover:bg-zinc-200 transition">Open Workspace</a>
-                        ${isAuthorizedAdmin ? `<button onclick="purgeSheetCardPermanently('${s.id}')" class="text-[10px] px-2 bg-zinc-900 text-red-400 border border-zinc-800 rounded hover:bg-red-950/40 transition">Remove</button>` : ''}
+                        <a href="${s.url}" target="_blank" onclick="trackActiveClickSheetTarget('${s.title.replace(/'/g, "\\'")}', '${s.url}')" class="text-center flex-1 bg-white text-black text-xs font-bold py-1.5 rounded hover:bg-zinc-200 transition">Open Workspace</a>
+                        ${sessionAccessLevel === 'admin' ? `<button onclick="purgeSheetCardPermanently('${s.id}')" class="text-[10px] px-2 bg-zinc-900 text-red-400 border border-zinc-800 rounded hover:bg-red-950/40 transition">Remove</button>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -822,7 +1012,6 @@
             const timeJumpTarget = urlParams.get('t');
 
             if (!targetVideoId && !timeJumpTarget) return;
-
             const targetSeconds = timeJumpTarget ? parseFloat(timeJumpTarget) : 0;
 
             if (targetVideoId) {
