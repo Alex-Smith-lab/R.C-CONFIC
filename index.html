@@ -60,7 +60,6 @@
 </head>
 <body class="h-screen flex flex-col justify-between overflow-x-hidden p-0 m-0">
 
-    <!-- AUTH GATEWAY PORTAL UPPER DECK FRAME LAYER -->
     <div id="authGatewayPortal" class="fixed inset-0 bg-darkBg z-[100] flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-cardBg p-8 rounded-xl border border-inputBorder shadow-2xl">
             
@@ -71,7 +70,6 @@
 
             <div id="feedbackAlert" class="hidden mb-6 p-4 rounded-lg text-sm font-medium border"></div>
 
-            <!-- DYNAMIC SEGMENTED TABS FOR REGISTER / SIGN-IN / RECOVERY -->
             <div class="grid grid-cols-3 gap-1 bg-black p-1 rounded-lg border border-inputBorder mb-6 text-xs font-bold uppercase tracking-wider">
                 <button id="tabSelectorLogin" onclick="switchAuthPortalContextMode('LOGIN')" class="py-2 text-white bg-brandPurple rounded transition-all">Login</button>
                 <button id="tabSelectorRegister" onclick="switchAuthPortalContextMode('REGISTER')" class="py-2 text-gray-400 hover:text-white rounded transition-all">Sign Up</button>
@@ -127,7 +125,6 @@
         </div>
     </div>
 
-    <!-- MAIN DYNAMIC OPERATIONAL GRAPHICS INTERFACE ASSEMBLY ROUTER -->
     <div id="dynamicViewRouter" class="hidden flex-1 flex flex-col justify-between">
         
         <div id="mainDashboardView" class="flex-1 flex flex-col justify-between">
@@ -151,7 +148,6 @@
 
             <main class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
                 
-                <!-- COLUMN 1: TRACKING VIDEO VIEWPORT CONTEXT AND ARCHIVE STACK -->
                 <section class="col-span-3 border-r border-zinc-800 pr-4 flex flex-col justify-between overflow-y-auto">
                     <div class="space-y-6">
                         <div>
@@ -198,23 +194,20 @@
                     </div>
                 </section>
 
-                <!-- COLUMN 2: PRIMARY OPERATION TARGET SHEET INTERFACES AND SPREADSHEET VIEWER CONTAINER -->
                 <section class="col-span-6 px-2 flex flex-col h-full overflow-hidden">
                     <div class="flex justify-between items-center mb-4 flex-shrink-0">
                         <h2 class="text-lg font-black tracking-tight uppercase text-blue-500">R.C Target Sheets Workspace</h2>
                         <div class="flex gap-2">
-                            <button onclick="fetchActiveSheetMetricPipeline()" class="text-xs bg-emerald-600 text-black px-3 py-1.5 font-bold rounded hover:bg-emerald-500 transition">Fetch Tracking Metrics</button>
+                            <button onclick="toggleOrFetchSheetMetricPipeline()" class="text-xs bg-emerald-600 text-black px-3 py-1.5 font-bold rounded hover:bg-emerald-500 transition">Fetch Tracking Metrics</button>
                             <button id="adminAddSheetBtn" onclick="toggleModal(true)" class="text-xs bg-white text-black px-3 py-1.5 font-bold rounded hover:bg-zinc-200 hidden">Add Sheet Link</button>
                             <button id="adminExportBtn" onclick="runClientCleanExportPipeline()" class="text-xs bg-blue-600 text-white px-3 py-1.5 font-bold rounded hover:bg-blue-500 transition hidden">Export Client Sheet</button>
                         </div>
                     </div>
 
-                    <!-- REVISED SYSTEM WORKSPACE BANNER FOR INLINE PREVIEW -->
                     <div id="coworkerClaimBanner" class="block mb-3 p-3 bg-zinc-900 border border-emerald-800 text-emerald-400 rounded text-xs flex-shrink-0">
                         <strong>System Notice:</strong> Selected sheet links will load dynamically within the live embedded workspace sandbox below.
                     </div>
 
-                    <!-- REAL-TIME SHEET METRICS AND CHARACTER LOOKUP LOG ENGINE INTERACTIVE HUB -->
                     <div id="metricsReportTerminal" class="hidden mb-4 p-4 bg-zinc-950 border border-purple-900 rounded-lg max-h-56 overflow-y-auto font-mono text-xs text-zinc-300">
                         <div class="flex justify-between items-center border-b border-zinc-800 pb-1.5 mb-2">
                             <span class="text-purple-400 font-bold uppercase tracking-wider text-[11px]">Real-Time Sheet Workspace Metrics & Unique Assignee Report</span>
@@ -223,7 +216,6 @@
                         <div id="metricsOutputSummary" class="space-y-3"></div>
                     </div>
 
-                    <!-- LIVE INCORPORATED INTERACTIVE WORKSPACE AREA EMBED CONTAINER FRAME -->
                     <div class="w-full h-72 bg-black border border-zinc-800 rounded-xl overflow-hidden mb-4 flex flex-col flex-shrink-0 relative">
                         <div class="bg-zinc-900/80 px-4 py-2 border-b border-zinc-800 flex justify-between items-center text-xs font-mono">
                             <span class="text-zinc-400">🔴 Live Embedded Workspace Engine Framework Layer:</span>
@@ -242,24 +234,53 @@
                     </div>
                 </section>
 
-                <!-- COLUMN 3: DIGITAL ONBOARDING ASSET DOWNLOAD REPOSITORIES -->
                 <section class="col-span-3 border-l border-zinc-800 pl-4 flex flex-col justify-between overflow-y-auto">
-                    <div>
-                        <h2 class="text-xs font-black tracking-widest uppercase mb-4 text-purple-500">Learning Modules Engine</h2>
-                        
-                        <div id="adminModuleUploadSection" class="mb-4 p-4 bg-zinc-900 rounded border border-zinc-800 hidden">
-                            <input type="text" id="moduleTitleInput" placeholder="Module Document Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
-                            <input type="file" id="moduleFileInput" class="block w-full text-[10px] text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-2">
-                            <button onclick="processModuleUploadEngine()" class="w-full bg-purple-600 text-white text-xs font-bold py-1.5 rounded hover:bg-purple-500 transition">Save Asset Module</button>
+                    <div class="space-y-6">
+                        <div>
+                            <h2 class="text-xs font-black tracking-widest uppercase mb-4 text-purple-500">Learning Modules Engine</h2>
+                            <div id="adminModuleUploadSection" class="mb-4 p-4 bg-zinc-900 rounded border border-zinc-800 hidden">
+                                <input type="text" id="moduleTitleInput" placeholder="Module Document Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
+                                <input type="file" id="moduleFileInput" class="block w-full text-[10px] text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-2">
+                                <button onclick="processModuleUploadEngine()" class="w-full bg-purple-600 text-white text-xs font-bold py-1.5 rounded hover:bg-purple-500 transition">Save Asset Module</button>
+                            </div>
+                            <div id="modulesListOutput" class="space-y-2"></div>
                         </div>
 
-                        <div id="modulesListOutput" class="space-y-2"></div>
+                        <div id="systemPrivilegeControlBlock" class="p-4 bg-zinc-900 border border-zinc-800 rounded hidden">
+                            <h3 class="text-xs font-black tracking-widest uppercase text-amber-400 mb-3">System Access Allocation</h3>
+                            <div class="space-y-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-zinc-400 uppercase mb-1">Target Account Email</label>
+                                    <input type="email" id="privilegeTargetEmail" placeholder="user@example.com" class="w-full bg-black border border-zinc-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 pt-1">
+                                    <button onclick="delegateUserAccessRole('Admin')" class="bg-amber-500 text-black font-bold text-[11px] py-1.5 rounded uppercase tracking-tight hover:bg-amber-400 transition">Make Admin</button>
+                                    <button onclick="delegateUserAccessRole('Coworker')" class="bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-[11px] py-1.5 rounded uppercase tracking-tight hover:bg-zinc-700 transition">Make Worker</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </main>
         </div>
 
-        <!-- FULL-SCREEN STUDIO DEEP ANALYSIS WORK ENVIRONMENT -->
+        <div id="fullScreenWorksheetArenaView" class="hidden fixed inset-0 bg-darkBg z-[90] flex flex-col justify-between">
+            <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center shadow-lg">
+                <div class="flex items-center gap-3">
+                    <span class="text-amber-500 text-lg font-black tracking-widest font-mono">R.C ROUTE ENTRY</span>
+                    <span class="text-zinc-600">|</span>
+                    <span id="arenaActiveSheetTitle" class="text-xs bg-zinc-950 border border-zinc-800 text-blue-400 px-3 py-1 rounded font-mono font-bold">Connecting Active Instance...</span>
+                </div>
+                <button onclick="closeFullScreenWorksheetArena()" class="bg-red-600 hover:bg-red-500 text-white text-xs font-black px-5 py-2 rounded uppercase tracking-wider transition duration-150 transform active:scale-95 shadow-lg shadow-red-950/40">
+                    Return to Terminal Matrix
+                </button>
+            </header>
+
+            <div class="flex-1 w-full h-full bg-black relative">
+                <iframe id="arenaFullScreenIframe" src="about:blank" class="w-full h-full border-0 bg-zinc-950"></iframe>
+            </div>
+        </div>
+
         <div id="dedicatedVideoStudioView" class="hidden fixed inset-0 bg-black z-50 flex flex-col justify-between">
             <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
                 <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C CONFIG VIDEO TEAM EXPERT</h1>
@@ -329,7 +350,6 @@
             </div>
         </div>
 
-        <!-- STANDALONE LEARNING ASSET DOWNLOADING MODULE ENGINE VIEW -->
         <div id="standaloneModuleReaderView" class="hidden flex-1 flex flex-col justify-between bg-black text-white">
             <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
                 <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C LEARNING MODULE</h1>
@@ -345,7 +365,6 @@
         </div>
     </div>
 
-    <!-- TARGET SHEET REGISTRATION SUB-MODAL CONTAINER OVERLAY -->
     <div id="sheetCardCreationModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-zinc-950 border border-zinc-800 p-6 rounded-lg w-full max-w-md">
             <h3 class="text-sm font-black uppercase tracking-wider text-white mb-4">Register R.C Target Card Sheet</h3>
@@ -370,8 +389,7 @@
         </div>
     </div>
 
-    <!-- LOWER RUNNING STATUS SCROLLBAR MARQUEE FOOTER LAYER -->
-    <footer class="w-full bg-black border-t border-zinc-900 py-1.5 overflow-hidden flex items-center shadow-lg">
+    <footer class="w-full bg-black border-t border-zinc-900 py-1.5 overflow-hidden flex items-center shadow-lg z-[95]">
         <div class="whitespace-nowrap flex text-[11px] font-black tracking-widest text-emerald-500 w-full uppercase">
             <marquee scrollamount="6" behavior="scroll" direction="left">
                 +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG
@@ -379,16 +397,15 @@
         </div>
     </footer>
 
-    <!-- INTERACTIVE SCRIPT LOGIC ROUTINES PANEL -->
     <script>
         let dbInstance = null;
         let sessionUserIdentity = null;
         let sessionAccessLevel = 'coworker';
-        let activeAuthMode = 'LOGIN'; // TRACKING MODES: LOGIN, REGISTER, FORGOT
+        let activeAuthMode = 'LOGIN'; 
         
         const MASTER_ADMIN_ID = "antonymbali96@gmail.com";
         const STABLE_LOCAL_SEED_KEY = "RC_SECURE_PHRASE_KEY_V2";
-        let trackingSelectedSheetIds = []; // SYSTEM STACK TO CAPTURE DYNAMIC MULTI-SELECTIONS
+        let trackingSelectedSheetIds = []; 
 
         const requestDB = indexedDB.open("RCAI_SystemStorage_v3", 1);
         let dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
@@ -413,10 +430,6 @@
             initializeDatabaseLayer();
         });
 
-        /**
-         * Verifies and configures persistent authentication structural storage maps.
-         * Resolves first-time experience failure loops by seeding default structural parameters.
-         */
         function initializeDatabaseLayer() {
             const registryExists = localStorage.getItem('rc_user_registry');
             if (!registryExists) {
@@ -429,7 +442,7 @@
                     }
                 ];
                 localStorage.setItem('rc_user_registry', JSON.stringify(defaultRegistry));
-                console.log("System Notice: Local identity user registry successfully seeded for first-time session run.");
+                console.log("System Notice: Local identity user registry successfully seeded.");
             }
             if(!localStorage.getItem(STABLE_LOCAL_SEED_KEY)) {
                 localStorage.setItem(STABLE_LOCAL_SEED_KEY, "password123");
@@ -463,16 +476,12 @@
             }
         }
 
-        /**
-         * Dynamic segment switcher to transition gateway layouts seamlessly
-         */
         function switchAuthPortalContextMode(targetMode) {
             activeAuthMode = targetMode;
             const subText = document.getElementById('authGatewaySubText');
             const pwdContainer = document.getElementById('passwordFieldContainer');
             const submitBtn = document.getElementById('portalPrimarySubmitBtn');
             
-            // RESET ACTIVE HIGHLIGHT CLASSES
             document.getElementById('tabSelectorLogin').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
             document.getElementById('tabSelectorRegister').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
             document.getElementById('tabSelectorForgot').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
@@ -495,9 +504,6 @@
             }
         }
 
-        /**
-         * Unified authentication handling for logins, user sign-ups, and key discovery loops.
-         */
         function handlePortalAuthentication(event) {
             event.preventDefault();
 
@@ -517,7 +523,7 @@
                     
                     sessionUserIdentity = emailInput;
                     
-                    // ANTONMYBALI96@GMAIL.COM ENFORCED AS MASTER OVERRIDE ADMIN KEY SYSTEM PROFILE
+                    // ANTONMYBALI96@GMAIL.COM IS BOTH FULL MASTER ADMIN AND CAPABLE OF ALL WORKER VIEW ROLES
                     if(emailInput === MASTER_ADMIN_ID.toLowerCase() || authenticatedUser.role === "Admin") {
                         sessionAccessLevel = 'admin';
                     } else {
@@ -545,7 +551,6 @@
                     return;
                 }
 
-                // DETECT IF TARGET REGISTRATION DESERVES INHERITED ACCESS RULES
                 const assignedRole = (emailInput === MASTER_ADMIN_ID.toLowerCase()) ? "Admin" : "Coworker";
 
                 users.push({
@@ -602,13 +607,14 @@
             document.getElementById('userEmailSessionDisplay').innerText = sessionUserIdentity;
             const badge = document.getElementById('adminBadge');
 
-            if(sessionAccessLevel === 'admin') {
+            if(sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase() || sessionAccessLevel === 'admin') {
                 badge.innerText = "SYSTEM ADMIN CONTROL";
                 badge.className = "bg-green-900 text-green-300 text-xs px-2.5 py-1 rounded-full border border-green-500 font-mono tracking-widest";
                 document.getElementById('adminVideoUploadSection').classList.remove('hidden');
                 document.getElementById('adminModuleUploadSection').classList.remove('hidden');
                 document.getElementById('adminAddSheetBtn').classList.remove('hidden');
                 document.getElementById('adminExportBtn').classList.remove('hidden');
+                document.getElementById('systemPrivilegeControlBlock').classList.remove('hidden');
             } else {
                 badge.innerText = "COWORKER ACCESS MODE";
                 badge.className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest";
@@ -616,6 +622,7 @@
                 document.getElementById('adminModuleUploadSection').classList.add('hidden');
                 document.getElementById('adminAddSheetBtn').classList.add('hidden');
                 document.getElementById('adminExportBtn').classList.add('hidden');
+                document.getElementById('systemPrivilegeControlBlock').classList.add('hidden');
             }
 
             renderSheetsGrid();
@@ -630,7 +637,40 @@
         }
 
         /**
-         * COMPREHENSIVE MULTI-SELECTION CARD HANDLING WITH AUTOMATED LIVE VIEW EMBED INJECTION
+         * ADMIN INTERFACE ROLE ASSIGNMENT SYSTEM DELEGATION LOGIC
+         */
+        function delegateUserAccessRole(targetRole) {
+            const targetEmail = document.getElementById('privilegeTargetEmail').value.trim().toLowerCase();
+            if(!targetEmail) {
+                alert("Please declare a target email string input first.");
+                return;
+            }
+
+            if(targetEmail === MASTER_ADMIN_ID.toLowerCase()) {
+                alert("Master system admin key settings cannot be altered or degraded.");
+                return;
+            }
+
+            const registryData = localStorage.getItem('rc_user_registry');
+            let users = registryData ? JSON.parse(registryData) : [];
+            const targetedProfile = users.find(u => u.email.toLowerCase() === targetEmail);
+
+            if(!targetedProfile) {
+                alert(`No database account is registered under the identifier [ ${targetEmail} ] yet.`);
+                return;
+            }
+
+            targetedProfile.role = targetRole;
+            targetedProfile.clearance = (targetRole === 'Admin') ? 1 : 2;
+            
+            localStorage.setItem('rc_user_registry', JSON.stringify(users));
+            alert(`Success! [ ${targetEmail} ] has been configured cleanly to role: ${targetRole}`);
+            document.getElementById('privilegeTargetEmail').value = "";
+            renderSheetsGrid();
+        }
+
+        /**
+         * CLICKING ACTIVATED WORKSHEET LAUNCHES DEDICATED EXTENDED VIEW
          */
         function handleTargetSheetCardInteraction(sheetId, title, url, checkboxElement) {
             const isChecked = checkboxElement.checked;
@@ -639,19 +679,20 @@
                 if (!trackingSelectedSheetIds.includes(sheetId)) {
                     trackingSelectedSheetIds.push(sheetId);
                 }
+                
+                // OPEN DIRECTLY INSIDE DEDICATED FULL SCREEN ROUTE WORKSPACE INTERFACE
+                launchFullScreenWorksheetArena(title, url);
             } else {
                 trackingSelectedSheetIds = trackingSelectedSheetIds.filter(id => id !== sheetId);
             }
 
-            // INSTANTLY RE-BIND THE EMBED IFRAME TO TARGET THE LAST SELECTED ASSET COMPONENT
+            // RE-BIND BACKUP INLINE ENGINE IFRAME DATA
             if (trackingSelectedSheetIds.length > 0) {
                 const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
                 const targetSheetObj = sheets.find(s => s.id === trackingSelectedSheetIds[trackingSelectedSheetIds.length - 1]);
                 
                 if (targetSheetObj) {
                     document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = `${targetSheetObj.title} (${targetSheetObj.url})`;
-                    document.getElementById('currentActiveWorkspaceUrlDisplay').title = targetSheetObj.url;
-                    
                     document.getElementById('workspaceActiveTitleBadge').innerText = targetSheetObj.title;
                     
                     const iframe = document.getElementById('liveWorkspaceSandboxIframe');
@@ -670,26 +711,48 @@
             }
         }
 
+        function launchFullScreenWorksheetArena(title, url) {
+            document.getElementById('arenaActiveSheetTitle').innerText = title;
+            document.getElementById('arenaFullScreenIframe').src = url;
+            
+            document.getElementById('mainDashboardView').classList.add('hidden');
+            document.getElementById('fullScreenWorksheetArenaView').classList.remove('hidden');
+        }
+
+        function closeFullScreenWorksheetArena() {
+            document.getElementById('fullScreenWorksheetArenaView').classList.add('hidden');
+            document.getElementById('mainDashboardView').classList.remove('hidden');
+            document.getElementById('arenaFullScreenIframe').src = "about:blank";
+            
+            // Uncheck standard matrix configurations so users can re-trigger on demand
+            renderSheetsGrid();
+        }
+
         /**
-         * SCAN ASSIGNEE COLUMN LOOKUPS AND CHARACTER-LEVEL MATRIX INSPECTION PIPELINES
+         * TOGGLE SHOW AND HIDE CAPABILITY ADDED TO FETCHMETRICS PIPELINE
          */
-        function fetchActiveSheetMetricPipeline() {
+        function toggleOrFetchSheetMetricPipeline() {
+            const terminalPanel = document.getElementById('metricsReportTerminal');
+            
+            // IF ALREADY VISIBLE, SIMPLY TOGGLE HIDE ON CLICK
+            if (!terminalPanel.classList.contains('hidden')) {
+                terminalPanel.classList.add('hidden');
+                return;
+            }
+
             const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
             const container = document.getElementById('metricsOutputSummary');
-            document.getElementById('metricsReportTerminal').classList.remove('hidden');
+            terminalPanel.classList.remove('hidden');
 
             if(sheets.length === 0) {
                 container.innerHTML = `<p class="text-zinc-500 italic text-[11px]">No operational tracking sheets are registered on this node profile.</p>`;
                 return;
             }
 
-            // STABLE LOOKUP VALIDATION REGISTRY DICTIONARY SPECIFIED TO MATCH THE COHORT PIPELINES
             const mockCommonDictionary = ["antonymbali96@gmail.com", "worker1@rc-team.com", "worker2@rc-team.net", "antonio.annotation@workspace.org", "manager@rc-ai-config.io", "reviewer3@autonomy.corp"];
             let outputHtml = "";
 
-            // PARSE ACROSS EACH REGISTERED SHEET NODE LAYOUT
             sheets.forEach((sheet) => {
-                // ALLOCATE METRIC TRACKERS FOR THE "ASSIGNEE" COLUMN ROW ELEMENT LOGS
                 let emailFrequencyMap = {};
                 
                 sheet.allowedEmails.forEach(email => {
@@ -710,7 +773,6 @@
                         <p>🔗 Location URL Path: <span class="text-zinc-500 font-sans break-all select-all">${sheet.url}</span></p>
                         <p class="text-emerald-400 font-bold">📋 Unique Assignees Identified: ${uniqueCount} System Entities</p>
                         
-                        <!-- RE-MAPPING DISTRIBUTION FREQUENCY FREIGHT SCANS -->
                         <div class="mt-1 bg-black/40 p-2 rounded border border-zinc-900">
                             <span class="text-[10px] uppercase font-bold text-zinc-500 block mb-1">Unique Assignee Frequency & Load Distribution Counts:</span>
                             <div class="grid grid-cols-1 gap-1 pl-2 font-mono text-[10px] text-zinc-300">`;
@@ -722,7 +784,6 @@
                 outputHtml += `</div>
                         </div>
 
-                        <!-- EXECUTING CHARACTER-LEVEL MATRIX INSPECTION SCAN OVER INDIVIDUAL ASSIGNEE ROWS -->
                         <div class="mt-2 bg-black/60 p-2 rounded border border-zinc-900 space-y-1.5">
                             <span class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Cell Verification Audit Scan Logs (Cell 1 to End):</span>`;
                 
@@ -736,7 +797,6 @@
                         
                         mockCommonDictionary.forEach(dictWord => {
                             let matches = 0;
-                            // EXACT CELL SCAN: LOOP FROM FIRST MATRIX INDEX VALUE TO THE LOG BOUND CONSTRAINTS
                             for(let charIdx = 0; charIdx < Math.min(dictWord.length, email.length); charIdx++) {
                                 if(dictWord[charIdx].toLowerCase() === email[charIdx].toLowerCase()) matches++;
                             }
@@ -811,7 +871,10 @@
             }
 
             sheets.forEach(sheet => {
-                const isUserPermitted = sheet.allowedEmails.some(email => email.toLowerCase() === sessionUserIdentity.toLowerCase()) || sessionAccessLevel === 'admin';
+                // EXPLICIT STRUCTURAL RULE: ANTONMYBALI96 HAS GRACEFUL ACCESS PERMISSIONS FOR EVERY CARD COWORKER LAYER
+                const isUserPermitted = sheet.allowedEmails.some(email => email.toLowerCase() === sessionUserIdentity.toLowerCase()) || 
+                                        sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase() || 
+                                        sessionAccessLevel === 'admin';
                 
                 const card = document.createElement('div');
                 card.className = `p-4 rounded-lg border bg-zinc-900/60 transition-all ${isUserPermitted ? 'border-zinc-800 hover:border-zinc-700' : 'border-red-950/40 opacity-40 select-none'}`;
@@ -834,7 +897,7 @@
                 }
 
                 let deleteButton = "";
-                if(sessionAccessLevel === 'admin') {
+                if(sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase() || sessionAccessLevel === 'admin') {
                     deleteButton = `<button onclick="deleteSheetAssetCard('${sheet.id}')" class="text-[10px] text-red-500 hover:text-red-400 uppercase font-mono tracking-tighter">Wipe</button>`;
                 }
 
@@ -1023,7 +1086,7 @@
                 div.className = "p-3 bg-zinc-950 border border-zinc-800 rounded flex justify-between items-center text-xs";
                 
                 let deleteOption = "";
-                if(sessionAccessLevel === 'admin') {
+                if(sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase() || sessionAccessLevel === 'admin') {
                     deleteOption = `<button onclick="deleteLearningModuleEngine('${m.id}')" class="text-red-500 font-mono hover:text-red-400 pl-1">Wipe</button>`;
                 }
 
@@ -1194,9 +1257,6 @@
             });
         }
 
-        /**
-         * REDIRECT PASTE INPUT VALUES TO EMBED IN LIVE WORKSPACE INTERFACE AUTOMATICALLY
-         */
         function savePasteInputLinkToGlobalStorage() {
             const valueInput = document.getElementById('internalDeepLinkPasteInput');
             const linkUrl = valueInput.value.trim();
@@ -1206,9 +1266,8 @@
             logs.push({ id: "link_" + Date.now(), fullUrl: linkUrl, dateStr: new Date().toISOString() });
             localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(logs));
 
-            // AUTO-OPEN THE EXTRACTED LINK VALUE LOCALLY IN WORKSPACE SANDBOX PANEL LAYERS
             document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = `Pasted Target Link Document (${linkUrl})`;
-            document.getElementById('workspaceActiveTitleBadge').innerText = "Pasted Target Workspace Connection Link Link";
+            document.getElementById('workspaceActiveTitleBadge').innerText = "Pasted Target Workspace Connection Link";
             
             const iframe = document.getElementById('liveWorkspaceSandboxIframe');
             const fallback = document.getElementById('iframePlaceholderFallbackState');
