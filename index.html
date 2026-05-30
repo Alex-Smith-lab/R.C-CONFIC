@@ -5,8 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>R.C AI CONFIG Workspace Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandPurple: '#9333ea',
+                        brandPurpleHover: '#a855f7',
+                        darkBg: '#0b0b0c',
+                        cardBg: '#121214',
+                        inputBg: '#1a1a1e',
+                        inputBorder: '#2a2a32'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { background-color: #000000; color: #ffffff; }
+        body { background-color: #0b0b0c; color: #ffffff; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
         .flame-effect {
             box-shadow: 0 0 25px #ff4500, 0 0 50px #ff8c00;
             animation: flicker 0.4s infinite alternate;
@@ -42,36 +58,71 @@
         }
     </style>
 </head>
-<body class="h-screen flex flex-col justify-between overflow-x-hidden font-sans">
+<body class="h-screen flex flex-col justify-between overflow-x-hidden p-0 m-0">
 
-    <!-- AUTHENTICATION GATEWAY PORTAL -->
-    <div id="authGatewayPortal" class="fixed inset-0 bg-black z-[100] flex items-center justify-center p-4">
-        <div class="bg-zinc-950 border border-zinc-800 p-8 rounded-lg w-full max-w-sm text-center">
-            <h2 class="text-xl font-black text-purple-500 uppercase tracking-wider mb-2">R.C Terminal Entry</h2>
-            <p class="text-xs text-zinc-500 mb-6 font-mono">Input secure session configuration credentials to unlock your workspace.</p>
-            <div class="space-y-4 text-left">
-                <div>
-                    <label class="block text-[10px] uppercase font-bold text-zinc-400 mb-1">User Identity Email</label>
-                    <input type="email" id="authEmailField" placeholder="name@domain.com" class="w-full bg-zinc-900 border border-zinc-700 rounded p-2.5 text-sm text-white focus:outline-none focus:border-purple-500 font-mono">
-                </div>
-                <div>
-                    <label class="block text-[10px] uppercase font-bold text-zinc-400 mb-1">Security Password</label>
-                    <input type="password" id="authPasswordField" placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-700 rounded p-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
-                </div>
-                <button onclick="executeTerminalAuthentication()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs py-3 rounded uppercase tracking-widest transition pt-3">Initialize Portal Connection</button>
-                <div class="text-center pt-2">
-                    <button onclick="triggerPasswordResetProtocol()" class="text-[10px] text-zinc-500 hover:text-zinc-300 font-mono underline">Reset Credentials</button>
-                </div>
+    <div id="authGatewayPortal" class="fixed inset-0 bg-darkBg z-[100] flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-cardBg p-8 rounded-xl border border-inputBorder shadow-2xl">
+            
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-black tracking-wider text-brandPurple uppercase mb-2">R.C TERMINAL ENTRY</h1>
+                <p class="text-sm text-gray-400">Input secure session configuration credentials to unlock your workspace.</p>
             </div>
+
+            <div id="feedbackAlert" class="hidden mb-6 p-4 rounded-lg text-sm font-medium border"></div>
+
+            <form id="terminalLoginForm" onsubmit="handlePortalAuthentication(event)" class="space-y-6">
+                
+                <div>
+                    <label for="identityEmail" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                        User Identity Email
+                    </label>
+                    <input 
+                        type="email" 
+                        id="identityEmail" 
+                        required
+                        placeholder="name@example.com"
+                        class="w-full bg-inputBg border border-inputBorder rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brandPurple transition-colors duration-200 text-base"
+                    >
+                </div>
+
+                <div>
+                    <label for="securityPassword" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                        Security Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="securityPassword" 
+                        required
+                        placeholder="••••••••"
+                        class="w-full bg-inputBg border border-inputBorder rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brandPurple transition-colors duration-200 text-base tracking-widest"
+                    >
+                </div>
+
+                <div>
+                    <button 
+                        type="submit"
+                        class="w-full bg-brandPurple hover:bg-brandPurpleHover text-white font-bold py-3 px-6 rounded-lg uppercase tracking-wide transition-all duration-200 transform active:scale-[0.99] shadow-lg shadow-purple-900/20"
+                    >
+                        Initialize Portal Connection
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-8 text-center">
+                <button 
+                    onclick="triggerCredentialsReset()" 
+                    class="text-xs text-gray-500 hover:text-brandPurple underline underline-offset-4 transition-colors duration-200"
+                >
+                    Reset Credentials
+                </button>
+            </div>
+
         </div>
     </div>
 
-    <!-- MAIN SYSTEM CONTROLLER VIEW CONTAINER -->
     <div id="dynamicViewRouter" class="hidden flex-1 flex flex-col justify-between">
         
-        <!-- MAIN DASHBOARD SYSTEM VIEW (HOMEPAGE) -->
         <div id="mainDashboardView" class="flex-1 flex flex-col justify-between">
-            <!-- Top Operational Header Control Panel -->
             <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
                 <div class="flex items-center gap-4">
                     <span class="text-zinc-400 text-sm">Active Session Identity:</span>
@@ -90,10 +141,8 @@
                 </div>
             </header>
 
-            <!-- Main Workspace 3-Column Split Framework -->
             <main class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
                 
-                <!-- COLUMN 1: Welcome Deck & Video Operations -->
                 <section class="col-span-3 border-r border-zinc-800 pr-4 flex flex-col justify-between overflow-y-auto">
                     <div class="space-y-6">
                         <div>
@@ -101,7 +150,6 @@
                             <p class="text-[11px] text-zinc-500">Internal workspace data processing and tracking.</p>
                         </div>
 
-                        <!-- Video Upload Form Panel (Admin Only Hidden Elements Controlled globally) -->
                         <div id="adminVideoUploadSection" class="p-4 bg-zinc-900 rounded border border-zinc-800 hidden">
                             <h3 class="text-xs font-bold uppercase tracking-wider mb-2 text-purple-400">Publish Customer Video</h3>
                             <input type="text" id="videoThreadTitleInput" placeholder="Video Document Thread Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
@@ -109,7 +157,6 @@
                             <button onclick="processVideoUploadEngine()" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 rounded uppercase tracking-wide transition">Publish Video Thread</button>
                         </div>
 
-                        <!-- Core Player Screen Frame -->
                         <div class="space-y-3">
                             <div class="flex justify-between items-center">
                                 <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400">Active Workspace Video</h3>
@@ -130,13 +177,11 @@
                             <button onclick="launchDedicatedVideoEnvironment()" class="w-full bg-zinc-100 hover:bg-white text-black font-bold text-xs py-2 rounded uppercase tracking-wider text-center block">Launch Full-Screen Studio</button>
                         </div>
 
-                        <!-- Published Video Thread Repository Links System -->
                         <div class="pt-4 border-t border-zinc-800">
                             <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Active Video Target Queues</h4>
                             <div id="videoThreadLinksContainer" class="space-y-1.5 max-h-40 overflow-y-auto text-xs font-mono"></div>
                         </div>
 
-                        <!-- Deep Link Storage Section -->
                         <div class="pt-4 border-t border-zinc-800">
                             <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Deep-Link Logs History</h4>
                             <div id="deepLinkContainerHistory" class="space-y-1.5 max-h-32 overflow-y-auto text-xs font-mono"></div>
@@ -144,7 +189,6 @@
                     </div>
                 </section>
 
-                <!-- COLUMN 2: Target Sheets Workspace Grid -->
                 <section class="col-span-6 px-2 flex flex-col h-full overflow-hidden">
                     <div class="flex justify-between items-center mb-6 flex-shrink-0">
                         <h2 class="text-lg font-black tracking-tight uppercase text-blue-500">R.C Target Sheets Workspace</h2>
@@ -159,7 +203,6 @@
                         <strong>System Notice:</strong> Select an assigned work card below to open your targeted task workspace.
                     </div>
 
-                    <!-- RUNTIME SHEET METRICS EVALUATION BAR -->
                     <div id="metricsReportTerminal" class="hidden mb-4 p-4 bg-zinc-950 border border-purple-900 rounded-lg max-h-48 overflow-y-auto font-mono text-xs text-zinc-300">
                         <div class="flex justify-between items-center border-b border-zinc-800 pb-1.5 mb-2">
                             <span class="text-purple-400 font-bold uppercase tracking-wider text-[11px]">Real-Time Sheet Workspace Metrics Report</span>
@@ -173,12 +216,10 @@
                     </div>
                 </section>
 
-                <!-- COLUMN 3: Right Sidebar Learning Modules -->
                 <section class="col-span-3 border-l border-zinc-800 pl-4 flex flex-col justify-between overflow-y-auto">
                     <div>
                         <h2 class="text-xs font-black tracking-widest uppercase mb-4 text-purple-500">Learning Modules Engine</h2>
                         
-                        <!-- Module File Dispatch Panel -->
                         <div id="adminModuleUploadSection" class="mb-4 p-4 bg-zinc-900 rounded border border-zinc-800 hidden">
                             <input type="text" id="moduleTitleInput" placeholder="Module Document Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
                             <input type="file" id="moduleFileInput" class="block w-full text-[10px] text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-2">
@@ -191,7 +232,6 @@
             </main>
         </div>
 
-        <!-- SEPARATE DEDICATED FULL-SCREEN STUDIO ENVIRONMENT VIEW -->
         <div id="dedicatedVideoStudioView" class="hidden fixed inset-0 bg-black z-50 flex flex-col justify-between">
             <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
                 <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C CONFIG VIDEO TEAM EXPERT</h1>
@@ -231,7 +271,6 @@
                     </div>
                 </div>
 
-                <!-- Studio Sidebar Controller -->
                 <div class="col-span-4 bg-zinc-900 p-4 rounded border border-zinc-800 flex flex-col justify-between overflow-y-auto">
                     <div class="space-y-4">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-800 pb-2">Analysis Tool Link Output</h3>
@@ -262,7 +301,6 @@
             </div>
         </div>
 
-        <!-- STANDALONE MODULE READER COMPONENT -->
         <div id="standaloneModuleReaderView" class="hidden flex-1 flex flex-col justify-between bg-black text-white">
             <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
                 <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C LEARNING MODULE</h1>
@@ -278,7 +316,6 @@
         </div>
     </div>
 
-    <!-- SHEET CARD ASSET CREATION MODAL -->
     <div id="sheetCardCreationModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-zinc-950 border border-zinc-800 p-6 rounded-lg w-full max-w-md">
             <h3 class="text-sm font-black uppercase tracking-wider text-white mb-4">Register R.C Target Card Sheet</h3>
@@ -337,7 +374,33 @@
         }
         if(!localStorage.getItem('RC_MODULES_METADATA')) localStorage.setItem('RC_MODULES_METADATA', JSON.stringify([]));
         if(!localStorage.getItem('RC_PASTED_LINKS')) localStorage.setItem('RC_PASTED_LINKS', JSON.stringify([]));
-        if(!localStorage.getItem(STABLE_LOCAL_SEED_KEY)) localStorage.setItem(STABLE_LOCAL_SEED_KEY, "rc_system_secure_pass");
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeDatabaseLayer();
+        });
+
+        /**
+         * Verifies and configures persistent authentication structural storage maps.
+         * Resolves first-time experience failure loops by seeding default structural parameters.
+         */
+        function initializeDatabaseLayer() {
+            const registryExists = localStorage.getItem('rc_user_registry');
+            if (!registryExists) {
+                const defaultRegistry = [
+                    {
+                        email: "antonymbali96@gmail.com",
+                        password: "password123", 
+                        clearance: 1,
+                        role: "Admin"
+                    }
+                ];
+                localStorage.setItem('rc_user_registry', JSON.stringify(defaultRegistry));
+                console.log("System Notice: Local identity user registry successfully seeded for first-time session run.");
+            }
+            if(!localStorage.getItem(STABLE_LOCAL_SEED_KEY)) {
+                localStorage.setItem(STABLE_LOCAL_SEED_KEY, "password123");
+            }
+        }
 
         requestDB.onupgradeneeded = function(e) {
             let database = e.target.result;
@@ -364,52 +427,65 @@
                 sessionAccessLevel = savedRole;
                 executeSystemBootSequence();
             }
-            // If credentials do not match, the system interface remains hidden beneath the auth gate modal
         }
 
-        function executeTerminalAuthentication() {
-            const inputEmail = document.getElementById('authEmailField').value.trim();
-            const inputPassword = document.getElementById('authPasswordField').value;
-            const validPassword = localStorage.getItem(STABLE_LOCAL_SEED_KEY);
+        /**
+         * Unified authentication processing system matching credentials against local storage maps.
+         */
+        function handlePortalAuthentication(event) {
+            event.preventDefault();
 
-            if(!inputEmail || !inputPassword) {
-                alert("Please provide both identity email parameters and access tokens.");
-                return;
-            }
+            const emailInput = document.getElementById('identityEmail').value.trim().toLowerCase();
+            const passwordInput = document.getElementById('securityPassword').value;
+            const alertBox = document.getElementById('feedbackAlert');
 
-            if(inputPassword !== validPassword) {
-                alert("Authentication validation match failure. Access denied.");
-                return;
-            }
+            const registryData = localStorage.getItem('rc_user_registry');
+            const users = registryData ? JSON.parse(registryData) : [];
 
-            sessionUserIdentity = inputEmail;
-            
-            // Explicit admin restriction validation filter
-            if(inputEmail.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
-                sessionAccessLevel = 'admin';
+            const authenticatedUser = users.find(user => 
+                user.email.toLowerCase() === emailInput && user.password === passwordInput
+            );
+
+            if (authenticatedUser) {
+                showAlert("Access granted. Initializing operational workspace pipeline components...", "success");
+                
+                sessionUserIdentity = emailInput;
+                if(emailInput === MASTER_ADMIN_ID.toLowerCase()) {
+                    sessionAccessLevel = 'admin';
+                } else {
+                    sessionAccessLevel = 'coworker';
+                }
+
+                sessionStorage.setItem("RC_ACTIVE_USER_EMAIL", sessionUserIdentity);
+                sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
+
+                setTimeout(() => {
+                    executeSystemBootSequence();
+                }, 1000);
+
             } else {
-                sessionAccessLevel = 'coworker';
+                showAlert("Authentication validation match failure. Access denied.", "error");
             }
-
-            sessionStorage.setItem("RC_ACTIVE_USER_EMAIL", sessionUserIdentity);
-            sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
-
-            executeSystemBootSequence();
         }
 
-        function triggerPasswordResetProtocol() {
-            const verificationEmail = prompt("Enter your registered user context identity email to dispatch a verification token link:");
-            if (!verificationEmail) return;
-            
-            const targetVerification = prompt("Enter registration token sent to workspace node or provide system master key override phrase:");
-            if (!targetVerification) return;
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('feedbackAlert');
+            alertBox.innerText = message;
+            alertBox.classList.remove('hidden', 'bg-red-950/40', 'border-red-800', 'text-red-400', 'bg-green-950/40', 'border-green-800', 'text-green-400');
 
-            const targetNewPassword = prompt("Input your updated private access token phrase:");
-            if (targetNewPassword && targetNewPassword.trim().length > 3) {
-                localStorage.setItem(STABLE_LOCAL_SEED_KEY, targetNewPassword.trim());
-                alert("Security configuration altered successfully. Use updated token parameters during login.");
+            if (type === 'error') {
+                alertBox.classList.add('bg-red-950/40', 'border-red-800', 'text-red-400');
             } else {
-                alert("Token reconfiguration cancelled or criteria unmet.");
+                alertBox.classList.add('bg-green-950/40', 'border-green-800', 'text-green-400');
+            }
+        }
+
+        function triggerCredentialsReset() {
+            if (confirm("Are you sure you want to restore the authentication system mapping database registries to defaults? This clears custom items.")) {
+                localStorage.removeItem('rc_user_registry');
+                localStorage.setItem(STABLE_LOCAL_SEED_KEY, "password123");
+                initializeDatabaseLayer();
+                showAlert("System credentials have been restored to defaults. Identity: antonymbali96@gmail.com / Password: password123", "success");
             }
         }
 
@@ -423,12 +499,11 @@
             document.getElementById('dynamicViewRouter').classList.remove('hidden');
 
             document.getElementById('userEmailSessionDisplay').innerText = sessionUserIdentity;
-            
             const badge = document.getElementById('adminBadge');
+
             if(sessionAccessLevel === 'admin') {
                 badge.innerText = "SYSTEM ADMIN CONTROL";
                 badge.className = "bg-green-900 text-green-300 text-xs px-2.5 py-1 rounded-full border border-green-500 font-mono tracking-widest";
-                
                 document.getElementById('adminVideoUploadSection').classList.remove('hidden');
                 document.getElementById('adminModuleUploadSection').classList.remove('hidden');
                 document.getElementById('adminAddSheetBtn').classList.remove('hidden');
@@ -436,7 +511,6 @@
             } else {
                 badge.innerText = "COWORKER ACCESS MODE";
                 badge.className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest";
-                
                 document.getElementById('adminVideoUploadSection').classList.add('hidden');
                 document.getElementById('adminModuleUploadSection').classList.add('hidden');
                 document.getElementById('adminAddSheetBtn').classList.add('hidden');
@@ -449,7 +523,6 @@
             setupPlaybackStateListeners();
             setupInteractivePanEngine();
             setupGlobalKeyboardShortcutHooks();
-            
             renderVideoThreadsList(() => {
                 checkUrlParametersForDeepLinkNavigation();
             });
@@ -470,9 +543,7 @@
                 return;
             }
 
-            // High-fidelity validation dictionary to flag syntax errors inside assignment strings
             const mockCommonDictionary = ["antonymbali96@gmail.com", "worker1@rc-team.com", "worker2@rc-team.net", "antonio.annotation@workspace.org", "manager@rc-ai-config.io", "reviewer3@autonomy.corp"];
-
             let outputHtml = "";
 
             sheets.forEach((sheet, idx) => {
@@ -484,19 +555,16 @@
                     <div class="pl-3 space-y-1 text-zinc-400 text-[11px]">
                         <p>🔗 Target Destination URL Path: <span class="text-zinc-500 font-sans break-all select-all">${sheet.url}</span></p>
                         <p>👥 Active Assigned Workforce Metric: <span class="text-purple-400 font-bold">${sheet.allowedEmails.length} Registered System Profiles</span></p>
-                        
                         <div class="mt-2 bg-black/60 p-2 rounded border border-zinc-900 space-y-1.5">
                             <span class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Assigned Node Diagnostic Inspection Logs:</span>`;
-
+                
                 sheet.allowedEmails.forEach((email, rowIdx) => {
                     const trackingRowNumber = rowIdx + 1;
                     let validationFlag = `<span class="text-emerald-500 font-bold">[VERIFIED RUNTIME MATRIX MATCH]</span>`;
-                    
-                    // Simple validation metrics matching against the runtime dictionary array
+
                     if (!mockCommonDictionary.includes(email.toLowerCase())) {
                         let nearestMatch = "None Identified";
                         let highestScore = 0;
-                        
                         mockCommonDictionary.forEach(dictWord => {
                             let matches = 0;
                             for(let charIdx = 0; charIdx < Math.min(dictWord.length, email.length); charIdx++) {
@@ -507,542 +575,119 @@
                                 nearestMatch = dictWord;
                             }
                         });
-                        
                         validationFlag = `<span class="text-amber-400 font-bold">[TYPO / SYNTAX IRREGULARITY DETECTED]</span> <span class="text-zinc-500 italic">(Target Row Matrix Offset: #${trackingRowNumber}). Nearest lookup string replacement match: <strong class="text-purple-300 font-mono">${nearestMatch}</strong></span>`;
                     }
-
                     outputHtml += `<div class="text-[10px] font-mono flex items-start gap-1 pl-1">
                         <span class="text-zinc-600 font-bold">[ROW ${trackingRowNumber.toString().padStart(2, '0')}]</span>
-                        <span class="text-zinc-300 select-all">${email}</span> 
-                        <span class="mx-1 text-zinc-700">—</span> 
-                        <span>${validationFlag}</span>
+                        <span class="text-zinc-300">${email}</span> &mdash; ${validationFlag}
                     </div>`;
                 });
 
-                outputHtml += `</div></div>`;
+                outputHtml += `</div></div></div>`;
             });
 
             container.innerHTML = outputHtml;
         }
 
-        function writeToStore(storeName, payload, callback) {
-            if (!dbInstance) return alert("Database processing system offline. Reload page.");
-            let tx = dbInstance.transaction([storeName], "readwrite");
-            tx.objectStore(storeName).put(payload).onsuccess = () => callback();
-        }
-
-        function getAllFromStore(storeName, callback) {
-            if (!dbInstance) { callback([]); return; }
-            let tx = dbInstance.transaction([storeName], "readonly");
-            let req = tx.objectStore(storeName).getAll();
-            req.onsuccess = (e) => callback(e.target.result || []);
-            req.onerror = () => callback([]);
-        }
-
-        function getFromStore(storeName, id, callback) {
-            if (!dbInstance) { callback(null); return; }
-            let tx = dbInstance.transaction([storeName], "readonly");
-            let req = tx.objectStore(storeName).get(id);
-            req.onsuccess = (e) => callback(e.target.result ? e.target.result.data : null);
-            req.onerror = () => callback(null);
-        }
-
-        function removeFromStore(storeName, id, callback) {
-            if (!dbInstance) return;
-            let tx = dbInstance.transaction([storeName], "readwrite");
-            tx.objectStore(storeName).delete(id).onsuccess = () => callback();
-        }
-
-        function processVideoUploadEngine() {
-            const titleInput = document.getElementById('videoThreadTitleInput');
-            const fileInput = document.getElementById('videoFileInput');
-            const file = fileInput.files[0];
-            const title = titleInput.value.trim() || (file ? file.name : "");
-
-            if(!file || !title) return alert('Provide a specific reference header name and attach a workspace video.');
-
-            const threadId = "video_" + Date.now();
-            writeToStore("blobs", { id: threadId, data: file }, () => {
-                writeToStore("video_threads", { id: threadId, title: title }, () => {
-                    alert("Video Thread successfully published.");
-                    titleInput.value = "";
-                    fileInput.value = "";
-                    renderVideoThreadsList(() => {
-                        loadActiveVideoFromThread(threadId);
-                    });
-                });
-            });
-        }
-
-        function renderVideoThreadsList(callback) {
-            getAllFromStore("video_threads", (threads) => {
-                const container = document.getElementById('videoThreadLinksContainer');
-                if(threads.length === 0) {
-                    container.innerHTML = `<p class="text-[10px] text-zinc-600 italic">No alternative video tracks mapped.</p>`;
-                    if(callback) callback();
-                    return;
-                }
-
-                container.innerHTML = threads.map(t => `
-                    <div id="card_${t.id}" class="bg-zinc-950 border border-zinc-900 p-2 rounded flex justify-between items-center hover:border-purple-900 transition">
-                        <button onclick="loadActiveVideoFromThread('${t.id}')" class="text-xs font-mono text-zinc-300 hover:text-purple-400 font-bold text-left truncate flex-1">
-                            🎬 ${t.title}
-                        </button>
-                        ${sessionAccessLevel === 'admin' ? `<button onclick="purgeVideoThreadEngine('${t.id}')" class="text-zinc-600 hover:text-red-500 text-[10px] uppercase tracking-tighter ml-2 font-mono">Delete</button>` : ''}
-                    </div>
-                `).join('');
-                
-                if(callback) callback();
-            });
-        }
-
-        function purgeVideoThreadEngine(id) {
-            removeFromStore("video_threads", id, () => {
-                removeFromStore("blobs", id, () => {
-                    if (currentActiveVideoThreadId === id) {
-                        currentActiveVideoThreadId = "";
-                        document.getElementById('dashboardVideoPlayer').src = "";
-                        document.getElementById('studioVideoPlayer').src = "";
-                    }
-                    renderVideoThreadsList();
-                });
-            });
-        }
-
-        function loadActiveVideoFromThread(id, targetTime = null, forceFullScreenStudio = false) {
-            if (!dbInstance) {
-                // If database handshake is delayed, retry initialization cycle after timeout instead of executing black screen routing code
-                setTimeout(() => loadActiveVideoFromThread(id, targetTime, forceFullScreenStudio), 150);
-                return;
+        function toggleModal(show) {
+            const modal = document.getElementById('sheetCardCreationModal');
+            if(show) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             }
-
-            getFromStore("blobs", id, (blob) => {
-                if(blob) {
-                    currentActiveVideoThreadId = id;
-                    const blobUrl = URL.createObjectURL(blob);
-                    const dashVideo = document.getElementById('dashboardVideoPlayer');
-                    const studioVideo = document.getElementById('studioVideoPlayer');
-                    
-                    dashVideo.src = blobUrl;
-                    studioVideo.src = blobUrl;
-                    
-                    resetDashboardZoom();
-                    resetStudioZoom();
-
-                    document.querySelectorAll('[id^="card_"]').forEach(el => el.classList.remove('active-thread-highlight'));
-                    const selectedGuiCard = document.getElementById(`card_${id}`);
-                    if(selectedGuiCard) selectedGuiCard.classList.add('active-thread-highlight');
-
-                    const jumpLogic = (videoEl) => {
-                        if (videoEl.readyState >= 1) {
-                            videoEl.currentTime = targetTime !== null ? targetTime : 0;
-                        } else {
-                            videoEl.addEventListener('loadedmetadata', () => { 
-                                videoEl.currentTime = targetTime !== null ? targetTime : 0; 
-                            }, { once: true });
-                        }
-                    };
-
-                    jumpLogic(dashVideo);
-                    jumpLogic(studioVideo);
-
-                    if (forceFullScreenStudio) {
-                        document.getElementById('mainDashboardView').classList.add('hidden');
-                        document.getElementById('dedicatedVideoStudioView').classList.replace('hidden', 'flex');
-                    }
-                } else {
-                    console.warn(`Target thread asset [${id}] not registered inside IndexedDB local store segment.`);
-                    if (forceFullScreenStudio) {
-                        document.getElementById('mainDashboardView').classList.remove('hidden');
-                        document.getElementById('dedicatedVideoStudioView').classList.replace('flex', 'hidden');
-                        alert("Deep-link Target Found! However, the matching raw video file must be published on this machine before streaming can load.");
-                    }
-                }
-            });
-        }
-
-        function applyMatrixTransform(element, state) {
-            element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scaleX}, ${state.scaleY})`;
-        }
-
-        function handleDashboardZoom(e) {
-            e.preventDefault();
-            const video = document.getElementById('dashboardVideoPlayer');
-            const factor = e.deltaY < 0 ? 1.08 : 0.92;
-            if (e.shiftKey) dashZoom.scaleX = Math.max(0.1, Math.min(dashZoom.scaleX * factor, 20));
-            else if (e.ctrlKey) dashZoom.scaleY = Math.max(0.1, Math.min(dashZoom.scaleY * factor, 20));
-            else {
-                dashZoom.scaleX = Math.max(0.1, Math.min(dashZoom.scaleX * factor, 20));
-                dashZoom.scaleY = Math.max(0.1, Math.min(dashZoom.scaleY * factor, 20));
-            }
-            document.getElementById('dashZoomIndicator').innerText = `Zoom X:${Math.round(dashZoom.scaleX*100)}% Y:${Math.round(dashZoom.scaleY*100)}%`;
-            applyMatrixTransform(video, dashZoom);
-        }
-
-        function handleStudioZoom(e) {
-            e.preventDefault();
-            const video = document.getElementById('studioVideoPlayer');
-            const factor = e.deltaY < 0 ? 1.08 : 0.92;
-            if (e.shiftKey) studioZoom.scaleX = Math.max(0.1, Math.min(studioZoom.scaleX * factor, 20));
-            else if (e.ctrlKey) studioZoom.scaleY = Math.max(0.1, Math.min(studioZoom.scaleY * factor, 20));
-            else {
-                studioZoom.scaleX = Math.max(0.1, Math.min(studioZoom.scaleX * factor, 20));
-                studioZoom.scaleY = Math.max(0.1, Math.min(studioZoom.scaleY * factor, 20));
-            }
-            document.getElementById('studioZoomIndicator').innerText = `Zoom Scale X:${Math.round(studioZoom.scaleX*100)}% Y:${Math.round(studioZoom.scaleY*100)}%`;
-            applyMatrixTransform(video, studioZoom);
-        }
-
-        function resetDashboardZoom() {
-            dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
-            document.getElementById('dashZoomIndicator').innerText = `Zoom: 100%`;
-            applyMatrixTransform(document.getElementById('dashboardVideoPlayer'), dashZoom);
-        }
-
-        function resetStudioZoom() {
-            studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
-            document.getElementById('studioZoomIndicator').innerText = `Zoom Scale: 100%`;
-            applyMatrixTransform(document.getElementById('studioVideoPlayer'), studioZoom);
-        }
-
-        function setupInteractivePanEngine() {
-            const setupPanContainer = (viewportId, elementId, zoomState) => {
-                const viewport = document.getElementById(viewportId);
-                const el = document.getElementById(elementId);
-                viewport.addEventListener('mousedown', (e) => {
-                    zoomState.isDragging = true;
-                    zoomState.startX = e.clientX - zoomState.x;
-                    zoomState.startY = e.clientY - zoomState.y;
-                });
-                window.addEventListener('mousemove', (e) => {
-                    if (!zoomState.isDragging) return;
-                    zoomState.x = e.clientX - zoomState.startX;
-                    zoomState.y = e.clientY - zoomState.startY;
-                    applyMatrixTransform(el, zoomState);
-                });
-                window.addEventListener('mouseup', () => { zoomState.isDragging = false; });
-            };
-            setupPanContainer('videoContainer', 'dashboardVideoPlayer', dashZoom);
-            setupPanContainer('studioVideoViewport', 'studioVideoPlayer', studioZoom);
-        }
-
-        function copyRawTimestampText(rawString) {
-            const pureTimestamp = rawString.replace('TS: ', '').trim();
-            navigator.clipboard.writeText(pureTimestamp).then(() => {
-                alert(`Copied clean frame timestamp: ${pureTimestamp}`);
-            }).catch(() => {
-                alert("Clipboard transaction blocked.");
-            });
-        }
-
-        function copyVideoElementToClipboard(videoElement) {
-            if(!videoElement || !videoElement.videoWidth) return;
-            const canvas = document.createElement('canvas');
-            
-            // Set canvas resolutions to read native video tracks accurately
-            canvas.width = videoElement.videoWidth;
-            canvas.height = videoElement.videoHeight;
-            const ctx = canvas.getContext('2d');
-            
-            // Clean aspect rendering logic prevents clipping near viewport borders
-            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-            
-            const time = videoElement.currentTime;
-            const hrs = Math.floor(time / 3600).toString().padStart(2, '0');
-            const mins = Math.floor((time % 3600) / 60).toString().padStart(2, '0');
-            const secs = Math.floor(time % 60).toString().padStart(2, '0');
-            const stampText = `${hrs}:${mins}:${secs}`;
-
-            ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
-            ctx.fillRect(canvas.width - 250, 20, 230, 55);
-            ctx.font = "bold 26px monospace";
-            ctx.fillStyle = "#34d399";
-            ctx.textBaseline = "middle";
-            ctx.textAlign = "center";
-            ctx.fillText(`TS: ${stampText}`, canvas.width - 135, 48);
-            
-            canvas.toBlob((blob) => {
-                if(!blob) return;
-                const dynamicClipboardItem = new ClipboardItem({ "image/png": blob });
-                navigator.clipboard.write([dynamicClipboardItem]).then(() => {
-                    alert(`Screenshot layer with stamp metadata [${stampText}] saved to clipboard.`);
-                });
-            }, 'image/png');
-        }
-
-        function copyDashboardScreenshotToClipboard() { copyVideoElementToClipboard(document.getElementById('dashboardVideoPlayer')); }
-        function copyStudioScreenshotToClipboard() { copyVideoElementToClipboard(document.getElementById('studioVideoPlayer')); }
-
-        function setupGlobalKeyboardShortcutHooks() {
-            window.addEventListener('keydown', (e) => {
-                const targetNode = e.target.tagName.toLowerCase();
-                if (targetNode === 'input' || targetNode === 'textarea') return;
-
-                const dashVideo = document.getElementById('dashboardVideoPlayer');
-                const studioVideo = document.getElementById('studioVideoPlayer');
-                const activeVideo = document.getElementById('mainDashboardView').classList.contains('hidden') ? studioVideo : dashVideo;
-
-                if (e.code === "Space") {
-                    e.preventDefault();
-                    if(activeVideo.paused) activeVideo.play(); else activeVideo.pause();
-                }
-                if (e.altKey && e.code === "KeyS") {
-                    e.preventDefault();
-                    copyVideoElementToClipboard(activeVideo);
-                }
-            });
-        }
-
-        function processModuleUploadEngine() {
-            const title = document.getElementById('moduleTitleInput').value.trim();
-            const file = document.getElementById('moduleFileInput').files[0];
-            if(!title || !file) return alert('Missing fields or document attachment targets.');
-
-            const moduleId = "module_" + Date.now();
-            writeToStore("blobs", { id: moduleId, data: file }, () => {
-                let modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA'));
-                modules.push({ id: moduleId, title: title, fileName: file.name });
-                localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(modules));
-                document.getElementById('moduleTitleInput').value = "";
-                document.getElementById('moduleFileInput').value = "";
-                renderLearningModules();
-            });
-        }
-
-        function renderLearningModules() {
-            const modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA'));
-            const container = document.getElementById('modulesListOutput');
-
-            if(modules.length === 0) {
-                container.innerHTML = `<p class="text-[11px] text-zinc-600 font-mono italic">No modules posted.</p>`;
-                return;
-            }
-            container.innerHTML = modules.map(m => `
-                <div class="bg-zinc-950 border border-zinc-800 p-3 rounded flex justify-between items-center group hover:border-zinc-500 transition">
-                    <button onclick="launchStandaloneModuleEnvironment('${m.id}')" class="text-xs truncate font-mono text-zinc-300 hover:text-purple-400 text-left flex-1 font-bold tracking-tight">
-                        📘 ${m.title}
-                    </button>
-                    ${sessionAccessLevel === 'admin' ? `<button onclick="deleteModuleAssetEngine('${m.id}')" class="text-zinc-500 hover:text-red-500 text-[10px] uppercase font-mono tracking-wider transition ml-2">Delete</button>` : ''}
-                </div>
-            `).join('');
-        }
-
-        function deleteModuleAssetEngine(id) {
-            let modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA'));
-            modules = modules.filter(m => m.id !== id);
-            localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(modules));
-            removeFromStore("blobs", id, () => { renderLearningModules(); });
-        }
-
-        function launchStandaloneModuleEnvironment(id) {
-            let modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA'));
-            let activeModule = modules.find(m => m.id === id);
-            if(!activeModule) return;
-
-            getFromStore("blobs", id, (blob) => {
-                if(blob) {
-                    const downloadUrl = URL.createObjectURL(blob);
-                    document.getElementById('standaloneModuleHeaderTitle').innerText = activeModule.title;
-                    const triggerBtn = document.getElementById('standaloneModuleDownloadTrigger');
-                    triggerBtn.href = downloadUrl;
-                    triggerBtn.download = activeModule.fileName;
-
-                    document.getElementById('mainDashboardView').classList.add('hidden');
-                    document.getElementById('standaloneModuleReaderView').classList.replace('hidden', 'flex');
-                }
-            });
-        }
-
-        function exitStandaloneModuleView() {
-            document.getElementById('standaloneModuleReaderView').classList.replace('flex', 'hidden');
-            document.getElementById('mainDashboardView').classList.remove('hidden');
-        }
-
-        function toggleModal(open) {
-            document.getElementById('sheetCardCreationModal').classList.toggle('hidden', !open);
-            document.getElementById('sheetCardCreationModal').classList.toggle('flex', open);
         }
 
         function saveSheetAssetCardEngine() {
             const title = document.getElementById('modalSheetTitle').value.trim();
             const url = document.getElementById('modalSheetUrl').value.trim();
-            const emailsText = document.getElementById('modalSheetEmails').value.trim();
+            const emailsRaw = document.getElementById('modalSheetEmails').value;
 
-            if(!title || !url) return alert('Missing workspace URL parameters.');
-            const allowedEmails = emailsText.split(',').map(e => e.trim().toLowerCase());
+            if(!title || !url) {
+                alert("Please satisfy all metadata properties schema headers required for creation.");
+                return;
+            }
 
-            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS'));
-            sheets.push({ id: Date.now().toString(), title, url, allowedEmails });
-            localStorage.setItem('RC_SHEETS', JSON.stringify(sheets));
+            const allowedEmails = emailsRaw.split(',').map(e => e.trim()).filter(e => e.length > 0);
+            const currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
+            
+            currentSheets.push({
+                id: "sheet_" + Date.now(),
+                title: title,
+                url: url,
+                allowedEmails: allowedEmails
+            });
 
+            localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
+            
             document.getElementById('modalSheetTitle').value = "";
             document.getElementById('modalSheetUrl').value = "";
             document.getElementById('modalSheetEmails').value = "";
+            
             toggleModal(false);
             renderSheetsGrid();
         }
 
         function renderSheetsGrid() {
-            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS'));
-            const container = document.getElementById('sheetsDisplayGrid');
-            const userEmailLower = sessionUserIdentity ? sessionUserIdentity.toLowerCase() : "";
+            const grid = document.getElementById('sheetsDisplayGrid');
+            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
+            grid.innerHTML = "";
 
-            const viewableSheets = sheets.filter(s => sessionAccessLevel === 'admin' || s.allowedEmails.map(e => e.toLowerCase()).includes(userEmailLower));
-
-            if(viewableSheets.length === 0) {
-                container.innerHTML = `<div class="col-span-2 text-center p-8 border border-dashed border-zinc-800 rounded font-mono text-xs text-zinc-600">No active tracking sheets mapped yet.</div>`;
+            if(sheets.length === 0) {
+                grid.innerHTML = `<p class="text-zinc-500 text-xs italic col-span-2">No sheet asset cards mapped into index memory arrays.</p>`;
                 return;
             }
-            container.innerHTML = viewableSheets.map(s => `
-                <div class="bg-zinc-950 border border-zinc-800 p-4 rounded flex flex-col justify-between h-36 hover:border-zinc-700 transition relative">
-                    <div>
-                        <h4 class="text-sm font-bold tracking-tight text-white truncate max-w-[220px]">${s.title}</h4>
-                        <p class="text-[10px] text-zinc-500 font-mono mt-1">Clearance Nodes: ${s.allowedEmails.length}</p>
-                    </div>
-                    <div class="flex gap-2 mt-4">
-                        <a href="${s.url}" target="_blank" onclick="trackActiveClickSheetTarget('${s.title.replace(/'/g, "\\'")}', '${s.url}')" class="text-center flex-1 bg-white text-black text-xs font-bold py-1.5 rounded hover:bg-zinc-200 transition">Open Workspace</a>
-                        ${sessionAccessLevel === 'admin' ? `<button onclick="purgeSheetCardPermanently('${s.id}')" class="text-[10px] px-2 bg-zinc-900 text-red-400 border border-zinc-800 rounded hover:bg-red-950/40 transition">Remove</button>` : ''}
-                    </div>
-                </div>
-            `).join('');
-        }
 
-        function purgeSheetCardPermanently(id) {
-            let sheets = JSON.parse(localStorage.getItem('RC_SHEETS'));
-            sheets = sheets.filter(s => s.id !== id);
-            localStorage.setItem('RC_SHEETS', JSON.stringify(sheets));
-            renderSheetsGrid();
-        }
-
-        function setupPlaybackStateListeners() {
-            const dashVideo = document.getElementById('dashboardVideoPlayer');
-            const studioVideo = document.getElementById('studioVideoPlayer');
-
-            const trackingTimelineHook = (videoEl, outputTextId, outputInputId) => {
-                const time = videoEl.currentTime;
-                const hrs = Math.floor(time / 3600).toString().padStart(2, '0');
-                const mins = Math.floor((time % 3600) / 60).toString().padStart(2, '0');
-                const secs = Math.floor(time % 60).toString().padStart(2, '0');
-                const cleanTimestamp = `${hrs}:${mins}:${secs}`;
+            sheets.forEach(sheet => {
+                const isUserPermitted = sheet.allowedEmails.some(email => email.toLowerCase() === sessionUserIdentity.toLowerCase()) || sessionAccessLevel === 'admin';
                 
-                if(document.getElementById(outputTextId)) {
-                    document.getElementById(outputTextId).innerText = `TS: ${cleanTimestamp}`;
+                const card = document.createElement('div');
+                card.className = `p-5 rounded-lg border bg-zinc-900/60 transition-all ${isUserPermitted ? 'border-zinc-800 hover:border-zinc-700' : 'border-red-950/40 opacity-40 select-none'}`;
+                
+                let buttonMarkup = "";
+                if(isUserPermitted) {
+                    buttonMarkup = `<a href="${sheet.url}" target="_blank" onclick="trackActiveClickSheetTarget('${sheet.title}', '${sheet.url}')" class="mt-4 block w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-center text-xs py-2 rounded uppercase tracking-wider transition">Open Assigned Workspace</a>`;
+                } else {
+                    buttonMarkup = `<button disabled class="mt-4 block w-full bg-zinc-800 text-zinc-500 font-bold text-center text-xs py-2 rounded uppercase tracking-wider cursor-not-allowed">Workspace Restrained</button>`;
                 }
-                
-                if(outputInputId) {
-                    const stableBaseUrl = window.location.origin + window.location.pathname;
-                    if (currentActiveVideoThreadId) {
-                        document.getElementById(outputInputId).value = `${stableBaseUrl}?v=${currentActiveVideoThreadId}&t=${time.toFixed(3)}`;
-                    } else {
-                        document.getElementById(outputInputId).value = `${stableBaseUrl}?t=${time.toFixed(3)}`;
-                    }
+
+                let deleteButton = "";
+                if(sessionAccessLevel === 'admin') {
+                    deleteButton = `<button onclick="deleteSheetAssetCard('${sheet.id}')" class="text-[10px] text-red-500 hover:text-red-400 uppercase font-mono tracking-tighter">Wipe Card</button>`;
                 }
-            };
 
-            dashVideo.addEventListener('timeupdate', () => trackingTimelineHook(dashVideo, 'dashTimestampDisplay', null));
-            studioVideo.addEventListener('timeupdate', () => trackingTimelineHook(studioVideo, 'studioTimestampCounter', 'studioDeepLinkExportUrl'));
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="text-sm font-black text-white tracking-wide truncate max-w-[180px]">${sheet.title}</h4>
+                        ${deleteButton}
+                    </div>
+                    <p class="text-[11px] text-zinc-500 font-mono mb-2 truncate">${sheet.url}</p>
+                    <div class="text-[10px] text-zinc-400 font-mono max-h-12 overflow-y-auto bg-black/40 p-1.5 rounded border border-zinc-950">
+                        <span class="text-zinc-600 block uppercase font-bold text-[9px]">Permissions:</span>
+                        ${sheet.allowedEmails.join(', ')}
+                    </div>
+                    ${buttonMarkup}
+                `;
+                grid.appendChild(card);
+            });
         }
 
-        function setPlayerVisualFX(mode) {
-            document.getElementById('videoContainer').className = (mode === 'flames') ? 'p-1 rounded bg-zinc-950 border border-zinc-800 zoom-viewport h-56 flame-effect' : 'p-1 rounded bg-zinc-950 border border-zinc-800 zoom-viewport h-56';
-        }
-
-        function launchDedicatedVideoEnvironment() {
-            document.getElementById('mainDashboardView').classList.add('hidden');
-            document.getElementById('dedicatedVideoStudioView').classList.replace('hidden', 'flex');
-            document.getElementById('studioVideoPlayer').src = document.getElementById('dashboardVideoPlayer').src;
-            document.getElementById('studioVideoPlayer').currentTime = document.getElementById('dashboardVideoPlayer').currentTime;
-            resetStudioZoom();
-        }
-
-        function exitDedicatedStudioEnvironment() {
-            document.getElementById('dedicatedVideoStudioView').classList.replace('flex', 'hidden');
-            document.getElementById('mainDashboardView').classList.remove('hidden');
-            document.getElementById('dashboardVideoPlayer').currentTime = document.getElementById('studioVideoPlayer').currentTime;
-            resetDashboardZoom();
-        }
-
-        function setStudioSpeed(rate) { document.getElementById('studioVideoPlayer').playbackRate = rate; }
-        
-        function stepVideoFrame(dir) { 
-            const player = document.getElementById('studioVideoPlayer');
-            player.pause(); 
-            player.currentTime = Math.max(0, player.currentTime + (dir * (1 / 24))); 
-        }
-
-        function copyStudioDeepLinkMetadata() {
-            const linkInput = document.getElementById('studioDeepLinkExportUrl');
-            if(!linkInput.value) return alert("Load a video file track first.");
-            linkInput.select();
-            
-            try {
-                navigator.clipboard.writeText(linkInput.value).then(() => {
-                    const params = new URLSearchParams(new URL(linkInput.value).search);
-                    alert(`Deep Link Copied! Target Video Thread ID: [${params.get('v')}] at [${parseFloat(params.get('t')).toFixed(2)}s]`);
-                });
-            } catch(err) {
-                document.execCommand('copy');
-            }
-        }
-
-        function savePasteInputLinkToGlobalStorage() {
-            const rawUrl = document.getElementById('internalDeepLinkPasteInput').value.trim();
-            if(!rawUrl) return;
-            try {
-                const urlObj = new URL(rawUrl);
-                const timeParam = urlObj.searchParams.get('t') || "0";
-                const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS'));
-                links.unshift({ id: Date.now().toString(), fullUrl: rawUrl, timestampMarker: parseFloat(timeParam).toFixed(2) + "s", loggedAt: new Date().toLocaleTimeString() });
-                localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(links));
-                document.getElementById('internalDeepLinkPasteInput').value = "";
-                renderDeepLinkHistoryLogs();
-            } catch(e) { alert("Invalid URL log structure."); }
-        }
-
-        function renderDeepLinkHistoryLogs() {
-            const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS'));
-            const container = document.getElementById('deepLinkContainerHistory');
-            if(links.length === 0) { container.innerHTML = `<p class="text-[10px] text-zinc-600 italic">No target logs recorded.</p>`; return; }
-            container.innerHTML = links.map(l => `<div class="bg-zinc-950 border border-zinc-900 p-2 rounded flex flex-col gap-1"><div class="flex justify-between items-center text-[10px] text-purple-400"><span>⏱️ Offset Location: ${l.timestampMarker}</span></div><a href="${l.fullUrl}" class="text-[10px] text-zinc-500 truncate hover:text-white underline font-mono">${l.fullUrl}</a></div>`).join('');
-        }
-
-        function checkUrlParametersForDeepLinkNavigation() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetVideoId = urlParams.get('v');
-            const timeJumpTarget = urlParams.get('t');
-
-            if (!targetVideoId && !timeJumpTarget) return;
-            const targetSeconds = timeJumpTarget ? parseFloat(timeJumpTarget) : 0;
-
-            if (targetVideoId) {
-                loadActiveVideoFromThread(targetVideoId, targetSeconds, true);
-            } else if (timeJumpTarget) {
-                const dashVideo = document.getElementById('dashboardVideoPlayer');
-                const studioVideo = document.getElementById('studioVideoPlayer');
-                const runDirectJump = (videoEl) => {
-                    if(!videoEl.src) return;
-                    if (videoEl.readyState >= 1) {
-                        videoEl.currentTime = targetSeconds;
-                    } else {
-                        videoEl.addEventListener('loadedmetadata', () => { videoEl.currentTime = targetSeconds; }, { once: true });
-                    }
-                };
-                runDirectJump(dashVideo);
-                runDirectJump(studioVideo);
-                
-                document.getElementById('mainDashboardView').classList.add('hidden');
-                document.getElementById('dedicatedVideoStudioView').classList.replace('hidden', 'flex');
+        function deleteSheetAssetCard(id) {
+            if(confirm("Confirm removal from runtime context lists?")) {
+                let currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
+                currentSheets = currentSheets.filter(s => s.id !== id);
+                localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
+                renderSheetsGrid();
             }
         }
 
         function runClientCleanExportPipeline() {
-            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS'));
-            const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS'));
-            if(sheets.length === 0) return alert("No active data targets available.");
-
-            let csv = "CLEAN CUSTOMER WORK EXPORT REPORT\n";
-            csv += `Export Timestamp Matrix,${new Date().toLocaleString()}\n`;
-            csv += "STATUS,CLEAN DATA RECORDS ONLY\n\n";
+            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
+            const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || '[]');
+            
+            let csv = "data:text/csv;charset=utf-8,+++ R.C GLOBAL COMPLIANCE SCHEMA LOG - CLEAN DATA RECORDS ONLY +++\n";
             csv += "Sheet Card Reference,Destination Link Track,Assigned Workforce Parameters,Audit Scan Flag\n";
 
             sheets.forEach(s => {
@@ -1051,7 +696,7 @@
                 const matchingLinksCount = links.filter(l => l.fullUrl.includes(`id=${s.id}`) || false).length;
                 if(matchingLinksCount === 0 && links.length > 0) syntaxErrorFlags.push("Warning: Missing Active Link Reference Maps");
 
-                const cleanTitle = s.title.replace(/[,"]/g, ""); 
+                const cleanTitle = s.title.replace(/[,\"]/g, ""); 
                 const cleanUrl = s.url; 
                 const cleanEmails = s.allowedEmails.join('; ');
                 const auditStatus = syntaxErrorFlags.length > 0 ? `AUDIT WARNING: ${syntaxErrorFlags.join(' | ')}` : "VERIFIED EXPORT COMPLIANT";
@@ -1066,6 +711,443 @@
             document.body.appendChild(anchor);
             anchor.click();
             document.body.removeChild(anchor);
+        }
+
+        function processVideoUploadEngine() {
+            const titleInput = document.getElementById('videoThreadTitleInput');
+            const fileInput = document.getElementById('videoFileInput');
+            
+            if(!titleInput.value.trim() || !fileInput.files[0]) {
+                alert("Please provide both video document thread name maps and a valid target stream binary file object reference.");
+                return;
+            }
+
+            const threadId = "thread_" + Date.now();
+            const file = fileInput.files[0];
+
+            if(!dbInstance) {
+                alert("IndexedDB transaction channel context not initialized ready.");
+                return;
+            }
+
+            const transaction = dbInstance.transaction(["blobs", "video_threads"], "readwrite");
+            const blobStore = transaction.objectStore("blobs");
+            const threadStore = transaction.objectStore("video_threads");
+
+            blobStore.put({ id: "blob_" + threadId, data: file });
+            threadStore.put({
+                id: threadId,
+                title: titleInput.value.trim(),
+                blobRef: "blob_" + threadId,
+                timestamp: Date.now()
+            });
+
+            transaction.oncomplete = function() {
+                titleInput.value = "";
+                fileInput.value = "";
+                alert("Binary tracking stream registered inside IndexedDB storage frame pipeline matrix layers cleanly.");
+                renderVideoThreadsList();
+            };
+        }
+
+        function renderVideoThreadsList(callback) {
+            const container = document.getElementById('videoThreadLinksContainer');
+            container.innerHTML = "";
+
+            if(!dbInstance) {
+                container.innerHTML = `<span class="text-zinc-600 italic">Storage frame loading...</span>`;
+                return;
+            }
+
+            const store = dbInstance.transaction("video_threads", "readonly").objectStore("video_threads");
+            const request = store.getAll();
+
+            request.onsuccess = function(e) {
+                const threads = e.target.result;
+                if(threads.length === 0) {
+                    container.innerHTML = `<span class="text-zinc-600 italic">No published video streams recorded.</span>`;
+                    if(callback) callback();
+                    return;
+                }
+
+                threads.forEach(t => {
+                    const lnk = document.createElement('button');
+                    lnk.id = `btn-thread-${t.id}`;
+                    lnk.className = "w-full text-left p-2 rounded border border-zinc-800 bg-black hover:border-zinc-700 block truncate text-[11px] text-zinc-300 font-mono mb-1";
+                    lnk.innerText = `🎥 ${t.title}`;
+                    lnk.onclick = () => loadActiveVideoThreadToPlayer(t.id);
+                    container.appendChild(lnk);
+                });
+                if(callback) callback();
+            };
+        }
+
+        function loadActiveVideoThreadToPlayer(id) {
+            currentActiveVideoThreadId = id;
+            
+            document.querySelectorAll('[id^="btn-thread-"]').forEach(el => el.classList.remove('active-thread-highlight'));
+            const activeBtn = document.getElementById(`btn-thread-${id}`);
+            if(activeBtn) activeBtn.classList.add('active-thread-highlight');
+
+            const tx = dbInstance.transaction(["video_threads", "blobs"], "readonly");
+            tx.objectStore("video_threads").get(id).onsuccess = function(e) {
+                const thread = e.target.result;
+                tx.objectStore("blobs").get(thread.blobRef).onsuccess = function(ev) {
+                    const blobData = ev.target.result.data;
+                    const streamUrl = URL.createObjectURL(blobData);
+                    
+                    document.getElementById('dashboardVideoPlayer').src = streamUrl;
+                    document.getElementById('studioVideoPlayer').src = streamUrl;
+                };
+            };
+        }
+
+        function processModuleUploadEngine() {
+            const title = document.getElementById('moduleTitleInput').value.trim();
+            const file = document.getElementById('moduleFileInput').files[0];
+
+            if(!title || !file) {
+                alert("Please attach full structural identity metadata metrics before staging module uploads.");
+                return;
+            }
+
+            const id = "mod_" + Date.now();
+            const tx = dbInstance.transaction("blobs", "readwrite");
+            tx.objectStore("blobs").put({ id: "blob_" + id, data: file });
+
+            tx.oncomplete = function() {
+                const metadata = JSON.parse(localStorage.getItem('RC_MODULES_METADATA') || '[]');
+                metadata.push({ id: id, title: title, fileName: file.name, blobRef: "blob_" + id });
+                localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(metadata));
+
+                document.getElementById('moduleTitleInput').value = "";
+                document.getElementById('moduleFileInput').value = "";
+                alert("Operational learning module locked in system records.");
+                renderLearningModules();
+            };
+        }
+
+        function renderLearningModules() {
+            const container = document.getElementById('modulesListOutput');
+            const modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA') || '[]');
+            container.innerHTML = "";
+
+            if(modules.length === 0) {
+                container.innerHTML = `<p class="text-zinc-600 text-xs italic">No static learning engine resource cards registered currently.</p>`;
+                return;
+            }
+
+            modules.forEach(m => {
+                const div = document.createElement('div');
+                div.className = "p-3 bg-zinc-950 border border-zinc-800 rounded flex justify-between items-center text-xs";
+                
+                let deleteOption = "";
+                if(sessionAccessLevel === 'admin') {
+                    deleteOption = `<button onclick="deleteLearningModuleEngine('${m.id}')" class="text-red-500 font-mono hover:text-red-400 pl-1">Wipe</button>`;
+                }
+
+                div.innerHTML = `
+                    <div class="truncate max-w-[170px]">
+                        <span onclick="launchStandaloneModuleReader('${m.id}')" class="text-purple-400 font-bold hover:underline cursor-pointer block truncate">${m.title}</span>
+                        <span class="text-[10px] text-zinc-500 font-mono">${m.fileName}</span>
+                    </div>
+                    ${deleteOption}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteLearningModuleEngine(id) {
+            if(confirm("Confirm destruction of asset profile memory metrics?")) {
+                let metadata = JSON.parse(localStorage.getItem('RC_MODULES_METADATA') || '[]');
+                metadata = metadata.filter(m => m.id !== id);
+                localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(metadata));
+
+                const tx = dbInstance.transaction("blobs", "readwrite");
+                tx.objectStore("blobs").delete("blob_" + id);
+                tx.oncomplete = function() {
+                    renderLearningModules();
+                };
+            }
+        }
+
+        function launchStandaloneModuleReader(id) {
+            const modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA') || '[]');
+            const activeMod = modules.find(m => m.id === id);
+            if(!activeMod) return;
+
+            document.getElementById('mainDashboardView').classList.add('hidden');
+            document.getElementById('standaloneModuleReaderView').classList.remove('hidden');
+            document.getElementById('standaloneModuleHeaderTitle').innerText = activeMod.title;
+
+            const tx = dbInstance.transaction("blobs", "readonly");
+            tx.objectStore("blobs").get(activeMod.blobRef).onsuccess = function(e) {
+                const blobObj = e.target.result.data;
+                const dl = document.getElementById('standaloneModuleDownloadTrigger');
+                dl.href = URL.createObjectURL(blobObj);
+                dl.setAttribute('download', activeMod.fileName);
+            };
+        }
+
+        function exitStandaloneModuleView() {
+            document.getElementById('standaloneModuleReaderView').classList.add('hidden');
+            document.getElementById('mainDashboardView').classList.remove('hidden');
+        }
+
+        function setupPlaybackStateListeners() {
+            const dashVideo = document.getElementById('dashboardVideoPlayer');
+            const studioVideo = document.getElementById('studioVideoPlayer');
+
+            dashVideo.ontimeupdate = function() {
+                const tsStr = convertSecondsToFormattedTimestamp(dashVideo.currentTime);
+                document.getElementById('dashTimestampDisplay').innerText = `TS: ${tsStr}`;
+            };
+
+            studioVideo.ontimeupdate = function() {
+                const tsStr = convertSecondsToFormattedTimestamp(studioVideo.currentTime);
+                document.getElementById('studioTimestampCounter').innerText = `TS: ${tsStr}`;
+                
+                let shareUrlBase = window.location.href.split('?')[0];
+                if(currentActiveVideoThreadId) {
+                    document.getElementById('studioDeepLinkExportUrl').value = `${shareUrlBase}?v_thread=${currentActiveVideoThreadId}&t_frame=${Math.floor(studioVideo.currentTime)}`;
+                } else {
+                    document.getElementById('studioDeepLinkExportUrl').value = "Load a distinct saved thread database key instance loop to export precise parameter references.";
+                }
+            };
+        }
+
+        function convertSecondsToFormattedTimestamp(totalSecs) {
+            const hrs = Math.floor(totalSecs / 3600).toString().padStart(2, '0');
+            const mins = Math.floor((totalSecs % 3600) / 60).toString().padStart(2, '0');
+            const secs = Math.floor(totalSecs % 60).toString().padStart(2, '0');
+            return `${hrs}:${mins}:${secs}`;
+        }
+
+        function copyRawTimestampText(rawText) {
+            const cleanText = rawText.replace("TS:", "").trim();
+            navigator.clipboard.writeText(cleanText).then(() => {
+                alert(`Raw timeline context data text string copied successfully: "${cleanText}"`);
+            });
+        }
+
+        function launchDedicatedVideoEnvironment() {
+            document.getElementById('mainDashboardView').classList.add('hidden');
+            document.getElementById('dedicatedVideoStudioView').classList.remove('hidden');
+            
+            const dashVideo = document.getElementById('dashboardVideoPlayer');
+            const studioVideo = document.getElementById('studioVideoPlayer');
+            
+            if(!dashVideo.paused) dashVideo.pause();
+            studioVideo.currentTime = dashVideo.currentTime;
+        }
+
+        function exitDedicatedStudioEnvironment() {
+            document.getElementById('dedicatedVideoStudioView').classList.add('hidden');
+            document.getElementById('mainDashboardView').classList.remove('hidden');
+            
+            const dashVideo = document.getElementById('dashboardVideoPlayer');
+            const studioVideo = document.getElementById('studioVideoPlayer');
+            
+            if(!studioVideo.paused) studioVideo.pause();
+            dashVideo.currentTime = studioVideo.currentTime;
+        }
+
+        function stepVideoFrame(directionCount) {
+            const player = document.getElementById('studioVideoPlayer');
+            const fpsConstantApproximation = 1 / 30; 
+            player.currentTime += (directionCount * fpsConstantApproximation);
+        }
+
+        function setStudioSpeed(rateFactor) {
+            document.getElementById('studioVideoPlayer').playbackRate = rateFactor;
+        }
+
+        function setPlayerVisualFX(effectKey) {
+            const canvas = document.getElementById('dashboardVideoPlayer');
+            if(effectKey === 'flames') {
+                canvas.classList.add('flame-effect');
+            } else {
+                canvas.classList.remove('flame-effect');
+            }
+        }
+
+        function copyDashboardScreenshotToClipboard() {
+            generateHardcodedCanvasImageSnapshot('dashboardVideoPlayer', (blobObj) => {
+                const clipboardItem = new ClipboardItem({ "image/png": blobObj });
+                navigator.clipboard.write([clipboardItem]).then(() => {
+                    alert("UI Frame screenshot capture copied directly into user execution layer clipboard buffers.");
+                });
+            });
+        }
+
+        function copyStudioScreenshotToClipboard() {
+            generateHardcodedCanvasImageSnapshot('studioVideoPlayer', (blobObj) => {
+                const clipboardItem = new ClipboardItem({ "image/png": blobObj });
+                navigator.clipboard.write([clipboardItem]).then(() => {
+                    alert("Studio viewport screenshot capture copied directly into user execution layer clipboard buffers.");
+                });
+            });
+        }
+
+        function generateHardcodedCanvasImageSnapshot(playerId, callback) {
+            const player = document.getElementById(playerId);
+            const canvas = document.createElement('canvas');
+            canvas.width = player.videoWidth || 640;
+            canvas.height = player.videoHeight || 360;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = "#34d399";
+            ctx.font = "bold 24px monospace";
+            const timestampString = convertSecondsToFormattedTimestamp(player.currentTime);
+            ctx.fillText(`R.C VERIFIED SNAPSHOT SYSTEM LOG STAMP &gt;&gt; TS: ${timestampString}`, 30, canvas.height - 30);
+            
+            canvas.toBlob((b) => { if(callback) callback(b); }, 'image/png');
+        }
+
+        function copyStudioDeepLinkMetadata() {
+            const elementUrlValue = document.getElementById('studioDeepLinkExportUrl').value;
+            navigator.clipboard.writeText(elementUrlValue).then(() => {
+                alert("Staged deep-link tracking metrics string locked in client clipboard parameters memory layout registers.");
+            });
+        }
+
+        function savePasteInputLinkToGlobalStorage() {
+            const valueInput = document.getElementById('internalDeepLinkPasteInput');
+            if(!valueInput.value.trim()) return;
+
+            const logs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || '[]');
+            logs.push({ id: "link_" + Date.now(), fullUrl: valueInput.value.trim(), dateStr: new Date().toISOString() });
+            localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(logs));
+
+            valueInput.value = "";
+            renderDeepLinkHistoryLogs();
+        }
+
+        function renderDeepLinkHistoryLogs() {
+            const box = document.getElementById('deepLinkContainerHistory');
+            const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || '[]');
+            box.innerHTML = "";
+
+            if(links.length === 0) {
+                box.innerHTML = `<span class="text-zinc-600 italic">Global logs pipeline empty.</span>`;
+                return;
+            }
+
+            links.forEach(l => {
+                const d = document.createElement('div');
+                d.className = "flex justify-between items-center bg-black/40 border border-zinc-900 rounded p-1.5 text-[10px]";
+                d.innerHTML = `<span class="text-zinc-400 break-all select-all truncate max-w-[190px]" title="${l.fullUrl}">${l.fullUrl}</span>
+                               <button onclick="wipeSpecificPastelinkItem('${l.id}')" class="text-red-700 hover:text-red-500 font-bold font-sans uppercase text-[9px] pl-1">Wipe</button>`;
+                box.appendChild(d);
+            });
+        }
+
+        function wipeSpecificPastelinkItem(id) {
+            let links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || '[]');
+            links = links.filter(l => l.id !== id);
+            localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(links));
+            renderDeepLinkHistoryLogs();
+        }
+
+        function setupInteractivePanEngine() {
+            const v1 = document.getElementById('videoContainer');
+            const c1 = document.getElementById('dashboardVideoPlayer');
+            setupViewportZoomPanController(v1, c1, dashZoom, 'dashZoomIndicator');
+
+            const v2 = document.getElementById('studioVideoViewport');
+            const c2 = document.getElementById('studioVideoPlayer');
+            setupViewportZoomPanController(v2, c2, studioZoom, 'studioZoomIndicator');
+        }
+
+        function setupViewportZoomPanController(viewport, canvas, stateObj, indicatorId) {
+            viewport.addEventListener('mousedown', (e) => {
+                if(e.target.tagName === 'VIDEO') {
+                    stateObj.isDragging = true;
+                    stateObj.startX = e.clientX - stateObj.x;
+                    stateObj.startY = e.clientY - stateObj.y;
+                }
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!stateObj.isDragging) return;
+                stateObj.x = e.clientX - stateObj.startX;
+                stateObj.y = e.clientY - stateObj.startY;
+                applyTransformCoordinatesMatrix(canvas, stateObj);
+            });
+
+            window.addEventListener('mouseup', () => {
+                stateObj.isDragging = false;
+            });
+        }
+
+        function handleDashboardZoom(e) {
+            e.preventDefault();
+            executeZoomTransformEngine(e, dashZoom, document.getElementById('dashboardVideoPlayer'), 'dashZoomIndicator');
+        }
+
+        function handleStudioZoom(e) {
+            e.preventDefault();
+            executeZoomTransformEngine(e, studioZoom, document.getElementById('studioVideoPlayer'), 'studioZoomIndicator');
+        }
+
+        function executeZoomTransformEngine(e, stateObj, canvas, indicatorId) {
+            const rateZoomStep = e.deltaY < 0 ? 0.15 : -0.15;
+            stateObj.scaleX = Math.max(0.5, Math.min(6, stateObj.scaleX + rateZoomStep));
+            stateObj.scaleY = Math.max(0.5, Math.min(6, stateObj.scaleY + rateZoomStep));
+            
+            document.getElementById(indicatorId).innerText = `Zoom Scale: ${Math.floor(stateObj.scaleX * 100)}%`;
+            applyTransformCoordinatesMatrix(canvas, stateObj);
+        }
+
+        function applyTransformCoordinatesMatrix(canvas, stateObj) {
+            canvas.style.transform = `translate(${stateObj.x}px, ${stateObj.y}px) scale(${stateObj.scaleX}, ${stateObj.scaleY})`;
+        }
+
+        function resetDashboardZoom() {
+            dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+            document.getElementById('dashZoomIndicator').innerText = "Zoom: 100%";
+            applyTransformCoordinatesMatrix(document.getElementById('dashboardVideoPlayer'), dashZoom);
+        }
+
+        function resetStudioZoom() {
+            studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+            document.getElementById('studioZoomIndicator').innerText = "Zoom Scale: 100%";
+            applyTransformCoordinatesMatrix(document.getElementById('studioVideoPlayer'), studioZoom);
+        }
+
+        function setupGlobalKeyboardShortcutHooks() {
+            window.addEventListener('keydown', (e) => {
+                if(e.altKey && (e.key === 's' || e.key === 'S')) {
+                    e.preventDefault();
+                    if(!document.getElementById('dedicatedVideoStudioView').classList.contains('hidden')) {
+                        copyStudioScreenshotToClipboard();
+                    } else if (!document.getElementById('mainDashboardView').classList.contains('hidden')) {
+                        copyDashboardScreenshotToClipboard();
+                    }
+                }
+            });
+        }
+
+        function checkUrlParametersForDeepLinkNavigation() {
+            const searchParams = new URLSearchParams(window.location.search);
+            const targetThread = searchParams.get('v_thread');
+            const targetTimeFrame = searchParams.get('t_frame');
+
+            if(targetThread) {
+                setTimeout(() => {
+                    loadActiveVideoThreadToPlayer(targetThread);
+                    if(targetTimeFrame) {
+                        setTimeout(() => {
+                            const dPlayer = document.getElementById('dashboardVideoPlayer');
+                            const sPlayer = document.getElementById('studioVideoPlayer');
+                            dPlayer.currentTime = parseInt(targetTimeFrame, 10);
+                            sPlayer.currentTime = parseInt(targetTimeFrame, 10);
+                        }, 800);
+                    }
+                }, 1000);
+            }
         }
     </script>
 </body>
