@@ -60,18 +60,25 @@
 </head>
 <body class="h-screen flex flex-col justify-between overflow-x-hidden p-0 m-0">
 
+    <!-- AUTH GATEWAY PORTAL UPPER DECK FRAME LAYER -->
     <div id="authGatewayPortal" class="fixed inset-0 bg-darkBg z-[100] flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-cardBg p-8 rounded-xl border border-inputBorder shadow-2xl">
             
-            <div class="text-center mb-8">
+            <div class="text-center mb-6">
                 <h1 class="text-3xl font-black tracking-wider text-brandPurple uppercase mb-2">R.C TERMINAL ENTRY</h1>
-                <p class="text-sm text-gray-400">Input secure session configuration credentials to unlock your workspace.</p>
+                <p id="authGatewaySubText" class="text-sm text-gray-400">Input secure session configuration credentials to unlock your workspace.</p>
             </div>
 
             <div id="feedbackAlert" class="hidden mb-6 p-4 rounded-lg text-sm font-medium border"></div>
 
-            <form id="terminalLoginForm" onsubmit="handlePortalAuthentication(event)" class="space-y-6">
-                
+            <!-- DYNAMIC SEGMENTED TABS FOR REGISTER / SIGN-IN / RECOVERY -->
+            <div class="grid grid-cols-3 gap-1 bg-black p-1 rounded-lg border border-inputBorder mb-6 text-xs font-bold uppercase tracking-wider">
+                <button id="tabSelectorLogin" onclick="switchAuthPortalContextMode('LOGIN')" class="py-2 text-white bg-brandPurple rounded transition-all">Login</button>
+                <button id="tabSelectorRegister" onclick="switchAuthPortalContextMode('REGISTER')" class="py-2 text-gray-400 hover:text-white rounded transition-all">Sign Up</button>
+                <button id="tabSelectorForgot" onclick="switchAuthPortalContextMode('FORGOT')" class="py-2 text-gray-400 hover:text-white rounded transition-all">Reset</button>
+            </div>
+
+            <form id="terminalLoginForm" onsubmit="handlePortalAuthentication(event)" class="space-y-4">
                 <div>
                     <label for="identityEmail" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
                         User Identity Email
@@ -85,14 +92,13 @@
                     >
                 </div>
 
-                <div>
-                    <label for="securityPassword" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                <div id="passwordFieldContainer">
+                    <label id="passwordLabelRef" for="securityPassword" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
                         Security Password
                     </label>
                     <input 
                         type="password" 
                         id="securityPassword" 
-                        required
                         placeholder="••••••••"
                         class="w-full bg-inputBg border border-inputBorder rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brandPurple transition-colors duration-200 text-base tracking-widest"
                     >
@@ -101,6 +107,7 @@
                 <div>
                     <button 
                         type="submit"
+                        id="portalPrimarySubmitBtn"
                         class="w-full bg-brandPurple hover:bg-brandPurpleHover text-white font-bold py-3 px-6 rounded-lg uppercase tracking-wide transition-all duration-200 transform active:scale-[0.99] shadow-lg shadow-purple-900/20"
                     >
                         Initialize Portal Connection
@@ -108,18 +115,19 @@
                 </div>
             </form>
 
-            <div class="mt-8 text-center">
+            <div class="mt-6 text-center">
                 <button 
                     onclick="triggerCredentialsReset()" 
                     class="text-xs text-gray-500 hover:text-brandPurple underline underline-offset-4 transition-colors duration-200"
                 >
-                    Reset Credentials
+                    Reset System to Factory Defaults
                 </button>
             </div>
 
         </div>
     </div>
 
+    <!-- MAIN DYNAMIC OPERATIONAL GRAPHICS INTERFACE ASSEMBLY ROUTER -->
     <div id="dynamicViewRouter" class="hidden flex-1 flex flex-col justify-between">
         
         <div id="mainDashboardView" class="flex-1 flex flex-col justify-between">
@@ -143,6 +151,7 @@
 
             <main class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
                 
+                <!-- COLUMN 1: TRACKING VIDEO VIEWPORT CONTEXT AND ARCHIVE STACK -->
                 <section class="col-span-3 border-r border-zinc-800 pr-4 flex flex-col justify-between overflow-y-auto">
                     <div class="space-y-6">
                         <div>
@@ -162,7 +171,7 @@
                                 <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400">Active Workspace Video</h3>
                                 <span id="dashZoomIndicator" class="text-[10px] text-zinc-500 font-mono">Zoom: 100%</span>
                             </div>
-                            <div id="videoContainer" class="p-1 rounded bg-zinc-950 border border-zinc-800 zoom-viewport h-56" onwheel="handleDashboardZoom(event)">
+                            <div id="videoContainer" class="p-1 rounded bg-zinc-950 border border-zinc-800 zoom-viewport h-48" onwheel="handleDashboardZoom(event)">
                                 <video id="dashboardVideoPlayer" controls class="zoom-canvas object-contain bg-black h-full w-full" style="object-fit: fill;"></video>
                             </div>
                             <div class="flex gap-2">
@@ -179,18 +188,19 @@
 
                         <div class="pt-4 border-t border-zinc-800">
                             <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Active Video Target Queues</h4>
-                            <div id="videoThreadLinksContainer" class="space-y-1.5 max-h-40 overflow-y-auto text-xs font-mono"></div>
+                            <div id="videoThreadLinksContainer" class="space-y-1.5 max-h-32 overflow-y-auto text-xs font-mono"></div>
                         </div>
 
                         <div class="pt-4 border-t border-zinc-800">
                             <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Deep-Link Logs History</h4>
-                            <div id="deepLinkContainerHistory" class="space-y-1.5 max-h-32 overflow-y-auto text-xs font-mono"></div>
+                            <div id="deepLinkContainerHistory" class="space-y-1.5 max-h-24 overflow-y-auto text-xs font-mono"></div>
                         </div>
                     </div>
                 </section>
 
+                <!-- COLUMN 2: PRIMARY OPERATION TARGET SHEET INTERFACES AND SPREADSHEET VIEWER CONTAINER -->
                 <section class="col-span-6 px-2 flex flex-col h-full overflow-hidden">
-                    <div class="flex justify-between items-center mb-6 flex-shrink-0">
+                    <div class="flex justify-between items-center mb-4 flex-shrink-0">
                         <h2 class="text-lg font-black tracking-tight uppercase text-blue-500">R.C Target Sheets Workspace</h2>
                         <div class="flex gap-2">
                             <button onclick="fetchActiveSheetMetricPipeline()" class="text-xs bg-emerald-600 text-black px-3 py-1.5 font-bold rounded hover:bg-emerald-500 transition">Fetch Tracking Metrics</button>
@@ -199,23 +209,40 @@
                         </div>
                     </div>
 
-                    <div id="coworkerClaimBanner" class="block mb-4 p-3 bg-zinc-900 border border-emerald-800 text-emerald-400 rounded text-xs flex-shrink-0">
-                        <strong>System Notice:</strong> Select an assigned work card below to open your targeted task workspace.
+                    <!-- REVISED SYSTEM WORKSPACE BANNER FOR INLINE PREVIEW -->
+                    <div id="coworkerClaimBanner" class="block mb-3 p-3 bg-zinc-900 border border-emerald-800 text-emerald-400 rounded text-xs flex-shrink-0">
+                        <strong>System Notice:</strong> Selected sheet links will load dynamically within the live embedded workspace sandbox below.
                     </div>
 
-                    <div id="metricsReportTerminal" class="hidden mb-4 p-4 bg-zinc-950 border border-purple-900 rounded-lg max-h-48 overflow-y-auto font-mono text-xs text-zinc-300">
+                    <!-- REAL-TIME SHEET METRICS AND CHARACTER LOOKUP LOG ENGINE INTERACTIVE HUB -->
+                    <div id="metricsReportTerminal" class="hidden mb-4 p-4 bg-zinc-950 border border-purple-900 rounded-lg max-h-56 overflow-y-auto font-mono text-xs text-zinc-300">
                         <div class="flex justify-between items-center border-b border-zinc-800 pb-1.5 mb-2">
-                            <span class="text-purple-400 font-bold uppercase tracking-wider text-[11px]">Real-Time Sheet Workspace Metrics Report</span>
+                            <span class="text-purple-400 font-bold uppercase tracking-wider text-[11px]">Real-Time Sheet Workspace Metrics & Unique Assignee Report</span>
                             <button onclick="document.getElementById('metricsReportTerminal').classList.add('hidden')" class="text-zinc-500 hover:text-white text-[10px] uppercase">Hide</button>
                         </div>
                         <div id="metricsOutputSummary" class="space-y-3"></div>
                     </div>
 
-                    <div class="flex-1 overflow-y-auto pr-1 pb-6">
+                    <!-- LIVE INCORPORATED INTERACTIVE WORKSPACE AREA EMBED CONTAINER FRAME -->
+                    <div class="w-full h-72 bg-black border border-zinc-800 rounded-xl overflow-hidden mb-4 flex flex-col flex-shrink-0 relative">
+                        <div class="bg-zinc-900/80 px-4 py-2 border-b border-zinc-800 flex justify-between items-center text-xs font-mono">
+                            <span class="text-zinc-400">🔴 Live Embedded Workspace Engine Framework Layer:</span>
+                            <span id="workspaceActiveTitleBadge" class="text-blue-400 font-bold truncate max-w-sm">No Active Matrix Target Bound</span>
+                        </div>
+                        <iframe id="liveWorkspaceSandboxIframe" src="about:blank" class="w-full flex-1 bg-zinc-950 border-0 hidden"></iframe>
+                        <div id="iframePlaceholderFallbackState" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-950/80">
+                            <span class="text-2xl mb-2">📁</span>
+                            <p class="text-xs text-zinc-500 font-mono max-w-sm">No workspace links are currently active inside the environment viewport area canvas stack layers.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto pr-1 pb-4">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Select Active Cards (Supports Multi-Selection)</h3>
                         <div id="sheetsDisplayGrid" class="grid grid-cols-2 gap-4"></div>
                     </div>
                 </section>
 
+                <!-- COLUMN 3: DIGITAL ONBOARDING ASSET DOWNLOAD REPOSITORIES -->
                 <section class="col-span-3 border-l border-zinc-800 pl-4 flex flex-col justify-between overflow-y-auto">
                     <div>
                         <h2 class="text-xs font-black tracking-widest uppercase mb-4 text-purple-500">Learning Modules Engine</h2>
@@ -232,6 +259,7 @@
             </main>
         </div>
 
+        <!-- FULL-SCREEN STUDIO DEEP ANALYSIS WORK ENVIRONMENT -->
         <div id="dedicatedVideoStudioView" class="hidden fixed inset-0 bg-black z-50 flex flex-col justify-between">
             <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
                 <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C CONFIG VIDEO TEAM EXPERT</h1>
@@ -301,6 +329,7 @@
             </div>
         </div>
 
+        <!-- STANDALONE LEARNING ASSET DOWNLOADING MODULE ENGINE VIEW -->
         <div id="standaloneModuleReaderView" class="hidden flex-1 flex flex-col justify-between bg-black text-white">
             <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
                 <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C LEARNING MODULE</h1>
@@ -316,6 +345,7 @@
         </div>
     </div>
 
+    <!-- TARGET SHEET REGISTRATION SUB-MODAL CONTAINER OVERLAY -->
     <div id="sheetCardCreationModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-zinc-950 border border-zinc-800 p-6 rounded-lg w-full max-w-md">
             <h3 class="text-sm font-black uppercase tracking-wider text-white mb-4">Register R.C Target Card Sheet</h3>
@@ -340,6 +370,7 @@
         </div>
     </div>
 
+    <!-- LOWER RUNNING STATUS SCROLLBAR MARQUEE FOOTER LAYER -->
     <footer class="w-full bg-black border-t border-zinc-900 py-1.5 overflow-hidden flex items-center shadow-lg">
         <div class="whitespace-nowrap flex text-[11px] font-black tracking-widest text-emerald-500 w-full uppercase">
             <marquee scrollamount="6" behavior="scroll" direction="left">
@@ -348,13 +379,16 @@
         </div>
     </footer>
 
+    <!-- INTERACTIVE SCRIPT LOGIC ROUTINES PANEL -->
     <script>
         let dbInstance = null;
         let sessionUserIdentity = null;
         let sessionAccessLevel = 'coworker';
+        let activeAuthMode = 'LOGIN'; // TRACKING MODES: LOGIN, REGISTER, FORGOT
         
         const MASTER_ADMIN_ID = "antonymbali96@gmail.com";
         const STABLE_LOCAL_SEED_KEY = "RC_SECURE_PHRASE_KEY_V2";
+        let trackingSelectedSheetIds = []; // SYSTEM STACK TO CAPTURE DYNAMIC MULTI-SELECTIONS
 
         const requestDB = indexedDB.open("RCAI_SystemStorage_v3", 1);
         let dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
@@ -430,41 +464,108 @@
         }
 
         /**
-         * Unified authentication processing system matching credentials against local storage maps.
+         * Dynamic segment switcher to transition gateway layouts seamlessly
+         */
+        function switchAuthPortalContextMode(targetMode) {
+            activeAuthMode = targetMode;
+            const subText = document.getElementById('authGatewaySubText');
+            const pwdContainer = document.getElementById('passwordFieldContainer');
+            const submitBtn = document.getElementById('portalPrimarySubmitBtn');
+            
+            // RESET ACTIVE HIGHLIGHT CLASSES
+            document.getElementById('tabSelectorLogin').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
+            document.getElementById('tabSelectorRegister').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
+            document.getElementById('tabSelectorForgot').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
+
+            if (targetMode === 'LOGIN') {
+                document.getElementById('tabSelectorLogin').className = "py-2 text-white bg-brandPurple rounded transition-all";
+                subText.innerText = "Input secure session configuration credentials to unlock your workspace.";
+                pwdContainer.classList.remove('hidden');
+                submitBtn.innerText = "Initialize Portal Connection";
+            } else if (targetMode === 'REGISTER') {
+                document.getElementById('tabSelectorRegister').className = "py-2 text-white bg-brandPurple rounded transition-all";
+                subText.innerText = "Provision an independent localized terminal registration instance map.";
+                pwdContainer.classList.remove('hidden');
+                submitBtn.innerText = "Register System Identity Account";
+            } else if (targetMode === 'FORGOT') {
+                document.getElementById('tabSelectorForgot').className = "py-2 text-white bg-brandPurple rounded transition-all";
+                subText.innerText = "Provide your registered identity email to read password storage logs.";
+                pwdContainer.classList.add('hidden');
+                submitBtn.innerText = "Recover Account Password";
+            }
+        }
+
+        /**
+         * Unified authentication handling for logins, user sign-ups, and key discovery loops.
          */
         function handlePortalAuthentication(event) {
             event.preventDefault();
 
             const emailInput = document.getElementById('identityEmail').value.trim().toLowerCase();
             const passwordInput = document.getElementById('securityPassword').value;
-            const alertBox = document.getElementById('feedbackAlert');
-
+            
             const registryData = localStorage.getItem('rc_user_registry');
-            const users = registryData ? JSON.parse(registryData) : [];
+            let users = registryData ? JSON.parse(registryData) : [];
 
-            const authenticatedUser = users.find(user => 
-                user.email.toLowerCase() === emailInput && user.password === passwordInput
-            );
+            if (activeAuthMode === 'LOGIN') {
+                const authenticatedUser = users.find(user => 
+                    user.email.toLowerCase() === emailInput && user.password === passwordInput
+                );
 
-            if (authenticatedUser) {
-                showAlert("Access granted. Initializing operational workspace pipeline components...", "success");
-                
-                sessionUserIdentity = emailInput;
-                if(emailInput === MASTER_ADMIN_ID.toLowerCase()) {
-                    sessionAccessLevel = 'admin';
+                if (authenticatedUser) {
+                    showAlert("Access granted. Initializing operational workspace pipeline components...", "success");
+                    
+                    sessionUserIdentity = emailInput;
+                    
+                    // ANTONMYBALI96@GMAIL.COM ENFORCED AS MASTER OVERRIDE ADMIN KEY SYSTEM PROFILE
+                    if(emailInput === MASTER_ADMIN_ID.toLowerCase() || authenticatedUser.role === "Admin") {
+                        sessionAccessLevel = 'admin';
+                    } else {
+                        sessionAccessLevel = 'coworker';
+                    }
+
+                    sessionStorage.setItem("RC_ACTIVE_USER_EMAIL", sessionUserIdentity);
+                    sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
+
+                    setTimeout(() => {
+                        executeSystemBootSequence();
+                    }, 1000);
                 } else {
-                    sessionAccessLevel = 'coworker';
+                    showAlert("Authentication validation match failure. Access denied.", "error");
                 }
 
-                sessionStorage.setItem("RC_ACTIVE_USER_EMAIL", sessionUserIdentity);
-                sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
+            } else if (activeAuthMode === 'REGISTER') {
+                const identityExists = users.some(u => u.email.toLowerCase() === emailInput);
+                if (identityExists) {
+                    showAlert("Identity configuration matching this user structure is already seeded.", "error");
+                    return;
+                }
+                if (!passwordInput) {
+                    showAlert("A secure password credential token pattern string is required.", "error");
+                    return;
+                }
 
-                setTimeout(() => {
-                    executeSystemBootSequence();
-                }, 1000);
+                // DETECT IF TARGET REGISTRATION DESERVES INHERITED ACCESS RULES
+                const assignedRole = (emailInput === MASTER_ADMIN_ID.toLowerCase()) ? "Admin" : "Coworker";
 
-            } else {
-                showAlert("Authentication validation match failure. Access denied.", "error");
+                users.push({
+                    email: emailInput,
+                    password: passwordInput,
+                    clearance: assignedRole === "Admin" ? 1 : 2,
+                    role: assignedRole
+                });
+
+                localStorage.setItem('rc_user_registry', JSON.stringify(users));
+                showAlert("Identity profile registered cleanly. Proceeding to switch context back to workspace entry.", "success");
+                setTimeout(() => { switchAuthPortalContextMode('LOGIN'); }, 1500);
+
+            } else if (activeAuthMode === 'FORGOT') {
+                const recoveryTarget = users.find(u => u.email.toLowerCase() === emailInput);
+                if (recoveryTarget) {
+                    showAlert(`Identity profile map verification successful. Password pattern sequence: [ ${recoveryTarget.password} ]`, "success");
+                } else {
+                    showAlert("No localized credential sequence record corresponds to that email identifier.", "error");
+                }
             }
         }
 
@@ -528,13 +629,52 @@
             });
         }
 
-        function trackActiveClickSheetTarget(title, url) {
-            document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = `${title} (${url})`;
-            document.getElementById('currentActiveWorkspaceUrlDisplay').title = url;
+        /**
+         * COMPREHENSIVE MULTI-SELECTION CARD HANDLING WITH AUTOMATED LIVE VIEW EMBED INJECTION
+         */
+        function handleTargetSheetCardInteraction(sheetId, title, url, checkboxElement) {
+            const isChecked = checkboxElement.checked;
+            
+            if (isChecked) {
+                if (!trackingSelectedSheetIds.includes(sheetId)) {
+                    trackingSelectedSheetIds.push(sheetId);
+                }
+            } else {
+                trackingSelectedSheetIds = trackingSelectedSheetIds.filter(id => id !== sheetId);
+            }
+
+            // INSTANTLY RE-BIND THE EMBED IFRAME TO TARGET THE LAST SELECTED ASSET COMPONENT
+            if (trackingSelectedSheetIds.length > 0) {
+                const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
+                const targetSheetObj = sheets.find(s => s.id === trackingSelectedSheetIds[trackingSelectedSheetIds.length - 1]);
+                
+                if (targetSheetObj) {
+                    document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = `${targetSheetObj.title} (${targetSheetObj.url})`;
+                    document.getElementById('currentActiveWorkspaceUrlDisplay').title = targetSheetObj.url;
+                    
+                    document.getElementById('workspaceActiveTitleBadge').innerText = targetSheetObj.title;
+                    
+                    const iframe = document.getElementById('liveWorkspaceSandboxIframe');
+                    const fallback = document.getElementById('iframePlaceholderFallbackState');
+                    
+                    iframe.src = targetSheetObj.url;
+                    iframe.classList.remove('hidden');
+                    fallback.classList.add('hidden');
+                }
+            } else {
+                document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = "No active workspace sheet selected";
+                document.getElementById('workspaceActiveTitleBadge').innerText = "No Active Matrix Target Bound";
+                document.getElementById('liveWorkspaceSandboxIframe').src = "about:blank";
+                document.getElementById('liveWorkspaceSandboxIframe').classList.add('hidden');
+                document.getElementById('iframePlaceholderFallbackState').classList.remove('hidden');
+            }
         }
 
+        /**
+         * SCAN ASSIGNEE COLUMN LOOKUPS AND CHARACTER-LEVEL MATRIX INSPECTION PIPELINES
+         */
         function fetchActiveSheetMetricPipeline() {
-            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS'));
+            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
             const container = document.getElementById('metricsOutputSummary');
             document.getElementById('metricsReportTerminal').classList.remove('hidden');
 
@@ -543,20 +683,48 @@
                 return;
             }
 
+            // STABLE LOOKUP VALIDATION REGISTRY DICTIONARY SPECIFIED TO MATCH THE COHORT PIPELINES
             const mockCommonDictionary = ["antonymbali96@gmail.com", "worker1@rc-team.com", "worker2@rc-team.net", "antonio.annotation@workspace.org", "manager@rc-ai-config.io", "reviewer3@autonomy.corp"];
             let outputHtml = "";
 
-            sheets.forEach((sheet, idx) => {
-                outputHtml += `<div class="border-b border-zinc-900 pb-2 mb-2 last:border-none">
+            // PARSE ACROSS EACH REGISTERED SHEET NODE LAYOUT
+            sheets.forEach((sheet) => {
+                // ALLOCATE METRIC TRACKERS FOR THE "ASSIGNEE" COLUMN ROW ELEMENT LOGS
+                let emailFrequencyMap = {};
+                
+                sheet.allowedEmails.forEach(email => {
+                    const cleanEmail = email.trim();
+                    if(cleanEmail) {
+                        emailFrequencyMap[cleanEmail] = (emailFrequencyMap[cleanEmail] || 0) + 1;
+                    }
+                });
+
+                const uniqueCount = Object.keys(emailFrequencyMap).length;
+
+                outputHtml += `<div class="border-b border-zinc-900 pb-3 mb-3 last:border-none">
                     <div class="text-zinc-400 font-bold flex justify-between items-center mb-1">
-                        <span>📊 Matrix Title Reference: <span class="text-white font-sans">${sheet.title}</span></span>
-                        <span class="text-[10px] bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-blue-400">Index Framework Model</span>
+                        <span>📊 Matrix: <span class="text-white font-sans">${sheet.title}</span></span>
+                        <span class="text-[10px] bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-blue-400">Assignee Diagnostics Layer</span>
                     </div>
                     <div class="pl-3 space-y-1 text-zinc-400 text-[11px]">
-                        <p>🔗 Target Destination URL Path: <span class="text-zinc-500 font-sans break-all select-all">${sheet.url}</span></p>
-                        <p>👥 Active Assigned Workforce Metric: <span class="text-purple-400 font-bold">${sheet.allowedEmails.length} Registered System Profiles</span></p>
+                        <p>🔗 Location URL Path: <span class="text-zinc-500 font-sans break-all select-all">${sheet.url}</span></p>
+                        <p class="text-emerald-400 font-bold">📋 Unique Assignees Identified: ${uniqueCount} System Entities</p>
+                        
+                        <!-- RE-MAPPING DISTRIBUTION FREQUENCY FREIGHT SCANS -->
+                        <div class="mt-1 bg-black/40 p-2 rounded border border-zinc-900">
+                            <span class="text-[10px] uppercase font-bold text-zinc-500 block mb-1">Unique Assignee Frequency & Load Distribution Counts:</span>
+                            <div class="grid grid-cols-1 gap-1 pl-2 font-mono text-[10px] text-zinc-300">`;
+                            
+                for (const [assigneeName, occurrenceCount] of Object.entries(emailFrequencyMap)) {
+                    outputHtml += `<div>• <span class="text-purple-400">${assigneeName}</span> appears <strong class="text-white bg-zinc-800 px-1.5 rounded">${occurrenceCount} time(s)</strong> inside column datasets.</div>`;
+                }
+                
+                outputHtml += `</div>
+                        </div>
+
+                        <!-- EXECUTING CHARACTER-LEVEL MATRIX INSPECTION SCAN OVER INDIVIDUAL ASSIGNEE ROWS -->
                         <div class="mt-2 bg-black/60 p-2 rounded border border-zinc-900 space-y-1.5">
-                            <span class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Assigned Node Diagnostic Inspection Logs:</span>`;
+                            <span class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Cell Verification Audit Scan Logs (Cell 1 to End):</span>`;
                 
                 sheet.allowedEmails.forEach((email, rowIdx) => {
                     const trackingRowNumber = rowIdx + 1;
@@ -565,20 +733,22 @@
                     if (!mockCommonDictionary.includes(email.toLowerCase())) {
                         let nearestMatch = "None Identified";
                         let highestScore = 0;
+                        
                         mockCommonDictionary.forEach(dictWord => {
                             let matches = 0;
+                            // EXACT CELL SCAN: LOOP FROM FIRST MATRIX INDEX VALUE TO THE LOG BOUND CONSTRAINTS
                             for(let charIdx = 0; charIdx < Math.min(dictWord.length, email.length); charIdx++) {
-                                if(dictWord[charIdx] === email[charIdx]) matches++;
+                                if(dictWord[charIdx].toLowerCase() === email[charIdx].toLowerCase()) matches++;
                             }
                             if(matches > highestScore) {
                                 highestScore = matches;
                                 nearestMatch = dictWord;
                             }
                         });
-                        validationFlag = `<span class="text-amber-400 font-bold">[TYPO / SYNTAX IRREGULARITY DETECTED]</span> <span class="text-zinc-500 italic">(Target Row Matrix Offset: #${trackingRowNumber}). Nearest lookup string replacement match: <strong class="text-purple-300 font-mono">${nearestMatch}</strong></span>`;
+                        validationFlag = `<span class="text-amber-400 font-bold">[TYPO / RUNTIME SPELLING ERROR DETECTED]</span> <span class="text-zinc-500 italic">(Cell Target Offset: Row #${trackingRowNumber}). Closest dictionary token baseline: <strong class="text-purple-300 font-mono">${nearestMatch}</strong></span>`;
                     }
                     outputHtml += `<div class="text-[10px] font-mono flex items-start gap-1 pl-1">
-                        <span class="text-zinc-600 font-bold">[ROW ${trackingRowNumber.toString().padStart(2, '0')}]</span>
+                        <span class="text-zinc-600 font-bold">[CELL ${trackingRowNumber}]</span>
                         <span class="text-zinc-300">${email}</span> &mdash; ${validationFlag}
                     </div>`;
                 });
@@ -644,31 +814,41 @@
                 const isUserPermitted = sheet.allowedEmails.some(email => email.toLowerCase() === sessionUserIdentity.toLowerCase()) || sessionAccessLevel === 'admin';
                 
                 const card = document.createElement('div');
-                card.className = `p-5 rounded-lg border bg-zinc-900/60 transition-all ${isUserPermitted ? 'border-zinc-800 hover:border-zinc-700' : 'border-red-950/40 opacity-40 select-none'}`;
+                card.className = `p-4 rounded-lg border bg-zinc-900/60 transition-all ${isUserPermitted ? 'border-zinc-800 hover:border-zinc-700' : 'border-red-950/40 opacity-40 select-none'}`;
                 
-                let buttonMarkup = "";
+                let checkboxMarkup = "";
                 if(isUserPermitted) {
-                    buttonMarkup = `<a href="${sheet.url}" target="_blank" onclick="trackActiveClickSheetTarget('${sheet.title}', '${sheet.url}')" class="mt-4 block w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-center text-xs py-2 rounded uppercase tracking-wider transition">Open Assigned Workspace</a>`;
+                    checkboxMarkup = `
+                        <div class="mt-3 pt-2 border-t border-zinc-800 flex items-center gap-2">
+                            <input 
+                                type="checkbox" 
+                                id="check-${sheet.id}" 
+                                onchange="handleTargetSheetCardInteraction('${sheet.id}', '${sheet.title}', '${sheet.url}', this)"
+                                class="w-4 h-4 rounded text-blue-600 bg-zinc-950 border-zinc-700 focus:ring-blue-500 focus:ring-2 accent-blue-500 cursor-pointer"
+                            >
+                            <label for="check-${sheet.id}" class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 cursor-pointer select-none hover:text-white">Activate Worksheet</label>
+                        </div>
+                    `;
                 } else {
-                    buttonMarkup = `<button disabled class="mt-4 block w-full bg-zinc-800 text-zinc-500 font-bold text-center text-xs py-2 rounded uppercase tracking-wider cursor-not-allowed">Workspace Restrained</button>`;
+                    checkboxMarkup = `<p class="text-[10px] text-red-500 font-bold uppercase tracking-tight mt-3">Access Restrained Matrix</p>`;
                 }
 
                 let deleteButton = "";
                 if(sessionAccessLevel === 'admin') {
-                    deleteButton = `<button onclick="deleteSheetAssetCard('${sheet.id}')" class="text-[10px] text-red-500 hover:text-red-400 uppercase font-mono tracking-tighter">Wipe Card</button>`;
+                    deleteButton = `<button onclick="deleteSheetAssetCard('${sheet.id}')" class="text-[10px] text-red-500 hover:text-red-400 uppercase font-mono tracking-tighter">Wipe</button>`;
                 }
 
                 card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <h4 class="text-sm font-black text-white tracking-wide truncate max-w-[180px]">${sheet.title}</h4>
+                    <div class="flex justify-between items-start mb-1">
+                        <h4 class="text-xs font-black text-white tracking-wide truncate max-w-[150px]">${sheet.title}</h4>
                         ${deleteButton}
                     </div>
-                    <p class="text-[11px] text-zinc-500 font-mono mb-2 truncate">${sheet.url}</p>
-                    <div class="text-[10px] text-zinc-400 font-mono max-h-12 overflow-y-auto bg-black/40 p-1.5 rounded border border-zinc-950">
-                        <span class="text-zinc-600 block uppercase font-bold text-[9px]">Permissions:</span>
+                    <p class="text-[10px] text-zinc-500 font-mono mb-2 truncate">${sheet.url}</p>
+                    <div class="text-[9px] text-zinc-400 font-mono max-h-12 overflow-y-auto bg-black/40 p-1 rounded border border-zinc-950">
+                        <span class="text-zinc-600 block uppercase font-bold text-[8px]">Assignees:</span>
                         ${sheet.allowedEmails.join(', ')}
                     </div>
-                    ${buttonMarkup}
+                    ${checkboxMarkup}
                 `;
                 grid.appendChild(card);
             });
@@ -679,6 +859,7 @@
                 let currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
                 currentSheets = currentSheets.filter(s => s.id !== id);
                 localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
+                trackingSelectedSheetIds = trackingSelectedSheetIds.filter(sid => sid !== id);
                 renderSheetsGrid();
             }
         }
@@ -1001,7 +1182,7 @@
             ctx.fillStyle = "#34d399";
             ctx.font = "bold 24px monospace";
             const timestampString = convertSecondsToFormattedTimestamp(player.currentTime);
-            ctx.fillText(`R.C VERIFIED SNAPSHOT SYSTEM LOG STAMP &gt;&gt; TS: ${timestampString}`, 30, canvas.height - 30);
+            ctx.fillText(`R.C VERIFIED SNAPSHOT SYSTEM LOG STAMP >> TS: ${timestampString}`, 30, canvas.height - 30);
             
             canvas.toBlob((b) => { if(callback) callback(b); }, 'image/png');
         }
@@ -1013,13 +1194,28 @@
             });
         }
 
+        /**
+         * REDIRECT PASTE INPUT VALUES TO EMBED IN LIVE WORKSPACE INTERFACE AUTOMATICALLY
+         */
         function savePasteInputLinkToGlobalStorage() {
             const valueInput = document.getElementById('internalDeepLinkPasteInput');
-            if(!valueInput.value.trim()) return;
+            const linkUrl = valueInput.value.trim();
+            if(!linkUrl) return;
 
             const logs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || '[]');
-            logs.push({ id: "link_" + Date.now(), fullUrl: valueInput.value.trim(), dateStr: new Date().toISOString() });
+            logs.push({ id: "link_" + Date.now(), fullUrl: linkUrl, dateStr: new Date().toISOString() });
             localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(logs));
+
+            // AUTO-OPEN THE EXTRACTED LINK VALUE LOCALLY IN WORKSPACE SANDBOX PANEL LAYERS
+            document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = `Pasted Target Link Document (${linkUrl})`;
+            document.getElementById('workspaceActiveTitleBadge').innerText = "Pasted Target Workspace Connection Link Link";
+            
+            const iframe = document.getElementById('liveWorkspaceSandboxIframe');
+            const fallback = document.getElementById('iframePlaceholderFallbackState');
+            
+            iframe.src = linkUrl;
+            iframe.classList.remove('hidden');
+            fallback.classList.add('hidden');
 
             valueInput.value = "";
             renderDeepLinkHistoryLogs();
