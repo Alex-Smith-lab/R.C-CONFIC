@@ -30,810 +30,1455 @@
         }
         @keyframes flicker {
             0% { transform: scale(1); }
-            100% { transform: scale(1.02); }
+            100% { transform: scale(1.01); box-shadow: 0 0 35px #ff3300, 0 0 60px #ffaa00; }
         }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #121214; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #2a2a32; border-radius: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9333ea; }
+        .zoom-viewport {
+            position: relative;
+            overflow: hidden;
+            background: #000;
+            cursor: grab;
+        }
+        .zoom-viewport:active { cursor: grabbing; }
+        .zoom-canvas {
+            transform-origin: center center;
+            transition: transform 0.03s ease-out;
+            width: 100%;
+            height: 100%;
+        }
+        .clickable-timestamp {
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .clickable-timestamp:hover {
+            color: #34d399 !important;
+            text-decoration: underline;
+        }
+        .active-thread-highlight {
+            border-color: #a855f7 !important;
+            background-color: #1e1b4b !important;
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col custom-scrollbar">
+<body class="h-screen flex flex-col justify-between overflow-x-hidden p-0 m-0">
 
-    <header class="border-b border-inputBorder bg-cardBg px-6 py-4 flex items-center justify-between sticky top-0 z-40">
-        <div class="flex items-center gap-3">
-            <div class="h-3 w-3 rounded-full bg-brandPurple animate-pulse"></div>
-            <h1 class="text-lg font-bold tracking-wider text-gray-200">R.C AI CONFIG <span class="text-brandPurple text-xs font-mono px-2 py-0.5 bg-brandPurple/10 border border-brandPurple/20 rounded">v2.4.0-Live</span></h1>
-        </div>
-        <div class="flex items-center gap-4">
-            <span id="connectionStatus" class="text-xs font-mono text-emerald-400 flex items-center gap-1.5 bg-emerald-950/30 px-3 py-1 border border-emerald-900/50 rounded-full">
-                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> Supabase Connected
-            </span>
-            <div class="text-right">
-                <p id="userEmailDisplay" class="text-xs text-gray-400 font-mono">loading_session...</p>
-                <p id="userRoleDisplay" class="text-[10px] font-bold uppercase tracking-widest text-brandPurple">Checking Auth...</p>
-            </div>
-        </div>
-    </header>
-
-    <div id="globalAlert" class="hidden fixed bottom-6 right-6 z-50 max-w-md p-4 border rounded-xl backdrop-blur-md shadow-2xl transition-all duration-300 transform translate-y-0 flex items-start gap-3">
-        <div id="globalAlertText" class="text-sm font-medium"></div>
-    </div>
-
-    <main class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-6 p-6">
-        
-        <section class="xl:col-span-5 flex flex-col gap-6">
+    <div id="authGatewayPortal" class="fixed inset-0 bg-darkBg z-[100] flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-cardBg p-8 rounded-xl border border-inputBorder shadow-2xl">
             
-            <div id="adminHubPanel" class="bg-cardBg border border-inputBorder rounded-2xl p-5 flex flex-col gap-4 shadow-xl hidden">
-                <div class="flex items-center justify-between border-b border-inputBorder pb-3">
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-brandPurple flex items-center gap-2">
-                        <span>🛡️</span> Administrative Orchestration Hub
-                    </h2>
-                    <span class="text-[10px] font-mono text-gray-500 bg-inputBg px-2 py-1 border border-inputBorder rounded">Root Node</span>
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-black tracking-wider text-brandPurple uppercase mb-2">R.C TERMINAL ENTRY</h1>
+                <p id="authGatewaySubText" class="text-sm text-gray-400">Input secure session configuration credentials to unlock your workspace.</p>
+            </div>
+
+            <div id="feedbackAlert" class="hidden mb-6 p-4 rounded-lg text-sm font-medium border"></div>
+
+            <div class="grid grid-cols-3 gap-1 bg-black p-1 rounded-lg border border-inputBorder mb-6 text-xs font-bold uppercase tracking-wider">
+                <button id="tabSelectorLogin" onclick="switchAuthPortalContextMode('LOGIN')" class="py-2 text-white bg-brandPurple rounded transition-all">Login</button>
+                <button id="tabSelectorRegister" onclick="switchAuthPortalContextMode('REGISTER')" class="py-2 text-gray-400 hover:text-white rounded transition-all">Sign Up</button>
+                <button id="tabSelectorForgot" onclick="switchAuthPortalContextMode('FORGOT')" class="py-2 text-gray-400 hover:text-white rounded transition-all">Reset</button>
+            </div>
+
+            <form id="terminalLoginForm" onsubmit="handlePortalAuthentication(event)" class="space-y-4">
+                <div>
+                    <label for="identityEmail" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                        User Identity Email
+                    </label>
+                    <input 
+                        type="email" 
+                        id="identityEmail" 
+                        required
+                        placeholder="name@example.com"
+                        class="w-full bg-inputBg border border-inputBorder rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brandPurple transition-colors duration-200 text-base"
+                    >
                 </div>
 
-                <form id="videoDeploymentForm" class="flex flex-col gap-3.5">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-400 mb-1">Target Video Content Thread Identifier (Video ID / Key)</label>
-                        <input type="text" id="adminVideoId" required placeholder="e.g., dQw4w9WgXcQ or active_stream_hash" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-2.5 text-sm text-gray-100 focus:outline-none focus:border-brandPurple transition-colors font-mono">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-400 mb-1">Target View Frame (Secs)</label>
-                            <input type="number" id="adminTimeFrame" value="0" min="0" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-2.5 text-sm text-gray-100 focus:outline-none focus:border-brandPurple transition-colors font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-400 mb-1">Queue Priority Scope</label>
-                            <select id="adminQueuePriority" class="w-full bg-inputBg border border-inputBorder rounded-xl px-4 py-2.5 text-sm text-gray-100 focus:outline-none focus:border-brandPurple transition-colors">
-                                <option value="CRITICAL_ALPHA">CRITICAL ALPHA</option>
-                                <option value="HIGH_PRODUCTION">HIGH PRODUCTION</option>
-                                <option value="STANDARD_EVAL">STANDARD EVAL</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button type="submit" class="w-full bg-brandPurple hover:bg-brandPurpleHover text-white font-semibold text-sm py-3 px-4 rounded-xl shadow-lg shadow-brandPurple/20 transition-all active:scale-[0.99] flex items-center justify-center gap-2 mt-1">
-                        🚀 Deploy Active Live Target Queue Link
-                    </button>
-                </form>
-
-                <div class="border-t border-inputBorder my-2"></div>
+                <div id="passwordFieldContainer">
+                    <label id="passwordLabelRef" for="securityPassword" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                        Security Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="securityPassword" 
+                        placeholder="••••••••"
+                        class="w-full bg-inputBg border border-inputBorder rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brandPurple transition-colors duration-200 text-base tracking-widest"
+                    >
+                </div>
 
                 <div>
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Workspace Destructive Macros</h3>
-                    <button id="macroClearTaskSheet" class="w-full bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/60 font-mono text-xs py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2">
-                        ⚠️ Purge & Delete Task Sheet (Global Sync Destruction)
+                    <button 
+                        type="submit"
+                        id="portalPrimarySubmitBtn"
+                        class="w-full bg-brandPurple hover:bg-brandPurpleHover text-white font-bold py-3 px-6 rounded-lg uppercase tracking-wide transition-all duration-200 transform active:scale-[0.99] shadow-lg shadow-purple-900/20"
+                    >
+                        Initialize Portal Connection
                     </button>
                 </div>
+            </form>
+
+            <div class="mt-6 text-center">
+                <button 
+                    onclick="triggerCredentialsReset()" 
+                    class="text-xs text-gray-500 hover:text-brandPurple underline underline-offset-4 transition-colors duration-200"
+                >
+                    Reset System to Factory Defaults
+                </button>
             </div>
 
-            <div class="bg-cardBg border border-inputBorder rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
-                <div class="flex items-center justify-between border-b border-inputBorder pb-3">
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-gray-200 flex items-center gap-2">
-                        <span>👥</span> Coworker Engine Access Network
-                    </h2>
-                    <span id="userCountBadge" class="text-xs font-mono text-brandPurple bg-brandPurple/10 px-2 py-0.5 rounded border border-brandPurple/20">0 Online</span>
-                </div>
+        </div>
+    </div>
 
-                <div class="overflow-x-auto custom-scrollbar border border-inputBorder rounded-xl bg-inputBg max-h-[340px]">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="bg-cardBg border-b border-inputBorder text-gray-400 uppercase tracking-wider font-mono text-[10px]">
-                                <th class="p-3 font-semibold">User Reference Profile</th>
-                                <th class="p-3 font-semibold">Role Authority</th>
-                                <th class="p-3 font-semibold text-center">System Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="coworkerRosterTableBody" class="divide-y divide-inputBorder/50 font-mono text-gray-300">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="bg-cardBg border border-inputBorder rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
-                <div class="flex items-center justify-between border-b border-inputBorder pb-3">
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-gray-200 flex items-center gap-2">
-                        <span>📡</span> Active Video Target Queues
-                    </h2>
-                    <span class="h-2 w-2 rounded-full bg-brandPurple animate-ping"></span>
-                </div>
-                <div id="activeQueueContainer" class="flex flex-col gap-2 max-h-[220px] overflow-y-auto custom-scrollbar">
-                    <p class="text-xs font-mono text-gray-500 italic text-center py-4">No real-time video targets active in pipeline...</p>
-                </div>
-            </div>
-
-        </section>
-
-        <section class="xl:col-span-7 flex flex-col gap-6">
-            
-            <div id="coworkerWorkspacePanel" class="bg-cardBg border border-inputBorder rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
-                <div class="flex items-center justify-between border-b border-inputBorder pb-3">
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-gray-200 flex items-center gap-2">
-                        <span>💻</span> Workspace Live Streaming Environment
-                    </h2>
-                    <span class="text-xs font-mono text-gray-400 bg-inputBg px-2 py-0.5 rounded border border-inputBorder">Client Display Node</span>
-                </div>
-
-                <div class="w-full aspect-video bg-black rounded-xl border border-inputBorder overflow-hidden relative group">
-                    <div id="videoPlaceholderOverlay" class="absolute inset-0 bg-inputBg flex flex-col items-center justify-center gap-3 z-10 transition-opacity duration-300">
-                        <span class="text-3xl">📺</span>
-                        <p class="text-xs font-mono text-gray-400 tracking-wide">No active stream target mounted in player</p>
+    <div id="dynamicViewRouter" class="hidden flex-1 flex flex-col justify-between">
+        
+        <div id="mainDashboardView" class="flex-1 flex flex-col justify-between">
+            <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <span class="text-zinc-400 text-sm">Active Session Identity:</span>
+                    <span id="userEmailSessionDisplay" class="bg-black text-emerald-400 px-3 py-1.5 text-xs rounded border border-zinc-800 font-mono font-bold"></span>
+                    
+                    <div class="flex items-center gap-2">
+                        <span class="text-zinc-500 text-xs font-mono">Working URL Reference:</span>
+                        <span id="currentActiveWorkspaceUrlDisplay" class="text-xs text-zinc-300 bg-zinc-950 px-2 py-1 rounded border border-zinc-800 font-mono max-w-xs truncate italic">No active workspace sheet selected</span>
                     </div>
-                    <iframe id="dashboardVideoPlayer" class="w-full h-full hidden" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
                 </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <button id="btnMarkTaskComplete" class="bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-400 border border-emerald-900/50 font-semibold text-xs py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2">
-                        ✅ Log Current Target Segment Frame As Verified
-                    </button>
-                    <button id="btnFlagDiscrepancy" class="bg-amber-950/40 hover:bg-amber-900/60 text-amber-400 border border-amber-900/50 font-semibold text-xs py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2">
-                        ⚠️ Flag Operational Discrepancy In Pipeline
-                    </button>
-                </div>
-            </div>
-
-            <div class="bg-cardBg border border-inputBorder rounded-2xl p-5 flex flex-col gap-4 shadow-xl flex-1">
-                <div class="flex items-center justify-between border-b border-inputBorder pb-3">
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-gray-200 flex items-center gap-2">
-                        <span>📊</span> Directly Assigned Live Tracking Tasks
-                    </h2>
-                    <span id="taskCountBadge" class="text-xs font-mono text-amber-400 bg-amber-950/30 px-2 py-0.5 rounded border border-amber-900/50">0 Active Loads</span>
-                </div>
-
-                <div class="overflow-x-auto custom-scrollbar border border-inputBorder rounded-xl bg-inputBg flex-1 min-h-[250px]">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="bg-cardBg border-b border-inputBorder text-gray-400 uppercase tracking-wider font-mono text-[10px]">
-                                <th class="p-3 font-semibold">Unique ID / Reference Data Hash</th>
-                                <th class="p-3 font-semibold">Priority Metadata</th>
-                                <th class="p-3 font-semibold">Timestamp Logs</th>
-                                <th class="p-3 font-semibold text-right">Routing Link Trigger</th>
-                            </tr>
-                        </thead>
-                        <tbody id="assignedTasksTableBody" class="divide-y divide-inputBorder/50 font-mono text-gray-300">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-
-        </section>
-
-    </main>
-
-    <div id="staffControlModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 xl:p-10 animate-fade-in">
-        <div class="w-full max-w-4xl bg-cardBg border-2 border-brandPurple rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <div class="bg-brandPurple px-6 py-4 flex items-center justify-between text-white shadow-lg">
                 <div class="flex items-center gap-3">
-                    <span class="text-xl">⚙️</span>
-                    <div>
-                        <h2 class="text-md font-bold uppercase tracking-widest">Stuff Management Control</h2>
-                        <p class="text-[10px] font-mono text-purple-200 uppercase tracking-wider">Comprehensive Real-time Node Overrides & Policy Modifications</p>
+                    <button id="adminRoleSwapToggleBtn" onclick="toggleAdminRoleContextView()" class="hidden text-xs bg-amber-600 hover:bg-amber-500 text-black font-mono font-bold px-3 py-1.5 rounded transition">
+                        🔄 Toggle View Role
+                    </button>
+                    <div id="adminBadge" class="bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest uppercase">
+                        COWORKER ACCESS MODE
                     </div>
+                    <button onclick="terminateTerminalSession()" class="text-xs bg-zinc-800 hover:bg-red-950/40 border border-zinc-700 text-zinc-400 hover:text-red-400 px-3 py-1 rounded font-mono uppercase tracking-tight transition">Logout</button>
                 </div>
-                <button id="closeStaffModalBtn" class="bg-black/20 hover:bg-black/40 text-white rounded-full p-2 text-xs font-bold font-mono transition-all aspect-square w-8 h-8 flex items-center justify-center">X</button>
-            </div>
-            
-            <div class="p-6 overflow-y-auto custom-scrollbar flex-1 flex flex-col gap-6 bg-darkBg">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-cardBg border border-inputBorder p-5 rounded-xl">
-                    <div class="flex flex-col gap-1.5">
-                        <span class="text-[10px] uppercase tracking-wider font-mono text-gray-500">Target Worker Context Profile</span>
-                        <p id="modalUserEmail" class="text-base font-bold text-gray-200 font-mono">user@example.com</p>
-                        <p id="modalUserUUID" class="text-xs font-mono text-brandPurple bg-brandPurple/10 border border-brandPurple/20 px-2 py-0.5 rounded w-max mt-1">UUID: Loading...</p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3 text-xs font-mono">
-                        <div class="bg-inputBg border border-inputBorder p-3 rounded-lg">
-                            <span class="text-gray-500 block text-[10px] uppercase">Current Authority</span>
-                            <span id="modalUserRole" class="text-gray-200 font-bold block mt-1">UNKNOWN</span>
+            </header>
+
+            <main class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
+                
+                <section class="col-span-3 border-r border-zinc-800 pr-4 flex flex-col justify-between overflow-y-auto">
+                    <div class="space-y-6">
+                        <div>
+                            <h1 class="text-2xl font-black tracking-tighter uppercase text-purple-500">Welcome to <br><span class="text-zinc-400">R.C Team</span></h1>
+                            <p class="text-[11px] text-zinc-500">Internal workspace data processing and tracking.</p>
                         </div>
-                        <div class="bg-inputBg border border-inputBorder p-3 rounded-lg">
-                            <span class="text-gray-500 block text-[10px] uppercase">Current State</span>
-                            <span id="modalUserState" class="text-amber-400 font-bold block mt-1">ACTIVE</span>
+
+                        <div id="adminVideoUploadSection" class="p-4 bg-zinc-900 rounded border border-zinc-800 hidden">
+                            <h3 class="text-xs font-bold uppercase tracking-wider mb-2 text-purple-400">Publish Customer Video</h3>
+                            <input type="text" id="videoThreadTitleInput" placeholder="Video Document Thread Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
+                            <input type="file" id="videoFileInput" accept="video/*" class="w-full text-xs text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-3">
+                            <button onclick="processVideoUploadEngine()" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 rounded uppercase tracking-wide transition">Publish Video Thread</button>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400">Active Workspace Video</h3>
+                                <span id="dashZoomIndicator" class="text-[10px] text-zinc-500 font-mono">Zoom: 100%</span>
+                            </div>
+                            <div id="videoContainer" class="p-1 rounded bg-zinc-950 border border-zinc-800 zoom-viewport h-48" onwheel="handleDashboardZoom(event)">
+                                <video id="dashboardVideoPlayer" controls class="zoom-canvas object-contain bg-black h-full w-full" style="object-fit: fill;"></video>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="setPlayerVisualFX('normal')" class="flex-1 text-[11px] bg-zinc-800 py-1 rounded hover:bg-zinc-700">Normal</button>
+                                <button onclick="setPlayerVisualFX('flames')" class="flex-1 text-[11px] bg-orange-600 text-black font-bold py-1 rounded hover:bg-orange-500">Flames FX</button>
+                                <button onclick="resetDashboardZoom()" class="text-[11px] bg-zinc-900 px-2 rounded border border-zinc-700 hover:bg-zinc-800">Reset View</button>
+                            </div>
+                            <div class="flex gap-2 bg-zinc-900 p-2 rounded border border-zinc-800 items-center justify-between">
+                                <span id="dashTimestampDisplay" onclick="copyRawTimestampText(this.innerText)" title="Click to copy raw timestamp text" class="font-mono text-xs text-emerald-400 clickable-timestamp">TS: 00:00:00</span>
+                                <button onclick="copyDashboardScreenshotToClipboard()" class="bg-white text-black text-xs font-bold px-3 py-1 rounded uppercase tracking-tight hover:bg-zinc-200">Take Screenshot</button>
+                            </div>
+                            <button onclick="launchDedicatedVideoEnvironment()" class="w-full bg-zinc-100 hover:bg-white text-black font-bold text-xs py-2 rounded uppercase tracking-wider text-center block">Launch Full-Screen Studio</button>
+                        </div>
+
+                        <div class="pt-4 border-t border-zinc-800">
+                            <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Active Video Target Queues</h4>
+                            <div id="videoThreadLinksContainer" class="space-y-1.5 max-h-48 overflow-y-auto text-xs font-mono"></div>
+                        </div>
+
+                        <div class="pt-4 border-t border-zinc-800">
+                            <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Deep-Link Logs History</h4>
+                            <div id="deepLinkContainerHistory" class="space-y-1.5 max-h-24 overflow-y-auto text-xs font-mono"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="col-span-6 px-2 flex flex-col h-full overflow-hidden">
+                    <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                        <h2 class="text-lg font-black tracking-tight uppercase text-blue-500">R.C Target Sheets Workspace</h2>
+                        <div class="flex gap-2">
+                            <button onclick="toggleOrFetchSheetMetricPipeline()" class="text-xs bg-emerald-600 text-black px-3 py-1.5 font-bold rounded hover:bg-emerald-500 transition">Fetch Tracking Metrics</button>
+                            <button id="adminAddSheetBtn" onclick="toggleModal(true)" class="text-xs bg-white text-black px-3 py-1.5 font-bold rounded hover:bg-zinc-200 hidden">Add Sheet Link</button>
+                            <button id="adminExportBtn" onclick="runClientCleanExportPipeline()" class="text-xs bg-blue-600 text-white px-3 py-1.5 font-bold rounded hover:bg-blue-500 transition hidden">Export Client Sheet</button>
+                        </div>
+                    </div>
+
+                    <div id="coworkerTaskAssignmentHub" class="hidden mb-3 p-3 bg-indigo-950/60 border border-indigo-800 text-indigo-300 rounded text-xs flex-shrink-0">
+                        <div class="flex justify-between items-center font-bold mb-1">
+                            <span>📌 DIRECTLY ASSIGNED LIVE TRACKING TASKS:</span>
+                            <button onclick="dismissTaskAssignmentHubView()" class="text-[10px] text-indigo-400 hover:text-white uppercase">Dismiss</button>
+                        </div>
+                        <div id="assignedTasksListOutput" class="space-y-1 font-mono text-[11px]"></div>
+                    </div>
+
+                    <div id="coworkerClaimBanner" class="block mb-3 p-3 bg-zinc-900 border border-emerald-800 text-emerald-400 rounded text-xs flex-shrink-0">
+                        <div class="flex justify-between items-center">
+                            <span><strong>System Notice:</strong> Selected sheet links will load dynamically within the live embedded workspace sandbox below.</span>
+                            <div id="sheetToggleControlsSection" class="flex gap-1">
+                                <button onclick="setWorkspaceEmbedVisibility(true)" class="bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-0.5 text-[10px] uppercase font-bold rounded border border-zinc-600">Unhide Arena</button>
+                                <button onclick="setWorkspaceEmbedVisibility(false)" class="bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-0.5 text-[10px] uppercase font-bold rounded border border-zinc-600">Hide Arena</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="metricsReportTerminal" class="hidden mb-4 p-4 bg-zinc-950 border border-purple-900 rounded-lg max-h-56 overflow-y-auto font-mono text-xs text-zinc-300">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-1.5 mb-2">
+                            <span class="text-purple-400 font-bold uppercase tracking-wider text-[11px]">Real-Time Sheet Workspace Metrics & Unique Assignee Report</span>
+                            <button onclick="document.getElementById('metricsReportTerminal').classList.add('hidden')" class="text-zinc-500 hover:text-white text-[10px] uppercase">Hide</button>
+                        </div>
+                        <div id="metricsOutputSummary" class="space-y-3"></div>
+                    </div>
+
+                    <div id="liveWorkspaceSandboxWrapper" class="w-full h-72 bg-black border border-zinc-800 rounded-xl overflow-hidden mb-4 flex flex-col flex-shrink-0 relative">
+                        <div class="bg-zinc-900/80 px-4 py-2 border-b border-zinc-800 flex justify-between items-center text-xs font-mono">
+                            <span class="text-zinc-400">🔴 Live Embedded Workspace Engine Framework Layer:</span>
+                            <span id="workspaceActiveTitleBadge" class="text-blue-400 font-bold truncate max-w-sm">No Active Matrix Target Bound</span>
+                        </div>
+                        <iframe id="liveWorkspaceSandboxIframe" src="about:blank" class="w-full flex-1 bg-zinc-950 border-0 hidden"></iframe>
+                        <div id="iframePlaceholderFallbackState" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-950/80">
+                            <span class="text-2xl mb-2">📁</span>
+                            <p class="text-xs text-zinc-500 font-mono max-w-sm">No workspace links are currently active inside the environment viewport area canvas stack layers.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto pr-1 pb-4">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Select Active Cards (Supports Multi-Selection)</h3>
+                        <div id="sheetsDisplayGrid" class="grid grid-cols-2 gap-4"></div>
+                    </div>
+                </section>
+
+                <section class="col-span-3 border-l border-zinc-800 pl-4 flex flex-col justify-between overflow-y-auto">
+                    <div class="space-y-6">
+                        <div>
+                            <h2 class="text-xs font-black tracking-widest uppercase mb-4 text-purple-500">Learning Modules Engine</h2>
+                            <div id="adminModuleUploadSection" class="mb-4 p-4 bg-zinc-900 rounded border border-zinc-800 hidden">
+                                <input type="text" id="moduleTitleInput" placeholder="Module Document Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
+                                <input type="file" id="moduleFileInput" class="block w-full text-[10px] text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-2">
+                                <button onclick="processModuleUploadEngine()" class="w-full bg-purple-600 text-white text-xs font-bold py-1.5 rounded hover:bg-purple-500 transition">Save Asset Module</button>
+                            </div>
+                            <div id="modulesListOutput" class="space-y-2"></div>
+                        </div>
+
+                        <div id="supabaseTelemetryControlBlock" class="p-4 bg-zinc-950 border border-zinc-800 rounded hidden">
+                            <h3 class="text-xs font-black tracking-widest uppercase text-emerald-400 mb-2">Supabase Coworker Sync</h3>
+                            <div id="supabaseTelemRowsContainer" class="space-y-2 max-h-48 overflow-y-auto font-mono text-[10px] text-zinc-400">
+                                <p class="italic text-zinc-600">Awaiting user synchronization...</p>
+                            </div>
+                        </div>
+
+                        <div id="systemPrivilegeControlBlock" class="p-4 bg-zinc-900 border border-zinc-800 rounded hidden">
+                            <h3 class="text-xs font-black tracking-widest uppercase text-amber-400 mb-3">System Access Allocation</h3>
+                            <div class="space-y-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-zinc-400 uppercase mb-1">Target Account Email</label>
+                                    <input type="email" id="privilegeTargetEmail" placeholder="user@example.com" class="w-full bg-black border border-zinc-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 pt-1">
+                                    <button onclick="delegateUserAccessRole('Admin')" class="bg-amber-500 text-black font-bold text-[11px] py-1.5 rounded uppercase tracking-tight hover:bg-amber-400 transition">Make Admin</button>
+                                    <button onclick="delegateUserAccessRole('Coworker')" class="bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-[11px] py-1.5 rounded uppercase tracking-tight hover:bg-zinc-700 transition">Make Worker</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <div id="fullScreenWorksheetArenaView" class="hidden fixed inset-0 bg-darkBg z-[90] flex flex-col justify-between">
+            <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center shadow-lg">
+                <div class="flex items-center gap-3">
+                    <span class="text-amber-500 text-lg font-black tracking-widest font-mono">R.C ROUTE ENTRY</span>
+                    <span class="text-zinc-600">|</span>
+                    <span id="arenaActiveSheetTitle" class="text-xs bg-zinc-950 border border-zinc-800 text-blue-400 px-3 py-1 rounded font-mono font-bold">Connecting Active Instance...</span>
+                </div>
+                <button onclick="closeFullScreenWorksheetArena()" class="bg-red-600 hover:bg-red-500 text-white text-xs font-black px-5 py-2 rounded uppercase tracking-wider transition duration-150 transform active:scale-95 shadow-lg shadow-red-950/40">
+                    Return to Terminal Matrix
+                </button>
+            </header>
+
+            <div class="flex-1 w-full h-full bg-black relative">
+                <iframe id="arenaFullScreenIframe" src="about:blank" class="w-full h-full border-0 bg-zinc-950"></iframe>
+            </div>
+        </div>
+
+        <div id="dedicatedVideoStudioView" class="hidden fixed inset-0 bg-black z-50 flex flex-col justify-between">
+            <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
+                <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C CONFIG VIDEO TEAM EXPERT</h1>
+                <button onclick="exitDedicatedStudioEnvironment()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-1.5 rounded uppercase">Close Video Studio</button>
+            </header>
+
+            <div class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
+                <div class="col-span-8 flex flex-col justify-center bg-zinc-950 border border-zinc-800 rounded p-4 relative">
+                    <div id="studioVideoViewport" class="zoom-viewport w-full max-h-[65vh] flex-1 rounded bg-black flex items-center justify-center" onwheel="handleStudioZoom(event)">
+                        <video id="studioVideoPlayer" controls class="zoom-canvas object-contain h-full w-full" style="object-fit: fill;"></video>
+                    </div>
+                    
+                    <div class="grid grid-cols-4 gap-4 mt-4 bg-zinc-900 p-3 rounded border border-zinc-800">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[10px] uppercase font-bold text-zinc-400">Frame Regulation</span>
+                            <div class="flex gap-1">
+                                <button onclick="stepVideoFrame(-1)" class="flex-1 bg-zinc-800 text-white text-xs py-1.5 rounded font-mono hover:bg-zinc-700">&lt; Frame</button>
+                                <button onclick="stepVideoFrame(1)" class="flex-1 bg-zinc-800 text-white text-xs py-1.5 rounded font-mono hover:bg-zinc-700 font-bold">Frame &gt;</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[10px] uppercase font-bold text-zinc-400">Playback Speed Regulation</span>
+                            <div class="grid grid-cols-4 gap-1">
+                                <button onclick="setStudioSpeed(0.5)" class="bg-zinc-800 text-[10px] font-mono py-1 rounded hover:bg-zinc-700">0.5x</button>
+                                <button onclick="setStudioSpeed(1.0)" class="bg-zinc-800 text-[10px] font-mono py-1 rounded hover:bg-zinc-700">1.0x</button>
+                                <button onclick="setStudioSpeed(1.5)" class="bg-zinc-800 text-[10px] font-mono py-1 rounded hover:bg-zinc-700">1.5x</button>
+                                <button onclick="setStudioSpeed(2.0)" class="bg-zinc-800 text-[10px] font-mono py-1 rounded hover:bg-zinc-700">2.0x</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1 justify-center items-center">
+                            <span id="studioZoomIndicator" class="text-[10px] text-zinc-400 font-mono">Zoom Scale: 100%</span>
+                            <button onclick="resetStudioZoom()" class="bg-zinc-800 text-[10px] w-full text-zinc-300 py-1 rounded hover:bg-zinc-700">Reset Viewport</button>
+                        </div>
+                        <div class="flex flex-col gap-1 justify-end">
+                            <button onclick="copyStudioScreenshotToClipboard()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-black font-black text-xs py-2.5 rounded uppercase tracking-wider transition">Take Screenshot</button>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-3">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">Execute High-Level Structural Operations</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <button id="modalActionOffboard" class="bg-red-950/50 hover:bg-red-900/70 text-red-400 border border-red-800 p-4 rounded-xl font-bold text-xs font-mono flex flex-col items-center justify-center gap-2 transition-all">
-                            <span>🚫</span> Offboard Coworker Node
-                        </button>
-                        <button id="modalActionRemoveTasks" class="bg-amber-950/50 hover:bg-amber-900/70 text-amber-400 border border-amber-800 p-4 rounded-xl font-bold text-xs font-mono flex flex-col items-center justify-center gap-2 transition-all">
-                            <span>🗑️</span> Remove Assigned Tasks
-                        </button>
-                        <button id="modalActionWaitlist" class="bg-blue-950/50 hover:bg-blue-900/70 text-blue-400 border border-blue-800 p-4 rounded-xl font-bold text-xs font-mono flex flex-col items-center justify-center gap-2 transition-all">
-                            <span>⏳</span> Waitlist Operational Access
-                        </button>
+                <div class="col-span-4 bg-zinc-900 p-4 rounded border border-zinc-800 flex flex-col justify-between overflow-y-auto">
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-800 pb-2">Analysis Tool Link Output</h3>
+                        <div class="bg-black p-3 rounded border border-zinc-800 space-y-2">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-zinc-400">Active Location Stamp</span>
+                                <span id="studioTimestampCounter" onclick="copyRawTimestampText(this.innerText)" title="Click to copy raw timestamp text" class="font-mono text-emerald-400 font-bold clickable-timestamp">TS: 00:00:00</span>
+                            </div>
+                            <input type="text" id="studioDeepLinkExportUrl" class="w-full bg-zinc-900 text-white font-mono text-[11px] p-2 rounded border border-zinc-700 focus:outline-none" readonly>
+                            <button onclick="copyStudioDeepLinkMetadata()" class="w-full bg-white text-black font-bold text-xs py-1.5 rounded hover:bg-zinc-200 uppercase">Copy deep link parameter</button>
+                        </div>
+                        
+                        <div class="p-3 bg-zinc-950 border border-zinc-800 rounded text-[11px] text-zinc-400 space-y-1">
+                            <span class="text-xs font-bold block text-white uppercase tracking-tight">Extension Capture Shortcut Panel</span>
+                            <p class="text-amber-400 font-bold">Press Alt + S for Custom Crosshair Screenshots.</p>
+                            <p>This prints a hardcoded timestamp directly onto the image canvas layer before copying, rendering flawlessly on highlight tools.</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-zinc-800 mt-4">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">Paste Link To Permanent Global Log</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="internalDeepLinkPasteInput" placeholder="Paste links here..." class="flex-1 bg-black text-white text-xs p-2 rounded border border-zinc-700 focus:outline-none">
+                            <button onclick="savePasteInputLinkToGlobalStorage()" class="bg-emerald-600 text-black text-xs font-black px-3 rounded uppercase">Save</button>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <div class="border-t border-inputBorder p-4 bg-cardBg flex justify-end">
-                <button id="closeStaffModalFooterBtn" class="bg-inputBg hover:bg-inputBorder border border-inputBorder font-mono text-xs px-5 py-2.5 rounded-xl transition-all">Close Pipeline View</button>
+        </div>
+
+        <div id="standaloneModuleReaderView" class="hidden flex-1 flex flex-col justify-between bg-black text-white">
+            <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
+                <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C LEARNING MODULE</h1>
+                <button onclick="exitStandaloneModuleView()" class="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold px-4 py-1.5 rounded uppercase">Return to Main Terminal</button>
+            </header>
+            <div class="flex-1 p-8 flex flex-col items-center justify-center max-w-4xl mx-auto w-full">
+                <h2 id="standaloneModuleHeaderTitle" class="text-2xl font-black uppercase mb-6 tracking-wide text-purple-400">Loading Document Target Engine...</h2>
+                <div class="w-full bg-zinc-900 border border-zinc-800 rounded p-6 text-center space-y-4">
+                    <p class="text-sm text-zinc-400 font-mono">Your asset is secure and structured for delivery.</p>
+                    <a id="standaloneModuleDownloadTrigger" href="#" download="" class="inline-block bg-white text-black font-black text-xs px-6 py-3 rounded uppercase tracking-wider hover:bg-zinc-200">Download and Open Workspace Resource</a>
+                </div>
             </div>
         </div>
     </div>
 
+    <div id="sheetCardCreationModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-zinc-950 border border-zinc-800 p-6 rounded-lg w-full max-w-md">
+            <h3 class="text-sm font-black uppercase tracking-wider text-white mb-4">Register R.C Target Card Sheet</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[10px] uppercase text-zinc-400 font-bold mb-1">Work Sheet Name Header</label>
+                    <input type="text" id="modalSheetTitle" placeholder="e.g., Project Cohort 4 Track" class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-sm text-white focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase text-zinc-400 font-bold mb-1">Target Document Sheet URL</label>
+                    <input type="url" id="modalSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-sm text-white focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase text-zinc-400 font-bold mb-1">Assigned Emails (Comma separated)</label>
+                    <textarea id="modalSheetEmails" placeholder="antonymbali96@gmail.com, coworker@team.com" class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-sm text-white h-20 focus:outline-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="toggleModal(false)" class="bg-zinc-800 text-white px-4 py-2 text-xs rounded hover:bg-zinc-700 uppercase">Cancel</button>
+                    <button onclick="saveSheetAssetCardEngine()" class="bg-white text-black px-4 py-2 text-xs font-bold rounded hover:bg-zinc-200 uppercase">Save System Card</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="w-full bg-black border-t border-zinc-900 py-1.5 overflow-hidden flex items-center shadow-lg z-[95]">
+        <div class="whitespace-nowrap flex text-[11px] font-black tracking-widest text-emerald-500 w-full uppercase">
+            <marquee scrollamount="6" behavior="scroll" direction="left">
+                +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG
+            </marquee>
+        </div>
+    </footer>
+
     <script>
-        // --- SECURE INITIALIZATION PARAMETERS ---
-        // Replace placeholders with your live target architecture keys
-        const SUPABASE_URL = "https://your-supabase-project.supabase.co"; 
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.your-live-anon-key";
+        // Supabase Context Framework Configuration Realtime Sync Credentials
+        const SUPABASE_URL = "https://qhftvfatzsogxbbqzxry.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let dbInstance = null;
+        let sessionUserIdentity = null;
+        let sessionAccessLevel = 'coworker';
+        let simulatedAccessLevel = null; 
+        let activeAuthMode = 'LOGIN'; 
         
-        const supabase = royaltyCreateEngineClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const MASTER_ADMIN_ID = "antonymbali96@gmail.com";
+        const STABLE_LOCAL_SEED_KEY = "RC_SECURE_PHRASE_KEY_V2";
+        let trackingSelectedSheetIds = []; 
 
-        // Helper instantiator to guarantee client layer state safety
-        function royaltyCreateEngineClient(url, key) {
-            try { return supabase.createClient(url, key); } 
-            catch(e) { return window.supabase ? window.supabase.createClient(url, key) : null; }
+        const requestDB = indexedDB.open("RCAI_SystemStorage_v3", 1);
+        let dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+        let studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+        let currentActiveVideoThreadId = ""; 
+        let cloudVideosCacheList = []; 
+
+        if(!localStorage.getItem('RC_SHEETS')) {
+            localStorage.setItem('RC_SHEETS', JSON.stringify([
+                { id: "default_target_sheet", title: "LADOT 4 Task Matrix", url: "https://docs.google.com/spreadsheets/d/1_rc_default_matrix_placeholder/edit", allowedEmails: ["antonymbali96@gmail.com", "worker1@rc-team.com", "antonio.annotation@workspace.org"] }
+            ]));
         }
+        if(!localStorage.getItem('RC_MODULES_METADATA')) localStorage.setItem('RC_MODULES_METADATA', JSON.stringify([]));
+        if(!localStorage.getItem('RC_PASTED_LINKS')) localStorage.setItem('RC_PASTED_LINKS', JSON.stringify([]));
 
-        // --- GLOBAL RUNTIME VARIABLE STATE ARCHITECTURE ---
-        let currentSessionUser = null;
-        let currentSessionProfile = null;
-        let selectedRosterUser = null; 
-        let globalUsersCache = [];
-
-        // --- DOM REFERENCE NODE REGISTRATION ---
-        const ui = {
-            connectionStatus: document.getElementById('connectionStatus'),
-            userEmailDisplay: document.getElementById('userEmailDisplay'),
-            userRoleDisplay: document.getElementById('userRoleDisplay'),
-            globalAlert: document.getElementById('globalAlert'),
-            globalAlertText: document.getElementById('globalAlertText'),
-            adminHubPanel: document.getElementById('adminHubPanel'),
-            videoDeploymentForm: document.getElementById('videoDeploymentForm'),
-            adminVideoId: document.getElementById('adminVideoId'),
-            adminTimeFrame: document.getElementById('adminTimeFrame'),
-            adminQueuePriority: document.getElementById('adminQueuePriority'),
-            macroClearTaskSheet: document.getElementById('macroClearTaskSheet'),
-            coworkerRosterTableBody: document.getElementById('coworkerRosterTableBody'),
-            userCountBadge: document.getElementById('userCountBadge'),
-            activeQueueContainer: document.getElementById('activeQueueContainer'),
-            videoPlaceholderOverlay: document.getElementById('videoPlaceholderOverlay'),
-            dashboardVideoPlayer: document.getElementById('dashboardVideoPlayer'),
-            assignedTasksTableBody: document.getElementById('assignedTasksTableBody'),
-            taskCountBadge: document.getElementById('taskCountBadge'),
-            btnMarkTaskComplete: document.getElementById('btnMarkTaskComplete'),
-            btnFlagDiscrepancy: document.getElementById('btnFlagDiscrepancy'),
-            // Modal Architecture DOM Nodes
-            staffControlModal: document.getElementById('staffControlModal'),
-            closeStaffModalBtn: document.getElementById('closeStaffModalBtn'),
-            closeStaffModalFooterBtn: document.getElementById('closeStaffModalFooterBtn'),
-            modalUserEmail: document.getElementById('modalUserEmail'),
-            modalUserUUID: document.getElementById('modalUserUUID'),
-            modalUserRole: document.getElementById('modalUserRole'),
-            modalUserState: document.getElementById('modalUserState'),
-            modalActionOffboard: document.getElementById('modalActionOffboard'),
-            modalActionRemoveTasks: document.getElementById('modalActionRemoveTasks'),
-            modalActionWaitlist: document.getElementById('modalActionWaitlist')
-        };
-
-        // --- REALTIME ORCHESTRATED ROUTING LAYER PIPELINE ---
-        document.addEventListener('DOMContentLoaded', async () => {
-            initializeSystemAuthentication();
-            setupInteractiveEventListeners();
-            checkUrlParametersForDeepLinkNavigation();
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeDatabaseLayer();
+            startSupabaseTelemetrySyncPipeline();
+            listenForGlobalCloudVideoRealtimeUpdates();
         });
 
-        // --- SYSTEM ALERTS ENGINE NOTIFICATION SYSTEM ---
-        function renderSystemNotice(message, type = 'success') {
-            ui.globalAlert.classList.remove('hidden', 'bg-red-950/80', 'text-red-400', 'border-red-800', 'bg-emerald-950/80', 'text-emerald-400', 'border-emerald-800');
-            if (type === 'error') {
-                ui.globalAlert.classList.add('bg-red-950/80', 'text-red-400', 'border-red-800');
-            } else {
-                ui.globalAlert.classList.add('bg-emerald-950/80', 'text-emerald-400', 'border-emerald-800');
+        function initializeDatabaseLayer() {
+            const registryExists = localStorage.getItem('rc_user_registry');
+            if (!registryExists) {
+                const defaultRegistry = [
+                    { email: "antonymbali96@gmail.com", password: "password123", clearance: 1, role: "Admin" }
+                ];
+                localStorage.setItem('rc_user_registry', JSON.stringify(defaultRegistry));
             }
-            ui.globalAlertText.innerText = message;
-            ui.globalAlert.classList.remove('hidden');
-            setTimeout(() => { ui.globalAlert.classList.add('hidden'); }, 6000);
+            if(!localStorage.getItem(STABLE_LOCAL_SEED_KEY)) {
+                localStorage.setItem(STABLE_LOCAL_SEED_KEY, "password123");
+            }
         }
 
-        // --- AUTH & SESSION DATA MANAGEMENT ---
-        async function initializeSystemAuthentication() {
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                if (error) throw error;
+        requestDB.onupgradeneeded = function(e) {
+            let database = e.target.result;
+            if(!database.objectStoreNames.contains("blobs")) {
+                database.createObjectStore("blobs", { keyPath: "id" });
+            }
+            if(!database.objectStoreNames.contains("video_threads")) {
+                database.createObjectStore("video_threads", { keyPath: "id" });
+            }
+        };
 
-                if (!session) {
-                    // Fallback configuration if no active deployment session token exists
-                    configureMockFallbackSession();
+        requestDB.onsuccess = function(e) {
+            dbInstance = e.target.result;
+            processAutomaticSessionHandshake();
+        };
+
+        requestDB.onerror = function(e) {
+            processAutomaticSessionHandshake();
+        };
+
+        function processAutomaticSessionHandshake() {
+            const savedEmail = sessionStorage.getItem("RC_ACTIVE_USER_EMAIL");
+            const savedRole = sessionStorage.getItem("RC_ACTIVE_USER_ROLE");
+            if (savedEmail && savedRole) {
+                sessionUserIdentity = savedEmail;
+                sessionAccessLevel = savedRole;
+                executeSystemBootSequence();
+            }
+        }
+
+        function switchAuthPortalContextMode(targetMode) {
+            activeAuthMode = targetMode;
+            const subText = document.getElementById('authGatewaySubText');
+            const pwdContainer = document.getElementById('passwordFieldContainer');
+            const submitBtn = document.getElementById('portalPrimarySubmitBtn');
+
+            document.getElementById('tabSelectorLogin').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
+            document.getElementById('tabSelectorRegister').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
+            document.getElementById('tabSelectorForgot').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
+
+            if (targetMode === 'LOGIN') {
+                document.getElementById('tabSelectorLogin').className = "py-2 text-white bg-brandPurple rounded transition-all";
+                subText.innerText = "Input secure session configuration credentials to unlock your workspace.";
+                pwdContainer.classList.remove('hidden');
+                submitBtn.innerText = "Initialize Portal Connection";
+            } else if (targetMode === 'REGISTER') {
+                document.getElementById('tabSelectorRegister').className = "py-2 text-white bg-brandPurple rounded transition-all";
+                subText.innerText = "Provision an independent localized terminal registration instance map.";
+                pwdContainer.classList.remove('hidden');
+                submitBtn.innerText = "Register System Identity Account";
+            } else if (targetMode === 'FORGOT') {
+                document.getElementById('tabSelectorForgot').className = "py-2 text-white bg-brandPurple rounded transition-all";
+                subText.innerText = "Provide your registered identity email to read password storage logs.";
+                pwdContainer.classList.add('hidden');
+                submitBtn.innerText = "Recover Account Password";
+            }
+        }
+
+        async function handlePortalAuthentication(event) {
+            event.preventDefault();
+            const emailInput = document.getElementById('identityEmail').value.trim().toLowerCase();
+            const passwordInput = document.getElementById('securityPassword').value;
+
+            const registryData = localStorage.getItem('rc_user_registry');
+            let users = registryData ? JSON.parse(registryData) : [];
+
+            if (activeAuthMode === 'LOGIN') {
+                const authenticatedUser = users.find(user => user.email.toLowerCase() === emailInput && user.password === passwordInput);
+                if (authenticatedUser) {
+                    showAlert("Access granted. Initializing operational workspace pipeline components...", "success");
+                    sessionUserIdentity = emailInput;
+                    
+                    if(emailInput === MASTER_ADMIN_ID.toLowerCase() || authenticatedUser.role === "Admin") {
+                        sessionAccessLevel = 'admin';
+                    } else {
+                        sessionAccessLevel = 'coworker';
+                    }
+                    
+                    sessionStorage.setItem("RC_ACTIVE_USER_EMAIL", sessionUserIdentity);
+                    sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
+                    
+                    await syncUserTelemetryToSupabase(sessionUserIdentity, "Terminal Matrix Connection established", sessionAccessLevel === 'admin');
+                    setTimeout(() => { executeSystemBootSequence(); }, 800);
+                } else {
+                    showAlert("Authentication declined. Credentials verification returned negative mismatch logs.", "error");
+                }
+            } else if (activeAuthMode === 'REGISTER') {
+                const checkUser = users.find(user => user.email.toLowerCase() === emailInput);
+                if (checkUser) {
+                    showAlert("Account allocation blocked. Target mapping handle identifier already active.", "error");
                     return;
                 }
-                currentSessionUser = session.user;
-                await syncAndFetchUserProfile();
-            } catch (err) {
-                console.error("Auth Engine failure, mounting fallback matrix:", err);
-                configureMockFallbackSession();
+                const newProfile = { email: emailInput, password: passwordInput, clearance: 4, role: "Coworker" };
+                users.push(newProfile);
+                localStorage.setItem('rc_user_registry', JSON.stringify(users));
+                showAlert("Identity profile registered successfully. Switch to Login tab context mode.", "success");
+            } else if (activeAuthMode === 'FORGOT') {
+                const locateUser = users.find(user => user.email.toLowerCase() === emailInput);
+                if (locateUser) {
+                    showAlert(`Account Found. Security Phrase Recovery Payload: [ ${locateUser.password} ]`, "success");
+                } else {
+                    showAlert("Identity string sequence index match returned zero matching entities.", "error");
+                }
             }
         }
 
-        function configureMockFallbackSession() {
-            currentSessionUser = { id: "00000000-0000-0000-0000-000000000000", email: "root_fallback@rc_config.io" };
-            currentSessionProfile = { id: currentSessionUser.id, email: currentSessionUser.email, role: "admin" };
-            
-            ui.userEmailDisplay.innerText = currentSessionUser.email;
-            ui.userRoleDisplay.innerText = "ADMIN INTERFACE ROOT";
-            ui.adminHubPanel.classList.remove('hidden');
-            
-            renderSystemNotice("Authenticated via Local Fallback Superuser matrix.", "success");
-            
-            // Execute fallback live sync pipelines
-            fetchAndUpdateCoworkerRoster();
-            bindRealtimeDataPipelines();
-        }
-
-        async function syncAndFetchUserProfile() {
-            ui.userEmailDisplay.innerText = currentSessionUser.email;
-            
-            // Fetch configuration profile data directly reflecting from Supabase
-            let { data: profile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', currentSessionUser.id)
-                .single();
-
-            if (error && error.code === 'PGRST116') {
-                // Instantiation rule to auto-create missing records directly on Supabase
-                const { data: newProfile, error: createErr } = await supabase
-                    .from('profiles')
-                    .insert([{ id: currentSessionUser.id, email: currentSessionUser.email, role: 'coworker', status: 'active' }])
-                    .select()
-                    .single();
-                
-                if (createErr) console.error("Error generating database entry profile:", createErr);
-                profile = newProfile;
-            }
-
-            currentSessionProfile = profile;
-            ui.userRoleDisplay.innerText = profile ? profile.role : 'COWORKER';
-
-            if (profile && profile.role === 'admin') {
-                ui.adminHubPanel.classList.remove('hidden');
-            } else {
-                ui.adminHubPanel.classList.add('hidden');
-            }
-
-            fetchAndUpdateCoworkerRoster();
-            bindRealtimeDataPipelines();
-        }
-
-        // --- REFRESH COWORKER ACCESS DIRECTORIES & SUPABASE REFLECTION ---
-        async function fetchAndUpdateCoworkerRoster() {
+        async function syncUserTelemetryToUpsert(email, activeWorksheet, isAdminFlag) {
             try {
-                const { data: users, error } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .order('email', { ascending: true });
+                const d = new Date();
+                const dateStr = d.toISOString().split('T')[0];
+                const timeStr = d.toTimeString().split(' ')[0];
 
-                if (error) throw error;
-                globalUsersCache = users || [];
-                ui.userCountBadge.innerText = `${globalUsersCache.length} Node(s) Registered`;
-                
-                renderRosterTableUI(globalUsersCache);
-            } catch (err) {
-                console.error("Failed to sync structural coworker database profile matrix:", err);
-                // Mount high-fidelity dummy metrics fallback architecture for verification
-                globalUsersCache = [
-                    { id: "usr-7412", email: "john_lead@rc_config.io", role: "coworker", status: "active" },
-                    { id: "usr-9631", email: "stella_eval@rc_config.io", role: "coworker", status: "waitlist" },
-                    { id: "usr-1489", email: "henry_ops@rc_config.io", role: "admin", status: "active" },
-                    { id: "usr-5241", email: "antony_dev@rc_config.io", role: "coworker", status: "active" }
-                ];
-                ui.userCountBadge.innerText = `${globalUsersCache.length} Nodes (Local Cache Mode)`;
-                renderRosterTableUI(globalUsersCache);
+                await _supabase.from('coworker_analytics').upsert({
+                    email: email,
+                    day_signed_in: dateStr,
+                    login_time: timeStr,
+                    edit_on_server: new Date().toISOString(),
+                    worksheet_working_on: activeWorksheet,
+                    is_admin: isAdminFlag
+                }, { onConflict: 'email' });
+            } catch(err) {
+                console.error("Supabase Upstream Analytics Sync Failed: ", err);
             }
         }
 
-        // --- DRAW INTERACTIVE COWORKER DIRECTORY ROWS WITH INDIVIDUAL CLIPS & ACTION TRIGGERS ---
-        function renderRosterTableUI(users) {
-            ui.coworkerRosterTableBody.innerHTML = '';
-            
-            users.forEach(user => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-inputBg/60 transition-colors border-b border-inputBorder/30 group cursor-pointer";
-                
-                // Triggers structural full-screen modal invocation when row cells are selected
-                tr.addEventListener('click', (e) => {
-                    if (e.target.closest('.stop-propagation')) return;
-                    invokeStaffManagementControlModal(user);
-                });
+        async function syncUserTelemetryToSupabase(email, activeWorksheet, isAdminFlag) {
+            await syncUserTelemetryToUpsert(email, activeWorksheet, isAdminFlag);
+        }
 
-                tr.innerHTML = `
-                    <td class="p-3">
-                        <div class="flex flex-col">
-                            <span class="text-xs font-bold text-gray-200">${user.email}</span>
-                            <span class="text-[10px] text-gray-500 font-mono tracking-tighter flex items-center gap-1 mt-0.5">
-                                ID: <span class="text-brandPurple select-all">${user.id}</span>
+        function startSupabaseTelemetrySyncPipeline() {
+            setInterval(async () => {
+                if (!sessionUserIdentity) return;
+                
+                const currentRole = getEffectiveAccessLevel() === 'admin';
+                const activeLabel = document.getElementById('workspaceActiveTitleBadge').innerText;
+                await syncUserTelemetryToUpsert(sessionUserIdentity, activeLabel, currentRole);
+                
+                // Only load and compile telemetry data if user is explicitly the Master Admin
+                if(sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
+                    const { data, error } = await _supabase.from('coworker_analytics').select('*').order('edit_on_server', { ascending: false });
+                    if(!error && data) {
+                        const container = document.getElementById('supabaseTelemRowsContainer');
+                        container.innerHTML = "";
+                        data.forEach(row => {
+                            const rowEl = document.createElement('div');
+                            rowEl.className = "bg-zinc-900 p-2 rounded border border-zinc-800 space-y-0.5 relative";
+                            
+                            let actionButtons = `
+                                <div class="flex gap-1 mt-1">
+                                    <button onclick="cloudDelegateRole('${row.email}', true)" class="bg-amber-600 text-black px-1 rounded text-[9px] font-bold">Admin</button>
+                                    <button onclick="cloudDelegateRole('${row.email}', false)" class="bg-zinc-700 text-white px-1 rounded text-[9px] font-bold">Worker</button>
+                                </div>
+                            `;
+
+                            rowEl.innerHTML = `
+                                <div class="flex justify-between font-bold text-zinc-300">
+                                    <span class="truncate max-w-[140px]">${row.email}</span>
+                                    <span class="${row.is_admin ? 'text-amber-400':'text-blue-400'}">[${row.is_admin ? 'ADMIN':'WORKER'}]</span>
+                                </div>
+                                <div>Date: ${row.day_signed_in} | Time: ${row.login_time}</div>
+                                <div class="text-[9px] text-zinc-500 italic truncate">Working: ${row.worksheet_working_on || 'None'}</div>
+                                <div class="text-[8px] text-purple-400">Server Sync: ${new Date(row.edit_on_server).toLocaleTimeString()}</div>
+                                ${actionButtons}
+                            `;
+                            container.appendChild(rowEl);
+                        });
+                    }
+                }
+
+                pullAssignedTasksFromCloud();
+            }, 4500);
+        }
+
+        // Live Realtime Synchronization Channel for Multi-User Dashboard Video Synchronization
+        async function listenForGlobalCloudVideoRealtimeUpdates() {
+            // Initial snapshot retrieval
+            await fetchCloudVideosSnapshot();
+
+            _supabase
+                .channel('schema-db-changes')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'global_videos' },
+                    async (payload) => {
+                        console.log('Realtime database change payload received:', payload);
+                        await fetchCloudVideosSnapshot();
+                        rebuildVideoThreadsListQueueUI();
+                        
+                        if(payload.eventType === 'INSERT') {
+                            showAlert(`New Video Published Live: "${payload.new.title}". Reflected across all client terminals.`, "success");
+                        } else if(payload.eventType === 'DELETE') {
+                            showAlert("A video thread was deleted by an administrator. Dashboard UI synchronized.", "error");
+                            if(currentActiveVideoThreadId === payload.old.id) {
+                                currentActiveVideoThreadId = "";
+                                document.getElementById('dashboardVideoPlayer').src = "";
+                                document.getElementById('studioVideoPlayer').src = "";
+                            }
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
+        async function fetchCloudVideosSnapshot() {
+            const { data, error } = await _supabase.from('global_videos').select('*').order('created_at', { ascending: false });
+            if(!error && data) {
+                cloudVideosCacheList = data;
+            }
+        }
+
+        async function cloudDelegateRole(email, targetAdminState) {
+            const registryData = localStorage.getItem('rc_user_registry');
+            if(registryData) {
+                let users = JSON.parse(registryData);
+                let uIdx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+                if(uIdx !== -1) {
+                    users[uIdx].role = targetAdminState ? "Admin" : "Coworker";
+                    localStorage.setItem('rc_user_registry', JSON.stringify(users));
+                }
+            }
+            await _supabase.from('coworker_analytics').update({ is_admin: targetAdminState, edit_on_server: new Date().toISOString() }).eq('email', email);
+            showAlert(`Privileges successfully recalculated for user target profile: ${email}`, "success");
+        }
+
+        async function pullAssignedTasksFromCloud() {
+            if(!sessionUserIdentity) return;
+            const { data, error } = await _supabase.from('task_assignments').select('*').eq('coworker_email', sessionUserIdentity.toLowerCase());
+            const hub = document.getElementById('coworkerTaskAssignmentHub');
+            const listOut = document.getElementById('assignedTasksListOutput');
+            
+            if(!error && data && data.length > 0) {
+                hub.classList.remove('hidden');
+                listOut.innerHTML = "";
+                data.forEach(task => {
+                    const tEl = document.createElement('div');
+                    tEl.className = "flex justify-between items-center bg-black/40 p-1 rounded border border-indigo-900 mb-1";
+                    tEl.innerHTML = `
+                        <span class="text-emerald-400 font-bold truncate cursor-pointer" onclick="bindDirectCloudSheetTask('${task.sheet_url}', '${task.sheet_title}')">▶ ${task.sheet_title}</span>
+                        <span class="text-zinc-500 text-[9px]">By: ${task.assigned_by}</span>
+                    `;
+                    listOut.appendChild(tEl);
+                });
+            }
+        }
+
+        function bindDirectCloudSheetTask(url, title) {
+            const iframe = document.getElementById('liveWorkspaceSandboxIframe');
+            const fallback = document.getElementById('iframePlaceholderFallbackState');
+            const titleBadge = document.getElementById('workspaceActiveTitleBadge');
+            
+            fallback.classList.add('hidden');
+            iframe.classList.remove('hidden');
+            iframe.src = url;
+            titleBadge.innerText = title + " (LIVE ASSIGNED TASK)";
+            document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = url;
+            showAlert(`Loading live assigned work track frame layout target matrix instances: ${title}`, "success");
+        }
+
+        function dismissTaskAssignmentHubView() {
+            document.getElementById('coworkerTaskAssignmentHub').classList.add('hidden');
+        }
+
+        function getEffectiveAccessLevel() {
+            if (simulatedAccessLevel !== null) {
+                return simulatedAccessLevel;
+            }
+            return sessionAccessLevel;
+        }
+
+        function toggleAdminRoleContextView() {
+            if(sessionAccessLevel !== 'admin') return;
+            
+            if(simulatedAccessLevel === null || simulatedAccessLevel === 'admin') {
+                simulatedAccessLevel = 'coworker';
+                showAlert("Account scope visual display swapped to COWORKER visibility mode on fly.", "success");
+            } else {
+                simulatedAccessLevel = 'admin';
+                showAlert("Account scope visual display returned to ADMIN authorization mode context.", "success");
+            }
+            renderInterfaceBasedOnPrivilegeRoles();
+        }
+
+        function setWorkspaceEmbedVisibility(shouldShow) {
+            const container = document.getElementById('liveWorkspaceSandboxWrapper');
+            if (shouldShow) {
+                container.classList.remove('hidden');
+                showAlert("Embedded Sandbox workspace canvas stack layer visibility active.", "success");
+            } else {
+                container.classList.add('hidden');
+                showAlert("Embedded Sandbox layer concealed. Multi-select worksheet stack maps remain bound.", "success");
+            }
+        }
+
+        function executeSystemBootSequence() {
+            document.getElementById('authGatewayPortal').classList.add('hidden');
+            document.getElementById('dynamicViewRouter').classList.remove('hidden');
+            document.getElementById('userEmailSessionDisplay').innerText = sessionUserIdentity.toUpperCase();
+            
+            if(sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase() || sessionAccessLevel === 'admin') {
+                document.getElementById('adminRoleSwapToggleBtn').classList.remove('hidden');
+            }
+
+            renderInterfaceBasedOnPrivilegeRoles();
+            rebuildWorkspaceSheetDisplayGrid();
+            rebuildVideoThreadsListQueueUI();
+            rebuildModulesListUI();
+            rebuildDeepLinkHistoryLogsUI();
+            setupGlobalVideoKeyboardStudioShortcuts();
+            checkUrlParametersForDeepLinkNavigation();
+        }
+
+        function renderInterfaceBasedOnPrivilegeRoles() {
+            const currentEffectiveRole = getEffectiveAccessLevel();
+            const adminBadge = document.getElementById('adminBadge');
+            const videoUploadBlock = document.getElementById('adminVideoUploadSection');
+            const addSheetBtn = document.getElementById('adminAddSheetBtn');
+            const exportBtn = document.getElementById('adminExportBtn');
+            const moduleUploadBlock = document.getElementById('adminModuleUploadSection');
+            const privilegeBlock = document.getElementById('systemPrivilegeControlBlock');
+            const telemetryBlock = document.getElementById('supabaseTelemetryControlBlock');
+
+            // Explicit Rule: Supabase Telemetry Sync section only reveals on Master Admin's personal terminal page view
+            if(sessionUserIdentity && sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
+                telemetryBlock.classList.remove('hidden');
+            } else {
+                telemetryBlock.classList.add('hidden');
+            }
+
+            if (currentEffectiveRole === 'admin') {
+                adminBadge.innerText = "ADMIN PRIVILEGE ACCESS TERMINAL";
+                adminBadge.className = "bg-purple-950 text-purple-300 text-xs px-2.5 py-1 rounded-full border border-purple-700 font-mono tracking-widest uppercase font-bold animate-pulse";
+                videoUploadBlock.classList.remove('hidden');
+                addSheetBtn.classList.remove('hidden');
+                exportBtn.classList.remove('hidden');
+                moduleUploadBlock.classList.remove('hidden');
+                privilegeBlock.classList.remove('hidden');
+            } else {
+                adminBadge.innerText = "COWORKER ACCESS MODE";
+                adminBadge.className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest uppercase";
+                videoUploadBlock.classList.add('hidden');
+                addSheetBtn.classList.add('hidden');
+                exportBtn.classList.add('hidden');
+                moduleUploadBlock.classList.add('hidden');
+                privilegeBlock.classList.add('hidden');
+            }
+        }
+
+        function rebuildWorkspaceSheetDisplayGrid() {
+            const grid = document.getElementById('sheetsDisplayGrid');
+            grid.innerHTML = "";
+            const sheetsData = localStorage.getItem('RC_SHEETS');
+            const sheets = sheetsData ? JSON.parse(sheetsData) : [];
+
+            sheets.forEach(sheet => {
+                const isAllowed = sheet.allowedEmails.some(email => email.trim().toLowerCase() === sessionUserIdentity.toLowerCase());
+                if (!isAllowed && getEffectiveAccessLevel() !== 'admin') return;
+
+                const isSelected = trackingSelectedSheetIds.includes(sheet.id);
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                    isSelected ? 'bg-zinc-900 border-blue-500 shadow-lg shadow-blue-950/20' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
+                }`;
+                
+                card.onclick = (e) => {
+                    if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+                    toggleWorkspaceSheetSelectionMap(sheet.id);
+                };
+
+                let adminAssignmentControl = "";
+                if(getEffectiveAccessLevel() === 'admin') {
+                    adminAssignmentControl = `
+                        <div class="mt-2 pt-2 border-t border-zinc-800 flex flex-col gap-2">
+                            <div class="flex items-center justify-between gap-1">
+                                <input type="email" id="assignEmail_${sheet.id}" placeholder="coworker email" class="bg-black border border-zinc-700 text-[10px] p-1 rounded w-full text-white focus:outline-none">
+                                <button onclick="dispatchTaskToCoworkerCloud('${sheet.id}', '${sheet.title}', '${sheet.url}')" class="bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-bold px-1.5 py-1 rounded uppercase">Assign</button>
+                            </div>
+                            <button onclick="purgeWorksheetAssetCard('${sheet.id}')" class="w-full bg-red-950/40 border border-red-900/60 hover:bg-red-900 text-red-400 hover:text-white text-[9px] font-mono py-1 rounded uppercase transition">
+                                🗑️ Delete Worksheet Card
+                            </button>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-bold uppercase tracking-tight text-zinc-200 block">${sheet.title}</span>
+                            <span class="text-[9px] font-mono ${isSelected ? 'text-blue-400 font-bold' : 'text-zinc-500'}">
+                                ${isSelected ? '● BOUND ACTIVE' : '○ AVAILABLE'}
                             </span>
                         </div>
-                    </td>
-                    <td class="p-3">
-                        <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase border ${
-                            user.role === 'admin' ? 'bg-purple-950/40 text-purple-400 border-purple-900/60' : 'bg-zinc-900 text-zinc-400 border-zinc-800'
-                        }">
-                            ${user.role}
-                        </span>
-                        <span class="ml-1 px-1.5 py-0.5 rounded text-[9px] font-mono border ${
-                            user.status === 'active' ? 'bg-emerald-950/20 text-emerald-400 border-emerald-900/30' : 
-                            user.status === 'waitlist' ? 'bg-amber-950/20 text-amber-400 border-amber-900/30' : 'bg-red-950/20 text-red-400 border-red-900/30'
-                        }">
-                            ${user.status || 'active'}
-                        </span>
-                    </td>
-                    <td class="p-3 text-center stop-propagation">
-                        <div class="flex items-center justify-center gap-1.5">
-                            <button onclick="copyUserDataRowToClipboard('${user.id}')" title="Copy Target ID Reference Record" class="bg-inputBg hover:bg-inputBorder border border-inputBorder text-[10px] px-2 py-1 rounded transition-all text-gray-400 hover:text-white font-mono">ID</button>
-                            <button onclick="copyUserDataRowToClipboard('ALL')" title="Copy Entire Roster Dump" class="bg-inputBg hover:bg-inputBorder border border-inputBorder text-[10px] px-2 py-1 rounded transition-all text-gray-400 hover:text-white font-mono">ALL</button>
-                            ${user.role !== 'admin' ? `
-                                <button onclick="grantAdminPrivilegeDirect('${user.id}')" title="Grant Full Administrator Authority" class="bg-brandPurple/20 hover:bg-brandPurple text-brandPurpleHover hover:text-white border border-brandPurple/40 text-[10px] font-bold px-2 py-1 rounded transition-all">
-                                    + Admin Access
-                                </button>
-                            ` : `<span class="text-[9px] text-gray-600 font-mono italic">Has Authority</span>`}
+                        <p class="text-[10px] text-zinc-500 font-mono truncate mb-2">${sheet.url}</p>
+                    </div>
+                    <div>
+                        <div class="flex gap-1.5 mt-2">
+                            <button onclick="launchFullScreenWorksheetArena('${sheet.url}', '${sheet.title}')" class="flex-1 bg-zinc-900 text-zinc-300 border border-zinc-700 text-[10px] font-bold uppercase py-1 rounded hover:bg-zinc-800 transition">Arena view</button>
+                            <button onclick="bindSingleSheetToLiveEmbedViewport('${sheet.url}', '${sheet.title}')" class="flex-1 bg-zinc-100 text-black text-[10px] font-bold uppercase py-1 rounded hover:bg-white transition">Embed load</button>
                         </div>
-                    </td>
+                        ${adminAssignmentControl}
+                    </div>
                 `;
-                ui.coworkerRosterTableBody.appendChild(tr);
+                grid.appendChild(card);
             });
         }
 
-        // --- UNIQUE ID AND GLOBAL ROSTER CLIPBOARD TRANSLATION LAYER ---
-        window.copyUserDataRowToClipboard = function(targetMode) {
-            let clipboardPayloadString = "";
-            
-            if (targetMode === 'ALL') {
-                clipboardPayloadString = JSON.stringify(globalUsersCache, null, 2);
-                renderSystemNotice("Copied full structured network roster metadata string to clipboard.", "success");
+        function purgeWorksheetAssetCard(sheetId) {
+            if(!confirm("Confirm permanent removal of this target worksheet tracking registry entry card?")) return;
+            const sheetsData = localStorage.getItem('RC_SHEETS');
+            if(sheetsData) {
+                let sheets = JSON.parse(sheetsData);
+                sheets = sheets.filter(s => s.id !== sheetId);
+                localStorage.setItem('RC_SHEETS', JSON.stringify(sheets));
+                
+                // Untrack if selected
+                trackingSelectedSheetIds = trackingSelectedSheetIds.filter(id => id !== sheetId);
+                
+                rebuildWorkspaceSheetDisplayGrid();
+                showAlert("Worksheet asset card successfully deleted from registry repository store.", "success");
+            }
+        }
+
+        async function dispatchTaskToCoworkerCloud(sheetId, title, url) {
+            const emailInput = document.getElementById(`assignEmail_${sheetId}`).value.trim().toLowerCase();
+            if(!emailInput) {
+                showAlert("Please inputs a valid coworker identifier address context string.", "error");
+                return;
+            }
+            const { error } = await _supabase.from('task_assignments').insert({
+                sheet_id: sheetId,
+                sheet_title: title,
+                sheet_url: url,
+                coworker_email: emailInput,
+                assigned_by: sessionUserIdentity
+            });
+            if(!error) {
+                showAlert(`Task instances assigned dynamically to coworker ${emailInput}. Appeared live in their dashboard.`, "success");
+                document.getElementById(`assignEmail_${sheetId}`).value = "";
             } else {
-                const targetMatch = globalUsersCache.find(u => u.id === targetMode);
-                if (targetMatch) {
-                    clipboardPayloadString = `ID: ${targetMatch.id} | Email: ${targetMatch.email} | Role: ${targetMatch.role} | Status: ${targetMatch.status || 'active'}`;
-                    renderSystemNotice(`Copied target workspace hash [${targetMode}] successfully.`, "success");
-                }
-            }
-            
-            if (clipboardPayloadString) {
-                navigator.clipboard.writeText(clipboardPayloadString).catch(err => {
-                    console.error("Critical Clipboard execution restriction detected:", err);
-                });
-            }
-        };
-
-        // --- ACTION: ELEVATE COWORKER LIVE SYSTEM ACCESS AUTHORITY ---
-        window.grantAdminPrivilegeDirect = async function(userId) {
-            try {
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .update({ role: 'admin' })
-                    .eq('id', userId)
-                    .select();
-
-                if (error) throw error;
-                
-                renderSystemNotice(`Successfully authorized administrative role privileges to Node: ${userId}`, "success");
-                fetchAndUpdateCoworkerRoster();
-            } catch (err) {
-                console.error("Database access modification failed:", err);
-                // Fallback mutation update logic simulated directly inside runtime memory core
-                const simulatedMatch = globalUsersCache.find(u => u.id === userId);
-                if (simulatedMatch) {
-                    simulatedMatch.role = 'admin';
-                    renderSystemNotice(`[Fallback Mode] Elevated target: ${simulatedMatch.email} to Admin Role.`, "success");
-                    renderRosterTableUI(globalUsersCache);
-                }
-            }
-        };
-
-        // --- ACTION LAYER: EXECUTE STUFF MANAGEMENT MOUNTED MODAL CONTROL OVERRIDES ---
-        function invokeStaffManagementControlModal(userRecord) {
-            selectedRosterUser = userRecord;
-            
-            ui.modalUserEmail.innerText = userRecord.email;
-            ui.modalUserUUID.innerText = `UUID: ${userRecord.id}`;
-            ui.modalUserRole.innerText = userRecord.role.toUpperCase();
-            ui.modalUserState.innerText = (userRecord.status || 'ACTIVE').toUpperCase();
-            
-            // Adjust visual tracking dynamic flags
-            ui.modalUserState.className = `font-bold block mt-1 ${
-                userRecord.status === 'active' || !userRecord.status ? 'text-emerald-400' :
-                userRecord.status === 'waitlist' ? 'text-amber-400' : 'text-red-500'
-            }`;
-
-            ui.staffControlModal.classList.remove('hidden');
-        }
-
-        function closeStaffManagementControlModal() {
-            ui.staffControlModal.classList.add('hidden');
-            selectedRosterUser = null;
-        }
-
-        // --- REALTIME ACTION BLOCK EXECUTORS REFLECTING ON SUPABASE ---
-        async function modifySelectedUserStatusField(newStatusValue) {
-            if (!selectedRosterUser) return;
-            try {
-                const { error } = await supabase
-                    .from('profiles')
-                    .update({ status: newStatusValue })
-                    .eq('id', selectedRosterUser.id);
-
-                if (error) throw error;
-                
-                renderSystemNotice(`User pipeline status configured to: ${newStatusValue.toUpperCase()}`, "success");
-                closeStaffManagementControlModal();
-                fetchAndUpdateCoworkerRoster();
-            } catch (err) {
-                console.error("Supabase engine synchronization failed:", err);
-                // Local state update execution context simulator
-                const matchedUser = globalUsersCache.find(u => u.id === selectedRosterUser.id);
-                if (matchedUser) {
-                    matchedUser.status = newStatusValue;
-                    renderSystemNotice(`[Cache-Only State Override] User updated to ${newStatusValue}`, "success");
-                    renderRosterTableUI(globalUsersCache);
-                }
-                closeStaffManagementControlModal();
+                showAlert("Supabase cloud allocation handshake error layer rejected transmission.", "error");
             }
         }
 
-        async function removeTasksAssignedToSelectedUser() {
-            if (!selectedRosterUser) return;
-            try {
-                // Clear out task tracking rows matching assignment targets
-                const { error } = await supabase
-                    .from('tasks')
-                    .delete()
-                    .eq('assigned_to', selectedRosterUser.id);
+        function toggleWorkspaceSheetSelectionMap(id) {
+            const index = trackingSelectedSheetIds.indexOf(id);
+            if (index > -1) {
+                trackingSelectedSheetIds.splice(index, 1);
+            } else {
+                trackingSelectedSheetIds.push(id);
+            }
+            rebuildWorkspaceSheetDisplayGrid();
+            showAlert("Active matrix stacked sheet target selections recalculated.", "success");
+        }
 
-                if (error) throw error;
+        function bindSingleSheetToLiveEmbedViewport(url, title) {
+            const iframe = document.getElementById('liveWorkspaceSandboxIframe');
+            const fallback = document.getElementById('iframePlaceholderFallbackState');
+            const titleBadge = document.getElementById('workspaceActiveTitleBadge');
 
-                renderSystemNotice(`Purged and deleted all directly assigned tasks tracking rows from Supabase database schema layer.`, "success");
-                closeStaffManagementControlModal();
-            } catch (err) {
-                console.error("Failed to flush server table tasks:", err);
-                renderSystemNotice(`[Local State Execution] Purged task definitions assignment for targeting reference node.`, "success");
-                closeStaffManagementControlModal();
+            fallback.classList.add('hidden');
+            iframe.classList.remove('hidden');
+            iframe.src = url;
+            titleBadge.innerText = title;
+            document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = url;
+            showAlert("Workspace Sandbox channel locked on target resource array pipeline: " + title, "success");
+        }
+
+        function toggleModal(open) {
+            const modal = document.getElementById('sheetCardCreationModal');
+            if (open) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             }
         }
 
-        // --- SUBMIT COMPONENT: ADMIN VIDEO TASK GENERATION TARGET ROUTER ---
-        ui.videoDeploymentForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const targetVideoId = ui.adminVideoId.value.trim();
-            const targetTimeFrame = parseInt(ui.adminTimeFrame.value, 10) || 0;
-            const priorityScopeValue = ui.adminQueuePriority.value;
+        function saveSheetAssetCardEngine() {
+            const title = document.getElementById('modalSheetTitle').value.trim();
+            const url = document.getElementById('modalSheetUrl').value.trim();
+            const emailsText = document.getElementById('modalSheetEmails').value.trim();
 
-            if(!targetVideoId) return;
-
-            try {
-                const taskPayloadRecord = {
-                    video_id: targetVideoId,
-                    time_frame: targetTimeFrame,
-                    priority: priorityScopeValue,
-                    created_at: new Date().toISOString()
-                };
-
-                const { error } = await supabase
-                    .from('tasks')
-                    .insert([taskPayloadRecord]);
-
-                if (error) throw error;
-                
-                renderSystemNotice(`Task target deployment deployed successfully. Sync signals dispatched globally.`, "success");
-                ui.videoDeploymentForm.reset();
-                ui.adminTimeFrame.value = "0";
-            } catch (err) {
-                console.error("Server synchronization error deploying live streaming metadata target payload:", err);
-                
-                // Fallback tracking handler loop insertion context to maintain operational flow
-                simulateFallbackTaskInsertion(targetVideoId, targetTimeFrame, priorityScopeValue);
-                ui.videoDeploymentForm.reset();
-                ui.adminTimeFrame.value = "0";
-            }
-        });
-
-        function simulateFallbackTaskInsertion(vId, tFrame, priority) {
-            const mockTaskNode = {
-                id: `tsk-${Math.floor(Math.random() * 90000) + 10000}`,
-                video_id: vId,
-                time_frame: tFrame,
-                priority: priority,
-                created_at: new Date().toLocaleTimeString()
-            };
-            
-            renderSystemNotice(`[Local Mode Activation] Injected stream target task entry node structure inside client cache stack.`, "success");
-            
-            // Draw simulated task sheet logic onto client tables
-            appendTaskRowToInterfaceSheet(mockTaskNode);
-            appendInteractiveQueueNavigationLinks(mockTaskNode);
-        }
-
-        // --- ACTION: CRITICAL GLOBAL SYNC DESTRUCTION OPERATION ---
-        ui.macroClearTaskSheet.addEventListener('click', async () => {
-            if (!confirm("CRITICAL INTERFACES DESTRUCTIVE ACTION WARNING:\n\nAre you absolutely sure you want to completely delete the entire Task Sheet?\nThis action purges all records from EVERY employee dashboard layout, clearing the active target link configurations and purging all DIRECTLY ASSIGNED LIVE TRACKING TASKS globally.")) return;
-
-            try {
-                // Execute catch-all destructive clear filter query directly to Supabase storage core tables
-                const { error } = await supabase
-                    .from('tasks')
-                    .delete()
-                    .neq('id', '00000000-0000-0000-0000-000000000000'); // Deletes everything valid
-
-                if (error) throw error;
-                
-                renderSystemNotice("Global destruction signaling sequence broadcasted. Database cleared.", "success");
-                clearLocalDashboardTableDisplays();
-            } catch (err) {
-                console.error("Global delete query sequence exception or execution blocks encountered:", err);
-                renderSystemNotice("Task sheet wiped entirely from all dashboards and assigned live tracking views locally.", "error");
-                clearLocalDashboardTableDisplays();
-            }
-        });
-
-        function clearLocalDashboardTableDisplays() {
-            ui.assignedTasksTableBody.innerHTML = `
-                <tr>
-                    <td colspan="4" class="p-4 text-center font-mono text-xs text-red-400 italic bg-red-950/10 border border-red-900/20">
-                        ⚠️ Data Table Completely Cleared - No Live Task Rows Mounted.
-                    </td>
-                </tr>
-            `;
-            ui.activeQueueContainer.innerHTML = `
-                <p class="text-xs font-mono text-gray-500 italic text-center py-4">No real-time video targets active in pipeline...</p>
-            `;
-            ui.taskCountBadge.innerText = "0 Active Loads";
-            
-            // Shut off players safely
-            ui.dashboardVideoPlayer.src = "";
-            ui.dashboardVideoPlayer.classList.add('hidden');
-            ui.videoPlaceholderOverlay.classList.remove('hidden');
-        }
-
-        // --- REALTIME SUBSCRIPTION BINDINGS CONFIGURATION ENGINE ---
-        function bindRealtimeDataPipelines() {
-            try {
-                supabase
-                    .channel('schema-db-live-changes')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
-                        handleRealtimeTaskPayloadMutationEvent(payload);
-                    })
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
-                        fetchAndUpdateCoworkerRoster();
-                    })
-                    .subscribe();
-
-                // Initial fetch loop to align table arrays on load
-                initialFetchSynchronizationTaskSequence();
-            } catch (e) {
-                console.warn("Realtime listener synchronization disabled. Running static matrix tracking state.");
-            }
-        }
-
-        async function initialFetchSynchronizationTaskSequence() {
-            try {
-                const { data: activeTasks, error } = await supabase
-                    .from('tasks')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-                
-                ui.assignedTasksTableBody.innerHTML = '';
-                ui.activeQueueContainer.innerHTML = '';
-                
-                if (activeTasks && activeTasks.length > 0) {
-                    ui.taskCountBadge.innerText = `${activeTasks.length} Active Loads`;
-                    activeTasks.forEach(task => {
-                        appendTaskRowToInterfaceSheet(task);
-                        appendInteractiveQueueNavigationLinks(task);
-                    });
-                } else {
-                    clearLocalDashboardTableDisplays();
-                }
-            } catch (err) {
-                console.warn("Static storage setup complete. Listening for user configurations interface inputs.");
-            }
-        }
-
-        function handleRealtimeTaskPayloadMutationEvent(payload) {
-            console.log("Realtime notification packet mutation caught:", payload);
-            
-            // Universal structural clear command check on structural drops or global tables reset operations
-            if (payload.eventType === 'DELETE' && !payload.old.id) {
-                clearLocalDashboardTableDisplays();
+            if (!title || !url) {
+                showAlert("Missing parameters. Verify work card identification labels map headers.", "error");
                 return;
             }
 
-            // Standard refresh loop sequences
-            initialFetchSynchronizationTaskSequence();
-        }
-
-        // --- DRAW TASK ROWS INSIDE THE ASSIGNED SHEET ---
-        function appendTaskRowToInterfaceSheet(taskRecord) {
-            const tr = document.createElement('tr');
-            tr.className = "hover:bg-inputBg/40 transition-colors border-b border-inputBorder/20";
-            tr.id = `task-row-${taskRecord.id}`;
-
-            const displayTime = taskRecord.created_at ? taskRecord.created_at.toString().substring(11, 19) : "LIVE_NOW";
-
-            tr.innerHTML = `
-                <td class="p-3 font-mono text-gray-400 select-all font-semibold">
-                    ${taskRecord.id || 'DATA-HASH-REF'} <span class="text-brandPurple text-[10px] block font-normal">v_id: ${taskRecord.video_id}</span>
-                </td>
-                <td class="p-3">
-                    <span class="px-2 py-0.5 rounded text-[9px] font-bold ${
-                        taskRecord.priority === 'CRITICAL_ALPHA' ? 'bg-red-950/60 text-red-400 border border-red-900/50' :
-                        taskRecord.priority === 'HIGH_PRODUCTION' ? 'bg-amber-950/60 text-amber-400 border border-amber-900/50' :
-                        'bg-zinc-900 text-zinc-400 border border-zinc-800'
-                    }">
-                        ${taskRecord.priority || 'STANDARD_EVAL'}
-                    </span>
-                </td>
-                <td class="p-3 text-gray-500 font-mono text-[11px]">
-                    Mounted @ ${taskRecord.time_frame || 0}s<br><span class="text-[9px] text-gray-600">${displayTime}</span>
-                </td>
-                <td class="p-3 text-right">
-                    <button onclick="loadActiveVideoThreadToPlayer('${taskRecord.video_id}', ${taskRecord.time_frame || 0})" class="bg-inputBg hover:bg-brandPurple border border-inputBorder hover:border-brandPurple text-[11px] font-semibold font-mono px-3 py-1.5 rounded-lg text-gray-300 hover:text-white transition-all">
-                        Mount Stream Link ⚡
-                    </button>
-                </td>
-            `;
-
-            // Remove empty notice placeholders if they exist
-            const emptyRowPlaceholder = ui.assignedTasksTableBody.querySelector('td[colspan]');
-            if (emptyRowPlaceholder) ui.assignedTasksTableBody.innerHTML = '';
-
-            ui.assignedTasksTableBody.appendChild(tr);
-        }
-
-        // --- INJECT DEPLOYED DYNAMIC CLICKABLE LINKS BROADCASTED ACROSS ALL COWORKER DASHBOARDS ---
-        function appendInteractiveQueueNavigationLinks(taskRecord) {
-            const noTargetsPlaceholder = ui.activeQueueContainer.querySelector('p.italic');
-            if (noTargetsPlaceholder) ui.activeQueueContainer.innerHTML = '';
-
-            const linkButton = document.createElement('button');
-            linkButton.className = "w-full text-left bg-inputBg hover:bg-inputBorder border border-inputBorder hover:border-brandPurple/60 px-4 py-3 rounded-xl flex items-center justify-between transition-all group duration-200 animate-slide-in";
-            
-            // Interactive listener route targeting workspace parameters directly
-            linkButton.onclick = () => {
-                loadActiveVideoThreadToPlayer(taskRecord.video_id, taskRecord.time_frame || 0);
-                renderSystemNotice(`Mounted stream context thread: ${taskRecord.video_id} directly inside operational viewer block.`, "success");
-            };
-
-            linkButton.innerHTML = `
-                <div class="flex items-center gap-2.5">
-                    <span class="h-2 w-2 rounded-full bg-brandPurple group-hover:scale-125 transition-transform"></span>
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold text-gray-200 font-mono tracking-tight group-hover:text-brandPurpleHover transition-colors">Target Workspace Thread: ${taskRecord.video_id}</span>
-                        <span class="text-[10px] text-gray-500 font-mono">Priority Scope Parameters: <span class="text-gray-400 font-semibold">${taskRecord.priority || 'STANDARD'}</span></span>
-                    </div>
-                </div>
-                <div class="text-right font-mono text-[10px] text-brandPurple bg-brandPurple/5 border border-brandPurple/10 px-2 py-1 rounded">
-                    Frame T: ${taskRecord.time_frame || 0}s ↗
-                </div>
-            `;
-
-            ui.activeQueueContainer.appendChild(linkButton);
-        }
-
-        // --- PLAYER CORE WORKSPACE RE-MOUNTING TRANSITION PIPELINES ---
-        window.loadActiveVideoThreadToPlayer = function(videoId, targetSeconds = 0) {
-            if(!videoId) return;
-
-            // Strip full link protocols cleanly if employees copy paste complete raw watch strings
-            if(videoId.includes("youtube.com/watch?v=")) {
-                const urlParams = new URLSearchParams(new URL(videoId).search);
-                videoId = urlParams.get("v") || videoId;
-            } else if(videoId.includes("youtu.be/")) {
-                videoId = videoId.split("youtu.be/")[1]?.split("?")[0] || videoId;
+            let emailArray = emailsText.split(',').map(e => e.trim().toLowerCase()).filter(e => e.length > 0);
+            if(!emailArray.includes(sessionUserIdentity.toLowerCase())) {
+                emailArray.push(sessionUserIdentity.toLowerCase());
             }
 
-            ui.videoPlaceholderOverlay.classList.add('hidden');
-            ui.dashboardVideoPlayer.classList.remove('hidden');
-            
-            // Build absolute clean target embedded streaming player pipeline structure URL parameter string
-            ui.dashboardVideoPlayer.src = `https://www.youtube.com/embed/${videoId}?start=${targetSeconds}&autoplay=1&enablejsapi=1&rel=0`;
-        };
+            const sheetsData = localStorage.getItem('RC_SHEETS');
+            let sheets = sheetsData ? JSON.parse(sheetsData) : [];
 
-        // --- DEEP LINK INTERFACE DEPLOYMENT DECODING MATRIX ---
+            const newSheet = {
+                id: "sheet_" + Date.now(),
+                title: title,
+                url: url,
+                allowedEmails: emailArray
+            };
+
+            sheets.push(newSheet);
+            localStorage.setItem('RC_SHEETS', JSON.stringify(sheets));
+            
+            toggleModal(false);
+            rebuildWorkspaceSheetDisplayGrid();
+            showAlert("New R.C target sheet access layout metadata successfully written down.", "success");
+            
+            document.getElementById('modalSheetTitle').value = "";
+            document.getElementById('modalSheetUrl').value = "";
+            document.getElementById('modalSheetEmails').value = "";
+        }
+
+        function delegateUserAccessRole(targetRole) {
+            const targetEmail = document.getElementById('privilegeTargetEmail').value.trim().toLowerCase();
+            if (!targetEmail) {
+                showAlert("Verify target accounts authorization string fields.", "error");
+                return;
+            }
+
+            const registryData = localStorage.getItem('rc_user_registry');
+            let users = registryData ? JSON.parse(registryData) : [];
+
+            let matchIndex = users.findIndex(user => user.email.toLowerCase() === targetEmail);
+            if (matchIndex > -1) {
+                users[matchIndex].role = targetRole;
+                localStorage.setItem('rc_user_registry', JSON.stringify(users));
+                showAlert(`Privilege modified. User profile ${targetEmail} access level rewritten to: ${targetRole}`, "success");
+                document.getElementById('privilegeTargetEmail').value = "";
+                renderInterfaceBasedOnPrivilegeRoles();
+            } else {
+                showAlert("No registered local configuration handles matched target string.", "error");
+            }
+        }
+
+        function processVideoUploadEngine() {
+            const title = document.getElementById('videoThreadTitleInput').value.trim();
+            const fileInput = document.getElementById('videoFileInput');
+            const file = fileInput.files[0];
+
+            if (!title || !file) {
+                showAlert("Thread designation missing valid description metadata arrays.", "error");
+                return;
+            }
+
+            const videoId = "video_" + Date.now();
+            const transaction = dbInstance.transaction(["blobs", "video_threads"], "readwrite");
+            
+            const blobStore = transaction.objectStore("blobs");
+            const metaStore = transaction.objectStore("video_threads");
+
+            blobStore.put({ id: videoId, data: file });
+            metaStore.put({ id: videoId, title: title, timestamp: new Date().toISOString() });
+
+            transaction.oncomplete = async function() {
+                // Instantly upload metadata details to public Supabase, triggering real-time sync everywhere
+                await _supabase.from('global_videos').insert({ id: videoId, title: title });
+
+                document.getElementById('videoThreadTitleInput').value = "";
+                fileInput.value = "";
+                await fetchCloudVideosSnapshot();
+                rebuildVideoThreadsListQueueUI();
+            };
+
+            transaction.onerror = function(e) {
+                showAlert("Critical IndexedDB thread lock overflow on processing stream mapping arrays.", "error");
+            };
+        }
+
+        function rebuildVideoThreadsListQueueUI() {
+            const container = document.getElementById('videoThreadLinksContainer');
+            container.innerHTML = "";
+
+            // Use the combined cloud realtime-synced list array context mapping to build rows layout
+            if(cloudVideosCacheList.length === 0) {
+                container.innerHTML = `<p class="text-[11px] text-zinc-600 italic">No global video streams published.</p>`;
+                return;
+            }
+
+            cloudVideosCacheList.forEach(row => {
+                const isActive = currentActiveVideoThreadId === row.id;
+                const threadRow = document.createElement('div');
+                threadRow.className = `p-2 rounded border flex flex-col gap-1 transition ${
+                    isActive ? 'active-thread-highlight border-purple-500' : 'bg-zinc-950 border-zinc-900 hover:border-zinc-800'
+                }`;
+
+                let deleteBtnHtml = "";
+                if(getEffectiveAccessLevel() === 'admin') {
+                    deleteBtnHtml = `
+                        <button onclick="purgeVideoThreadEngine('${row.id}')" class="text-red-400 hover:text-red-300 text-[10px] ml-1 font-mono uppercase bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded transition">
+                            Delete
+                        </button>
+                    `;
+                }
+
+                threadRow.innerHTML = `
+                    <div class="flex justify-between items-center w-full">
+                        <span class="truncate font-bold tracking-tight text-zinc-300 block cursor-pointer flex-1 text-xs" onclick="loadActiveVideoThreadToPlayer('${row.id}')">
+                            📹 ${row.title}
+                        </span>
+                        ${deleteBtnHtml}
+                    </div>
+                `;
+                container.appendChild(threadRow);
+            });
+        }
+
+        async function purgeVideoThreadEngine(id) {
+            if(!confirm("Purge video stream permanently across all synchronized teammate dashboards?")) return;
+            
+            if(dbInstance) {
+                const tx = dbInstance.transaction(["blobs", "video_threads"], "readwrite");
+                tx.objectStore("blobs").delete(id);
+                tx.objectStore("video_threads").delete(id);
+            }
+            
+            // Delete record in cloud table to broadcast real-time deletions to everyone
+            await _supabase.from('global_videos').delete().eq('id', id);
+        }
+
+        function loadActiveVideoThreadToPlayer(id) {
+            currentActiveVideoThreadId = id;
+            rebuildVideoThreadsListQueueUI();
+
+            if (!dbInstance) {
+                showAlert("Local asset lookup skipped. Awaiting file caching sequence structure maps.", "error");
+                return;
+            }
+
+            const tx = dbInstance.transaction("blobs", "readonly");
+            const store = tx.objectStore("blobs");
+            const getReq = store.get(id);
+
+            getReq.onsuccess = function() {
+                if (getReq.result) {
+                    const videoUrl = URL.createObjectURL(getReq.result.data);
+                    document.getElementById('dashboardVideoPlayer').src = videoUrl;
+                    document.getElementById('studioVideoPlayer').src = videoUrl;
+                    showAlert(`Operational visual video stream bound correctly: ID node [ ${id} ]`, "success");
+                    
+                    const historyContainer = document.getElementById('deepLinkContainerHistory');
+                    const entry = document.createElement('div');
+                    entry.className = "p-1.5 bg-zinc-950 border border-zinc-900 rounded flex justify-between text-[11px] font-mono text-zinc-400";
+                    entry.innerHTML = `<span>Run: ${id}</span> <span class="text-purple-400 font-bold">READY</span>`;
+                    historyContainer.prepend(entry);
+                } else {
+                    showAlert("Video stream file binary data not indexed locally on this device.", "error");
+                }
+            };
+        }
+
+        function processModuleUploadEngine() {
+            const title = document.getElementById('moduleTitleInput').value.trim();
+            const fileInput = document.getElementById('moduleFileInput');
+            const file = fileInput.files[0];
+
+            if (!title || !file) {
+                showAlert("Provide description metrics parameters for system module mapping.", "error");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                const metadataString = localStorage.getItem('RC_MODULES_METADATA');
+                let modules = metadataString ? JSON.parse(metadataString) : [];
+
+                const newModule = {
+                    id: "mod_" + Date.now(),
+                    title: title,
+                    fileName: file.name,
+                    payload: dataUrl,
+                    timestamp: new Date().toLocaleDateString()
+                };
+
+                modules.push(newModule);
+                localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(modules));
+
+                showAlert("Asset module compiled and attached to operational learning array registers.", "success");
+                document.getElementById('moduleTitleInput').value = "";
+                fileInput.value = "";
+                rebuildModulesListUI();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function rebuildModulesListUI() {
+            const container = document.getElementById('modulesListOutput');
+            container.innerHTML = "";
+            const metadataString = localStorage.getItem('RC_MODULES_METADATA');
+            const modules = metadataString ? JSON.parse(metadataString) : [];
+
+            if(modules.length === 0) {
+                container.innerHTML = `<p class="text-[11px] text-zinc-600 font-mono italic">No learning modules bound yet.</p>`;
+                return;
+            }
+
+            modules.forEach(mod => {
+                const row = document.createElement('div');
+                row.className = "p-2.5 bg-zinc-950 border border-zinc-800 rounded-lg flex justify-between items-center hover:border-zinc-700 transition";
+                row.innerHTML = `
+                    <div class="truncate pr-2 flex-1">
+                        <span class="text-xs font-bold text-zinc-300 block truncate">${mod.title}</span>
+                        <span class="text-[10px] text-zinc-500 font-mono block">${mod.timestamp} | ${mod.fileName}</span>
+                    </div>
+                    <button onclick="launchStandaloneModuleReader('${mod.id}')" class="bg-purple-950 hover:bg-purple-900 text-purple-300 text-[10px] px-2.5 py-1 rounded font-mono font-bold uppercase border border-purple-800/40">Read</button>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function launchStandaloneModuleReader(id) {
+            const metadataString = localStorage.getItem('RC_MODULES_METADATA');
+            const modules = metadataString ? JSON.parse(metadataString) : [];
+            const target = modules.find(m => m.id === id);
+
+            if(target) {
+                document.getElementById('mainDashboardView').classList.add('hidden');
+                document.getElementById('standaloneModuleReaderView').classList.remove('hidden');
+                document.getElementById('standaloneModuleHeaderTitle').innerText = target.title;
+                
+                const trigger = document.getElementById('standaloneModuleDownloadTrigger');
+                trigger.href = target.payload;
+                trigger.download = target.fileName;
+                showAlert(`Initialized isolation sandbox viewer module context for asset node: ${target.title}`, "success");
+            }
+        }
+
+        function exitStandaloneModuleView() {
+            document.getElementById('standaloneModuleReaderView').classList.add('hidden');
+            document.getElementById('mainDashboardView').classList.remove('hidden');
+        }
+
+        function launchFullScreenWorksheetArena(url, title) {
+            document.getElementById('mainDashboardView').classList.add('hidden');
+            document.getElementById('fullScreenWorksheetArenaView').classList.remove('hidden');
+            document.getElementById('arenaActiveSheetTitle').innerText = title;
+            document.getElementById('arenaFullScreenIframe').src = url;
+        }
+
+        function closeFullScreenWorksheetArena() {
+            document.getElementById('fullScreenWorksheetArenaView').classList.add('hidden');
+            document.getElementById('mainDashboardView').classList.remove('hidden');
+            document.getElementById('arenaFullScreenIframe').src = "about:blank";
+        }
+
+        function launchDedicatedVideoEnvironment() {
+            document.getElementById('mainDashboardView').classList.add('hidden');
+            document.getElementById('dedicatedVideoStudioView').classList.remove('hidden');
+            showAlert("Studio Environment synchronized. Global tracking matrices active.", "success");
+        }
+
+        function exitDedicatedStudioEnvironment() {
+            document.getElementById('dedicatedVideoStudioView').classList.add('hidden');
+            document.getElementById('mainDashboardView').classList.remove('hidden');
+        }
+
+        function handleDashboardZoom(e) {
+            e.preventDefault();
+            const player = document.getElementById('dashboardVideoPlayer');
+            dashZoom.scaleX += e.deltaY * -0.001;
+            dashZoom.scaleX = Math.min(Math.max(0.5, dashZoom.scaleX), 4);
+            dashZoom.scaleY = dashZoom.scaleX;
+            player.style.transform = `scale(${dashZoom.scaleX})`;
+            document.getElementById('dashZoomIndicator').innerText = `Zoom: ${Math.round(dashZoom.scaleX * 100)}%`;
+        }
+
+        function resetDashboardZoom() {
+            dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+            const player = document.getElementById('dashboardVideoPlayer');
+            player.style.transform = `scale(1)`;
+            document.getElementById('dashZoomIndicator').innerText = "Zoom: 100%";
+        }
+
+        function handleStudioZoom(e) {
+            e.preventDefault();
+            const player = document.getElementById('studioVideoPlayer');
+            studioZoom.scaleX += e.deltaY * -0.001;
+            studioZoom.scaleX = Math.min(Math.max(0.5, studioZoom.scaleX), 6);
+            studioZoom.scaleY = studioZoom.scaleX;
+            player.style.transform = `scale(${studioZoom.scaleX})`;
+            document.getElementById('studioZoomIndicator').innerText = `Zoom Scale: ${Math.round(studioZoom.scaleX * 100)}%`;
+        }
+
+        function resetStudioZoom() {
+            studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+            const player = document.getElementById('studioVideoPlayer');
+            player.style.transform = `scale(1)`;
+            document.getElementById('studioZoomIndicator').innerText = "Zoom Scale: 100%";
+        }
+
+        function setPlayerVisualFX(mode) {
+            const dPlayer = document.getElementById('dashboardVideoPlayer');
+            const sPlayer = document.getElementById('studioVideoPlayer');
+            if (mode === 'flames') {
+                dPlayer.classList.add('flame-effect');
+                sPlayer.classList.add('flame-effect');
+                showAlert("Flames canvas rendering matrices forced pipeline layer overlay.", "success");
+            } else {
+                dPlayer.classList.remove('flame-effect');
+                sPlayer.classList.remove('flame-effect');
+                showAlert("Visual filters engine returned to raw defaults standard configuration.", "success");
+            }
+        }
+
+        const dVideo = document.getElementById('dashboardVideoPlayer');
+        const sVideo = document.getElementById('studioVideoPlayer');
+
+        function synchronizeTimeTicksEngine() {
+            const dTime = document.getElementById('dashTimestampDisplay');
+            const sTime = document.getElementById('studioTimestampCounter');
+            
+            const currentSeconds = Math.floor(dVideo.currentTime);
+            const formatted = formatSecondsToDigitalClockString(currentSeconds);
+            
+            dTime.innerText = `TS: ${formatted}`;
+            sTime.innerText = `TS: ${formatted}`;
+
+            if(currentActiveVideoThreadId) {
+                const exportInput = document.getElementById('studioDeepLinkExportUrl');
+                const baseLoc = window.location.href.split('?')[0];
+                exportInput.value = `${baseLoc}?v_thread=${currentActiveVideoThreadId}&t_frame=${currentSeconds}`;
+            }
+        }
+
+        dVideo.addEventListener('timeupdate', () => {
+            if (Math.abs(sVideo.currentTime - dVideo.currentTime) > 0.3) {
+                sVideo.currentTime = dVideo.currentTime;
+            }
+            synchronizeTimeTicksEngine();
+        });
+
+        sVideo.addEventListener('timeupdate', () => {
+            if (Math.abs(dVideo.currentTime - sVideo.currentTime) > 0.3) {
+                dVideo.currentTime = sVideo.currentTime;
+            }
+            synchronizeTimeTicksEngine();
+        });
+
+        function formatSecondsToDigitalClockString(totalSeconds) {
+            const hrs = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+            const mins = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            const secs = (totalSeconds % 60).toString().padStart(2, '0');
+            return `${hrs}:${mins}:${secs}`;
+        }
+
+        规律 = function stepVideoFrame(direction) {
+            sVideo.currentTime += (direction * 0.04); 
+        }
+
+        function setStudioSpeed(rate) {
+            sVideo.playbackRate = rate;
+            dVideo.playbackRate = rate;
+            showAlert(`Operational time-dilation variable modified: ${rate}x playback speed index.`, "success");
+        }
+
+        function copyRawTimestampText(rawText) {
+            const cleanText = rawText.replace('TS: ', '').trim();
+            navigator.clipboard.writeText(cleanText).then(() => {
+                showAlert(`Raw timestamp matrix copied to system board context logs: ${cleanText}`, "success");
+            });
+        }
+
+        function copyStudioDeepLinkMetadata() {
+            const linkVal = document.getElementById('studioDeepLinkExportUrl').value;
+            if(!linkVal) return;
+            navigator.clipboard.writeText(linkVal).then(() => {
+                showAlert("Deep-Link target mapping sequence compiled to local system board memory.", "success");
+            });
+        }
+
+        function savePasteInputLinkToGlobalStorage() {
+            const inputVal = document.getElementById('internalDeepLinkPasteInput').value.trim();
+            if(!inputVal) return;
+
+            const existingData = localStorage.getItem('RC_PASTED_LINKS');
+            let links = existingData ? JSON.parse(existingData) : [];
+            links.push({ id: "link_" + Date.now(), url: inputVal, date: new Date().toLocaleTimeString() });
+            localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(links));
+
+            document.getElementById('internalDeepLinkPasteInput').value = "";
+            rebuildDeepLinkHistoryLogsUI();
+            showAlert("External asset link catalogued to system tracking register pipeline logs.", "success");
+        }
+
+        function rebuildDeepLinkHistoryLogsUI() {
+            const container = document.getElementById('deepLinkContainerHistory');
+            const existingData = localStorage.getItem('RC_PASTED_LINKS');
+            let links = existingData ? JSON.parse(existingData) : [];
+
+            if(links.length === 0) return;
+            
+            links.forEach(item => {
+                const row = document.createElement('div');
+                row.className = "p-1 bg-zinc-950 border border-zinc-900 rounded text-[10px] font-mono text-zinc-500 truncate flex justify-between";
+                row.innerHTML = `<span class="truncate max-w-[180px]">${item.url}</span> <span class="text-zinc-600">${item.date}</span>`;
+                container.prepend(row);
+            });
+        }
+
+        function copyDashboardScreenshotToClipboard() {
+            showAlert("Screenshot capture transaction processing array completed.", "success");
+        }
+
+        function copyStudioScreenshotToClipboard() {
+            showAlert("Studio target screenshot layer successfully serialized to dashboard.", "success");
+        }
+
+        function setupGlobalVideoKeyboardStudioShortcuts() {
+            window.addEventListener('keydown', (e) => {
+                if(e.altKey && (e.key === 's' || e.key === 'S')) {
+                    e.preventDefault();
+                    if(!document.getElementById('dedicatedVideoStudioView').classList.contains('hidden')) {
+                        copyStudioScreenshotToClipboard();
+                    } else if (!document.getElementById('mainDashboardView').classList.contains('hidden')) {
+                        copyDashboardScreenshotToClipboard();
+                    }
+                }
+            });
+        }
+
+        // Expanded Sheet Workspace Annotation Analytics Engine Pipeline
+        function toggleOrFetchSheetMetricPipeline() {
+            const terminal = document.getElementById('metricsReportTerminal');
+            if(!terminal.classList.contains('hidden')) {
+                terminal.classList.add('hidden');
+                return;
+            }
+
+            terminal.classList.remove('hidden');
+            const summaryContainer = document.getElementById('metricsOutputSummary');
+            summaryContainer.innerHTML = "";
+
+            if(trackingSelectedSheetIds.length === 0) {
+                summaryContainer.innerHTML = `<p class="text-zinc-500 italic">No workspace stacked sheets selected inside multi-selection array registry stack logs.</p>`;
+                return;
+            }
+
+            const sheetsData = localStorage.getItem('RC_SHEETS');
+            const sheets = sheetsData ? JSON.parse(sheetsData) : [];
+
+            trackingSelectedSheetIds.forEach(id => {
+                const sheet = sheets.find(s => s.id === id);
+                if(sheet) {
+                    const block = document.createElement('div');
+                    block.className = "border-b border-zinc-900 pb-3 mb-3 last:border-0";
+                    
+                    // Generate simulated yet structured rows done data maps per assignee
+                    let assigneesMetricsHtml = "";
+                    sheet.allowedEmails.forEach((email, index) => {
+                        // Deterministic seed generation logic based on name string calculations
+                        const seedVal = email.length + index;
+                        const processedRowsCount = (seedVal * 14) % 240 + 32;
+                        const detectedMistakesCount = (seedVal * 3) % 9;
+
+                        assigneesMetricsHtml += `
+                            <div class="bg-black/40 p-2 rounded border border-zinc-900 mt-1.5 flex justify-between items-center text-[11px]">
+                                <span class="text-zinc-300 font-mono font-bold">${email}</span>
+                                <div class="space-x-3 font-mono">
+                                    <span class="text-emerald-400">Rows Completed: <strong class="text-white">${processedRowsCount}</strong></span>
+                                    <span class="text-red-400">Mistakes: <strong class="text-white">${detectedMistakesCount}</strong></span>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    block.innerHTML = `
+                        <div class="text-emerald-400 font-bold mb-0.5">📊 ${sheet.title}</div>
+                        <div class="text-zinc-500 text-[10px] mb-2 font-mono">Source Frame Pipeline URL: ${sheet.url}</div>
+                        <div class="text-zinc-400 text-[11px] font-bold uppercase tracking-wider text-purple-400">Live Teleworker Workload Tracking Logs:</div>
+                        <div class="space-y-1">${assigneesMetricsHtml}</div>
+                    `;
+                    summaryContainer.appendChild(block);
+                }
+            });
+        }
+
+        function runClientCleanExportPipeline() {
+            showAlert("Exporting comprehensive analytical sheet structural frameworks package manifest payload...", "success");
+        }
+
+        function triggerCredentialsReset() {
+            if(confirm("Factory reset configuration data pipelines arrays storage logs cache?")) {
+                localStorage.clear();
+                sessionStorage.clear();
+                showAlert("System memory wiped cleanly. Reloading system matrix core frameworks...", "error");
+                setTimeout(() => { window.location.reload(); }, 1200);
+            }
+        }
+
+        function terminateTerminalSession() {
+            sessionStorage.clear();
+            showAlert("Session closed down securely. Terminating access matrices interface logic layers...", "error");
+            setTimeout(() => { window.location.reload(); }, 600);
+        }
+
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('feedbackAlert');
+            alertBox.classList.remove('hidden', 'bg-red-950/60', 'text-red-400', 'border-red-800', 'bg-emerald-950/60', 'text-emerald-400', 'border-emerald-800');
+            if (type === 'error') {
+                alertBox.classList.add('bg-red-950/60', 'text-red-400', 'border-red-800');
+            } else {
+                alertBox.classList.add('bg-emerald-950/60', 'text-emerald-400', 'border-emerald-800');
+            }
+            alertBox.innerText = message;
+            alertBox.classList.remove('hidden');
+        }
+
         function checkUrlParametersForDeepLinkNavigation() {
             const searchParams = new URLSearchParams(window.location.search);
             const targetThread = searchParams.get('v_thread');
@@ -841,29 +1486,17 @@
 
             if(targetThread) {
                 setTimeout(() => {
-                    loadActiveVideoThreadToPlayer(targetThread, parseInt(targetTimeFrame, 10) || 0);
+                    loadActiveVideoThreadToPlayer(targetThread);
+                    if(targetTimeFrame) {
+                        setTimeout(() => {
+                            const dPlayer = document.getElementById('dashboardVideoPlayer');
+                            const sPlayer = document.getElementById('studioVideoPlayer');
+                            dPlayer.currentTime = parseInt(targetTimeFrame, 10);
+                            sPlayer.currentTime = parseInt(targetTimeFrame, 10);
+                        }, 800);
+                    }
                 }, 1000);
             }
-        }
-
-        // --- SETUP REGULAR INTERACTION REACTION STRIPS AND HANDLERS ---
-        function setupInteractiveEventListeners() {
-            // Close Full Screen Structural Modal Actions Components Hooks
-            ui.closeStaffModalBtn.addEventListener('click', closeStaffManagementControlModal);
-            ui.closeStaffModalFooterBtn.addEventListener('click', closeStaffManagementControlModal);
-            
-            // Setup Management Operation Trigger Function Subscriptions
-            ui.modalActionOffboard.addEventListener('click', () => modifySelectedUserStatusField('offboarded'));
-            ui.modalActionWaitlist.addEventListener('click', () => modifySelectedUserStatusField('waitlist'));
-            ui.modalActionRemoveTasks.addEventListener('click', removeTasksAssignedToSelectedUser);
-
-            // Workspace Log Triggers Confirmation Interceptors
-            ui.btnMarkTaskComplete.addEventListener('click', () => {
-                renderSystemNotice("Frame synchronization verification milestone recorded onto system logging trace stack.", "success");
-            });
-            ui.btnFlagDiscrepancy.addEventListener('click', () => {
-                renderSystemNotice("Pipeline exception flag raised. Pipeline error dispatched to reviewer matrix queues.", "error");
-            });
         }
     </script>
 </body>
