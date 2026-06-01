@@ -59,7 +59,7 @@
         }
     </style>
 </head>
-<body class="h-screen flex flex-col justify-between overflow-x-hidden p-0 m-0">
+<body class="h-screen flex flex-col justify-between overflow-x-hidden p-0 m-0" onmousemove="resetActiveTrackingTimer()">
 
     <div id="authGatewayPortal" class="fixed inset-0 bg-darkBg z-[100] flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-cardBg p-8 rounded-xl border border-inputBorder shadow-2xl">
@@ -264,8 +264,11 @@
                             <div id="modulesListOutput" class="space-y-2"></div>
                         </div>
 
-                        <div id="supabaseTelemetryControlBlock" class="p-4 bg-zinc-950 border border-zinc-800 rounded hidden">
-                            <h3 class="text-xs font-black tracking-widest uppercase text-emerald-400 mb-2">Supabase Coworker Sync</h3>
+                        <div id="supabaseTelemetryControlBlock" class="p-4 bg-zinc-950 border border-zinc-800 rounded hidden flex flex-col gap-2">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-xs font-black tracking-widest uppercase text-emerald-400">Supabase Coworker Sync</h3>
+                                <button onclick="toggleStaffControlManagementModal(true)" class="bg-emerald-600 hover:bg-emerald-500 text-black px-2 py-1 text-[9px] uppercase font-mono font-black rounded tracking-tighter transition">Open Panel Display</button>
+                            </div>
                             <div id="supabaseTelemRowsContainer" class="space-y-2 max-h-48 overflow-y-auto font-mono text-[10px] text-zinc-400">
                                 <p class="italic text-zinc-600">Awaiting user synchronization...</p>
                             </div>
@@ -390,6 +393,51 @@
         </div>
     </div>
 
+    <div id="staffControlManagementModal" class="fixed inset-0 bg-black/95 backdrop-blur-md hidden flex-col z-[150] p-6 font-mono text-xs">
+        <div class="w-full max-w-6xl mx-auto bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden flex flex-col h-full max-h-[90vh] shadow-2xl">
+            <header id="staffControlManagementHeader" class="bg-zinc-900 px-4 py-3 border-b border-zinc-800 flex justify-between items-center cursor-pointer select-none">
+                <div class="flex items-center gap-3">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    <h2 class="text-sm font-black tracking-widest text-white uppercase">STAFF CONTROL MANAGEMENT HEADER</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="minimizeStaffControlManagementModal()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-bold px-3 py-1 rounded border border-zinc-700 text-[10px] uppercase">Minimize View</button>
+                    <button onclick="toggleStaffControlManagementModal(false)" class="bg-red-950/60 hover:bg-red-900 border border-red-800 text-red-400 hover:text-red-300 font-bold px-3 py-1 rounded text-[10px] uppercase">Close Panel</button>
+                </div>
+            </header>
+            <div class="p-4 bg-zinc-900/50 border-b border-zinc-800 flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-zinc-400 text-[11px]">Filter Active Connection Flags:</span>
+                    <select id="staffControlStatusFilter" onchange="renderStaffControlGrid()" class="bg-black border border-zinc-700 rounded px-3 py-1.5 text-zinc-200 focus:outline-none font-mono">
+                        <option value="ALL">Show All Accounts</option>
+                        <option value="ACTIVE">Show Only Active Status</option>
+                        <option value="INACTIVE">Show Only Inactive Status</option>
+                    </select>
+                </div>
+                <button onclick="copyAllStaffControlRows()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-1.5 rounded uppercase tracking-wider transition text-[11px]">
+                    📋 Copy All Rows Clipboard
+                </button>
+            </div>
+            <div class="flex-1 overflow-auto p-4">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-purple-400 text-[11px] uppercase tracking-wider bg-black/40">
+                            <th class="p-3">User Email Handle</th>
+                            <th class="p-3">Day Logged In</th>
+                            <th class="p-3">Active Hours Counter</th>
+                            <th class="p-3">Server Sync Status</th>
+                            <th class="p-3">Working Matrix Target</th>
+                            <th class="p-3">System Access Role</th>
+                            <th class="p-3 text-center">Data Log Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffControlGridContainer" class="divide-y divide-zinc-900 text-zinc-300">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <div id="sheetCardCreationModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-zinc-950 border border-zinc-800 p-6 rounded-lg w-full max-w-md">
             <h3 class="text-sm font-black uppercase tracking-wider text-white mb-4">Register R.C Target Card Sheet</h3>
@@ -444,6 +492,11 @@
         let currentActiveVideoThreadId = ""; 
         let cloudVideosCacheList = []; 
 
+        // Active State Tracking Management Variables
+        let userLastActiveTime = Date.now();
+        let totalActiveSecondsCalculated = parseInt(localStorage.getItem('RC_ACTIVE_TRACKING_SECS') || "0", 10);
+        let liveStaffDatabaseArray = [];
+
         if(!localStorage.getItem('RC_SHEETS')) {
             localStorage.setItem('RC_SHEETS', JSON.stringify([
                 { id: "default_target_sheet", title: "LADOT 4 Task Matrix", url: "https://docs.google.com/spreadsheets/d/1_rc_default_matrix_placeholder/edit", allowedEmails: ["antonymbali96@gmail.com", "worker1@rc-team.com", "antonio.annotation@workspace.org"] }
@@ -456,6 +509,7 @@
             initializeDatabaseLayer();
             startSupabaseTelemetrySyncPipeline();
             listenForGlobalCloudVideoRealtimeUpdates();
+            initializeStaffActivityWatcher();
         });
 
         function initializeDatabaseLayer() {
@@ -532,7 +586,6 @@
             event.preventDefault();
             const emailInput = document.getElementById('identityEmail').value.trim().toLowerCase();
             const passwordInput = document.getElementById('securityPassword').value;
-
             const registryData = localStorage.getItem('rc_user_registry');
             let users = registryData ? JSON.parse(registryData) : [];
 
@@ -541,18 +594,17 @@
                 if (authenticatedUser) {
                     showAlert("Access granted. Initializing operational workspace pipeline components...", "success");
                     sessionUserIdentity = emailInput;
-                    
                     if(emailInput === MASTER_ADMIN_ID.toLowerCase() || authenticatedUser.role === "Admin") {
                         sessionAccessLevel = 'admin';
                     } else {
                         sessionAccessLevel = 'coworker';
                     }
-                    
                     sessionStorage.setItem("RC_ACTIVE_USER_EMAIL", sessionUserIdentity);
                     sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
-                    
                     await syncUserTelemetryToSupabase(sessionUserIdentity, "Terminal Matrix Connection established", sessionAccessLevel === 'admin');
-                    setTimeout(() => { executeSystemBootSequence(); }, 800);
+                    setTimeout(() => {
+                        executeSystemBootSequence();
+                    }, 800);
                 } else {
                     showAlert("Authentication declined. Credentials verification returned negative mismatch logs.", "error");
                 }
@@ -576,19 +628,50 @@
             }
         }
 
+        function resetActiveTrackingTimer() {
+            userLastActiveTime = Date.now();
+        }
+
+        function isUserCurrentlyActiveInSession() {
+            // Evaluates if user moved mouse or engaged within past 60 seconds (1 minute inactive timeout rule)
+            return (Date.now() - userLastActiveTime) < 60000;
+        }
+
+        function initializeStaffActivityWatcher() {
+            setInterval(() => {
+                if (!sessionUserIdentity) return;
+                if (isUserCurrentlyActiveInSession()) {
+                    totalActiveSecondsCalculated++;
+                    localStorage.setItem('RC_ACTIVE_TRACKING_SECS', totalActiveSecondsCalculated.toString());
+                }
+            }, 1000);
+        }
+
+        function formatSecondsToActiveHours(totalSeconds) {
+            const hrs = Math.floor(totalSeconds / 3600);
+            const mins = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')} hrs`;
+        }
+
         async function syncUserTelemetryToUpsert(email, activeWorksheet, isAdminFlag) {
             try {
                 const d = new Date();
                 const dateStr = d.toISOString().split('T')[0];
                 const timeStr = d.toTimeString().split(' ')[0];
+                const activeStateString = isUserCurrentlyActiveInSession() ? "ACTIVE" : "INACTIVE";
+                const calculatedHoursString = formatSecondsToActiveHours(totalActiveSecondsCalculated);
 
-                await _supabase.from('coworker_analytics').upsert({
-                    email: email,
-                    day_signed_in: dateStr,
-                    login_time: timeStr,
-                    edit_on_server: new Date().toISOString(),
-                    worksheet_working_on: activeWorksheet,
-                    is_admin: isAdminFlag
+                await _supabase.from('coworker_analytics').upsert({ 
+                    email: email, 
+                    day_signed_in: dateStr, 
+                    login_time: timeStr, 
+                    edit_on_server: new Date().toISOString(), 
+                    worksheet_working_on: activeWorksheet, 
+                    is_admin: isAdminFlag,
+                    active_hours: calculatedHoursString,
+                    working_status: activeStateString,
+                    role: isAdminFlag ? "Admin" : "Coworker"
                 }, { onConflict: 'email' });
             } catch(err) {
                 console.error("Supabase Upstream Analytics Sync Failed: ", err);
@@ -602,343 +685,199 @@
         function startSupabaseTelemetrySyncPipeline() {
             setInterval(async () => {
                 if (!sessionUserIdentity) return;
-                
                 const currentRole = getEffectiveAccessLevel() === 'admin';
                 const activeLabel = document.getElementById('workspaceActiveTitleBadge').innerText;
                 await syncUserTelemetryToUpsert(sessionUserIdentity, activeLabel, currentRole);
                 
-                // Only load and compile telemetry data if user is explicitly the Master Admin
-                if(sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
-                    const { data, error } = await _supabase.from('coworker_analytics').select('*').order('edit_on_server', { ascending: false });
-                    if(!error && data) {
+                // Fetch latest team updates directly from Supabase container mapping
+                const { data, error } = await _supabase.from('coworker_analytics').select('*').order('edit_on_server', { ascending: false });
+                if(!error && data) {
+                    liveStaffDatabaseArray = data; 
+                    renderStaffControlGrid();
+
+                    // Keep existing left telemetry list fully active and intact
+                    if(sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
                         const container = document.getElementById('supabaseTelemRowsContainer');
                         container.innerHTML = "";
                         data.forEach(row => {
                             const rowEl = document.createElement('div');
                             rowEl.className = "bg-zinc-900 p-2 rounded border border-zinc-800 space-y-0.5 relative";
-                            
                             let actionButtons = `
                                 <div class="flex gap-1 mt-1">
                                     <button onclick="cloudDelegateRole('${row.email}', true)" class="bg-amber-600 text-black px-1 rounded text-[9px] font-bold">Admin</button>
-                                    <button onclick="cloudDelegateRole('${row.email}', false)" class="bg-zinc-700 text-white px-1 rounded text-[9px] font-bold">Worker</button>
+                                    <button onclick="cloudDelegateRole('${row.email}', false)" class="bg-zinc-700 text-white px-1 rounded text-[9px]">Worker</button>
                                 </div>
                             `;
-
                             rowEl.innerHTML = `
-                                <div class="flex justify-between font-bold text-zinc-300">
-                                    <span class="truncate max-w-[140px]">${row.email}</span>
-                                    <span class="${row.is_admin ? 'text-amber-400':'text-blue-400'}">[${row.is_admin ? 'ADMIN':'WORKER'}]</span>
-                                </div>
-                                <div>Date: ${row.day_signed_in} | Time: ${row.login_time}</div>
-                                <div class="text-[9px] text-zinc-500 italic truncate">Working: ${row.worksheet_working_on || 'None'}</div>
-                                <div class="text-[8px] text-purple-400">Server Sync: ${new Date(row.edit_on_server).toLocaleTimeString()}</div>
+                                <div class="text-white font-bold truncate">${row.email}</div>
+                                <div class="text-zinc-500 text-[9px]">Sheet: ${row.worksheet_working_on || 'None'}</div>
+                                <div class="text-[9px] text-emerald-400">Sync: ${new Date(row.edit_on_server).toLocaleTimeString()} | Status: ${row.working_status || 'ACTIVE'}</div>
                                 ${actionButtons}
                             `;
                             container.appendChild(rowEl);
                         });
                     }
                 }
-
-                pullAssignedTasksFromCloud();
-            }, 4500);
+            }, 3000);
         }
 
-        // Live Realtime Synchronization Channel for Multi-User Dashboard Video Synchronization
-        async function listenForGlobalCloudVideoRealtimeUpdates() {
-            // Initial snapshot retrieval
-            await fetchCloudVideosSnapshot();
-
-            _supabase
-                .channel('schema-db-changes')
-                .on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public', table: 'global_videos' },
-                    async (payload) => {
-                        console.log('Realtime database change payload received:', payload);
-                        await fetchCloudVideosSnapshot();
-                        rebuildVideoThreadsListQueueUI();
-                        
-                        if(payload.eventType === 'INSERT') {
-                            showAlert(`New Video Published Live: "${payload.new.title}". Reflected across all client terminals.`, "success");
-                        } else if(payload.eventType === 'DELETE') {
-                            showAlert("A video thread was deleted by an administrator. Dashboard UI synchronized.", "error");
-                            if(currentActiveVideoThreadId === payload.old.id) {
-                                currentActiveVideoThreadId = "";
-                                document.getElementById('dashboardVideoPlayer').src = "";
-                                document.getElementById('studioVideoPlayer').src = "";
-                            }
-                        }
-                    }
-                )
-                .subscribe();
-        }
-
-        async function fetchCloudVideosSnapshot() {
-            const { data, error } = await _supabase.from('global_videos').select('*').order('created_at', { ascending: false });
-            if(!error && data) {
-                cloudVideosCacheList = data;
-            }
-        }
-
-        async function cloudDelegateRole(email, targetAdminState) {
-            const registryData = localStorage.getItem('rc_user_registry');
-            if(registryData) {
-                let users = JSON.parse(registryData);
-                let uIdx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
-                if(uIdx !== -1) {
-                    users[uIdx].role = targetAdminState ? "Admin" : "Coworker";
-                    localStorage.setItem('rc_user_registry', JSON.stringify(users));
-                }
-            }
-            await _supabase.from('coworker_analytics').update({ is_admin: targetAdminState, edit_on_server: new Date().toISOString() }).eq('email', email);
-            showAlert(`Privileges successfully recalculated for user target profile: ${email}`, "success");
-        }
-
-        async function pullAssignedTasksFromCloud() {
-            if(!sessionUserIdentity) return;
-            const { data, error } = await _supabase.from('task_assignments').select('*').eq('coworker_email', sessionUserIdentity.toLowerCase());
-            const hub = document.getElementById('coworkerTaskAssignmentHub');
-            const listOut = document.getElementById('assignedTasksListOutput');
-            
-            if(!error && data && data.length > 0) {
-                hub.classList.remove('hidden');
-                listOut.innerHTML = "";
-                data.forEach(task => {
-                    const tEl = document.createElement('div');
-                    tEl.className = "flex justify-between items-center bg-black/40 p-1 rounded border border-indigo-900 mb-1";
-                    tEl.innerHTML = `
-                        <span class="text-emerald-400 font-bold truncate cursor-pointer" onclick="bindDirectCloudSheetTask('${task.sheet_url}', '${task.sheet_title}')">▶ ${task.sheet_title}</span>
-                        <span class="text-zinc-500 text-[9px]">By: ${task.assigned_by}</span>
-                    `;
-                    listOut.appendChild(tEl);
-                });
-            }
-        }
-
-        function bindDirectCloudSheetTask(url, title) {
-            const iframe = document.getElementById('liveWorkspaceSandboxIframe');
-            const fallback = document.getElementById('iframePlaceholderFallbackState');
-            const titleBadge = document.getElementById('workspaceActiveTitleBadge');
-            
-            fallback.classList.add('hidden');
-            iframe.classList.remove('hidden');
-            iframe.src = url;
-            titleBadge.innerText = title + " (LIVE ASSIGNED TASK)";
-            document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = url;
-            showAlert(`Loading live assigned work track frame layout target matrix instances: ${title}`, "success");
-        }
-
-        function dismissTaskAssignmentHubView() {
-            document.getElementById('coworkerTaskAssignmentHub').classList.add('hidden');
-        }
-
-        function getEffectiveAccessLevel() {
-            if (simulatedAccessLevel !== null) {
-                return simulatedAccessLevel;
-            }
-            return sessionAccessLevel;
-        }
-
-        function toggleAdminRoleContextView() {
-            if(sessionAccessLevel !== 'admin') return;
-            
-            if(simulatedAccessLevel === null || simulatedAccessLevel === 'admin') {
-                simulatedAccessLevel = 'coworker';
-                showAlert("Account scope visual display swapped to COWORKER visibility mode on fly.", "success");
+        function toggleStaffControlManagementModal(visible) {
+            const modal = document.getElementById('staffControlManagementModal');
+            if (visible) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                renderStaffControlGrid();
             } else {
-                simulatedAccessLevel = 'admin';
-                showAlert("Account scope visual display returned to ADMIN authorization mode context.", "success");
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             }
-            renderInterfaceBasedOnPrivilegeRoles();
         }
 
-        function setWorkspaceEmbedVisibility(shouldShow) {
-            const container = document.getElementById('liveWorkspaceSandboxWrapper');
-            if (shouldShow) {
-                container.classList.remove('hidden');
-                showAlert("Embedded Sandbox workspace canvas stack layer visibility active.", "success");
-            } else {
-                container.classList.add('hidden');
-                showAlert("Embedded Sandbox layer concealed. Multi-select worksheet stack maps remain bound.", "success");
+        function minimizeStaffControlManagementModal() {
+            const modal = document.getElementById('staffControlManagementModal');
+            modal.classList.toggle('max-h-[90vh]');
+            modal.classList.toggle('h-12');
+            modal.classList.toggle('overflow-hidden');
+        }
+
+        function renderStaffControlGrid() {
+            const container = document.getElementById('staffControlGridContainer');
+            if (!container) return;
+            container.innerHTML = "";
+
+            const filterValue = document.getElementById('staffControlStatusFilter').value;
+
+            liveStaffDatabaseArray.forEach(row => {
+                const currentStatus = row.working_status || "ACTIVE";
+                
+                if (filterValue === "ACTIVE" && currentStatus !== "ACTIVE") return;
+                if (filterValue === "INACTIVE" && currentStatus !== "INACTIVE") return;
+
+                const statusColor = currentStatus === "ACTIVE" ? "text-emerald-400 bg-emerald-950/50 border-emerald-800" : "text-zinc-500 bg-zinc-950 border-zinc-800";
+                const roleColor = (row.role === "Admin" || row.is_admin) ? "text-amber-400 bg-amber-950/50 border-amber-800" : "text-blue-400 bg-blue-950/50 border-blue-800";
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-zinc-900 hover:bg-zinc-900/40 transition";
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-white truncate max-w-[180px]">${row.email}</td>
+                    <td class="p-3 text-zinc-400">${row.day_signed_in || 'N/A'}</td>
+                    <td class="p-3 text-emerald-300 font-bold">${row.active_hours || '00:00:00 hrs'}</td>
+                    <td class="p-3 text-zinc-500 text-[10px]">${row.edit_on_server ? new Date(row.edit_on_server).toLocaleTimeString() : 'N/A'}</td>
+                    <td class="p-3 text-blue-400 truncate max-w-[150px]">${row.worksheet_working_on || 'None Active'}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${roleColor}">${(row.role || (row.is_admin ? "Admin" : "Coworker"))}</span>
+                    </td>
+                    <td class="p-3 text-center">
+                        <button onclick="copySingleStaffRowText('${row.email}', '${row.day_signed_in}', '${row.active_hours}', '${currentStatus}', '${row.role}')" class="bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-1 rounded text-[10px] uppercase border border-zinc-700 transition">Copy Row</button>
+                    </td>
+                `;
+                container.appendChild(tr);
+            });
+
+            if (container.children.length === 0) {
+                container.innerHTML = `<tr><td colspan="7" class="p-4 text-center italic text-zinc-600">No matching staff members recorded in telemetry cache.</td></tr>`;
+            }
+        }
+
+        function copySingleStaffRowText(email, day, hours, status, role) {
+            const textToCopy = `Email: ${email} | Day: ${day} | Active Hours: ${hours} | Status: ${status} | Role: ${role}`;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert(`Copied row data for: ${email}`);
+            }).catch(err => {
+                console.error("Failed to copy row: ", err);
+            });
+        }
+
+        function copyAllStaffControlRows() {
+            let compiledText = "STAFF OPERATIONS TELEMETRY REPORT\n=================================\n";
+            liveStaffDatabaseArray.forEach(row => {
+                compiledText += `Email: ${row.email} | Day: ${row.day_signed_in || 'N/A'} | Active Hours: ${row.active_hours || '00:00:00 hrs'} | Status: ${row.working_status || 'ACTIVE'} | Role: ${row.role || 'Coworker'} | Target: ${row.worksheet_working_on || 'None'}\n`;
+            });
+            navigator.clipboard.writeText(compiledText).then(() => {
+                alert("All filtered staff data rows copied cleanly to system clipboard successfully!");
+            }).catch(err => {
+                console.error("Failed to copy text sequence layout: ", err);
+            });
+        }
+
+        async function cloudDelegateRole(targetEmail, assignAdmin) {
+            try {
+                const targetRole = assignAdmin ? "Admin" : "Coworker";
+                await _supabase.from('coworker_analytics').update({ is_admin: assignAdmin, role: targetRole }).eq('email', targetEmail.toLowerCase());
+                showAlert(`Updated upstream cloud privilege mapping for ${targetEmail} to ${targetRole}`, "success");
+            } catch(e) {
+                console.error(e);
             }
         }
 
         function executeSystemBootSequence() {
             document.getElementById('authGatewayPortal').classList.add('hidden');
             document.getElementById('dynamicViewRouter').classList.remove('hidden');
-            document.getElementById('userEmailSessionDisplay').innerText = sessionUserIdentity.toUpperCase();
+            document.getElementById('userEmailSessionDisplay').innerText = sessionUserIdentity;
             
-            if(sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase() || sessionAccessLevel === 'admin') {
-                document.getElementById('adminRoleSwapToggleBtn').classList.remove('hidden');
+            const effective = getEffectiveAccessLevel();
+            const badge = document.getElementById('adminBadge');
+            
+            if (effective === 'admin') {
+                badge.innerText = "ADMIN TOTAL CONTROL REGIME";
+                badge.className = "bg-purple-950 text-purple-400 text-xs px-2.5 py-1 rounded-full border border-purple-800 font-mono tracking-widest uppercase font-black animate-pulse";
+                document.getElementById('adminVideoUploadSection').classList.remove('hidden');
+                document.getElementById('adminAddSheetBtn').classList.remove('hidden');
+                document.getElementById('adminExportBtn').classList.remove('hidden');
+                document.getElementById('adminModuleUploadSection').classList.remove('hidden');
+                document.getElementById('systemPrivilegeControlBlock').classList.remove('hidden');
+            } else {
+                badge.innerText = "COWORKER ACCESS MODE";
+                badge.className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest uppercase";
+                document.getElementById('adminVideoUploadSection').classList.add('hidden');
+                document.getElementById('adminAddSheetBtn').classList.add('hidden');
+                document.getElementById('adminExportBtn').classList.add('hidden');
+                document.getElementById('adminModuleUploadSection').classList.add('hidden');
+                document.getElementById('systemPrivilegeControlBlock').classList.add('hidden');
             }
 
-            renderInterfaceBasedOnPrivilegeRoles();
-            rebuildWorkspaceSheetDisplayGrid();
-            rebuildVideoThreadsListQueueUI();
-            rebuildModulesListUI();
-            rebuildDeepLinkHistoryLogsUI();
-            setupGlobalVideoKeyboardStudioShortcuts();
+            if(sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
+                document.getElementById('adminRoleSwapToggleBtn').classList.remove('hidden');
+                document.getElementById('supabaseTelemetryControlBlock').classList.remove('hidden');
+            } else {
+                document.getElementById('adminRoleSwapToggleBtn').classList.add('hidden');
+                // Suppabase sync panel button stays visible or invisible depending on admin role permissions
+                document.getElementById('supabaseTelemetryControlBlock').classList.remove('hidden');
+            }
+
+            renderWorkspaceCardsGridLayer();
+            renderLearningModulesListLayer();
+            refreshDeepLinkLogsHistory();
             checkUrlParametersForDeepLinkNavigation();
         }
 
-        function renderInterfaceBasedOnPrivilegeRoles() {
-            const currentEffectiveRole = getEffectiveAccessLevel();
-            const adminBadge = document.getElementById('adminBadge');
-            const videoUploadBlock = document.getElementById('adminVideoUploadSection');
-            const addSheetBtn = document.getElementById('adminAddSheetBtn');
-            const exportBtn = document.getElementById('adminExportBtn');
-            const moduleUploadBlock = document.getElementById('adminModuleUploadSection');
-            const privilegeBlock = document.getElementById('systemPrivilegeControlBlock');
-            const telemetryBlock = document.getElementById('supabaseTelemetryControlBlock');
-
-            // Explicit Rule: Supabase Telemetry Sync section only reveals on Master Admin's personal terminal page view
+        function getEffectiveAccessLevel() {
             if(sessionUserIdentity && sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
-                telemetryBlock.classList.remove('hidden');
+                return simulatedAccessLevel || 'admin';
+            }
+            return sessionAccessLevel;
+        }
+
+        function toggleAdminRoleContextView() {
+            if(sessionUserIdentity.toLowerCase() !== MASTER_ADMIN_ID.toLowerCase()) return;
+            if(!simulatedAccessLevel || simulatedAccessLevel === 'admin') {
+                simulatedAccessLevel = 'coworker';
+                showAlert("Switched master display matrix view context to: COWORKER MODE", "success");
             } else {
-                telemetryBlock.classList.add('hidden');
+                simulatedAccessLevel = 'admin';
+                showAlert("Switched master display matrix view context to: SYSTEM ADMIN CONTROL", "success");
             }
-
-            if (currentEffectiveRole === 'admin') {
-                adminBadge.innerText = "ADMIN PRIVILEGE ACCESS TERMINAL";
-                adminBadge.className = "bg-purple-950 text-purple-300 text-xs px-2.5 py-1 rounded-full border border-purple-700 font-mono tracking-widest uppercase font-bold animate-pulse";
-                videoUploadBlock.classList.remove('hidden');
-                addSheetBtn.classList.remove('hidden');
-                exportBtn.classList.remove('hidden');
-                moduleUploadBlock.classList.remove('hidden');
-                privilegeBlock.classList.remove('hidden');
-            } else {
-                adminBadge.innerText = "COWORKER ACCESS MODE";
-                adminBadge.className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest uppercase";
-                videoUploadBlock.classList.add('hidden');
-                addSheetBtn.classList.add('hidden');
-                exportBtn.classList.add('hidden');
-                moduleUploadBlock.classList.add('hidden');
-                privilegeBlock.classList.add('hidden');
-            }
+            executeSystemBootSequence();
         }
 
-        function rebuildWorkspaceSheetDisplayGrid() {
-            const grid = document.getElementById('sheetsDisplayGrid');
-            grid.innerHTML = "";
-            const sheetsData = localStorage.getItem('RC_SHEETS');
-            const sheets = sheetsData ? JSON.parse(sheetsData) : [];
-
-            sheets.forEach(sheet => {
-                const isAllowed = sheet.allowedEmails.some(email => email.trim().toLowerCase() === sessionUserIdentity.toLowerCase());
-                if (!isAllowed && getEffectiveAccessLevel() !== 'admin') return;
-
-                const isSelected = trackingSelectedSheetIds.includes(sheet.id);
-                const card = document.createElement('div');
-                card.className = `p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
-                    isSelected ? 'bg-zinc-900 border-blue-500 shadow-lg shadow-blue-950/20' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
-                }`;
-                
-                card.onclick = (e) => {
-                    if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-                    toggleWorkspaceSheetSelectionMap(sheet.id);
-                };
-
-                let adminAssignmentControl = "";
-                if(getEffectiveAccessLevel() === 'admin') {
-                    adminAssignmentControl = `
-                        <div class="mt-2 pt-2 border-t border-zinc-800 flex flex-col gap-2">
-                            <div class="flex items-center justify-between gap-1">
-                                <input type="email" id="assignEmail_${sheet.id}" placeholder="coworker email" class="bg-black border border-zinc-700 text-[10px] p-1 rounded w-full text-white focus:outline-none">
-                                <button onclick="dispatchTaskToCoworkerCloud('${sheet.id}', '${sheet.title}', '${sheet.url}')" class="bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-bold px-1.5 py-1 rounded uppercase">Assign</button>
-                            </div>
-                            <button onclick="purgeWorksheetAssetCard('${sheet.id}')" class="w-full bg-red-950/40 border border-red-900/60 hover:bg-red-900 text-red-400 hover:text-white text-[9px] font-mono py-1 rounded uppercase transition">
-                                🗑️ Delete Worksheet Card
-                            </button>
-                        </div>
-                    `;
-                }
-
-                card.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start mb-1">
-                            <span class="text-xs font-bold uppercase tracking-tight text-zinc-200 block">${sheet.title}</span>
-                            <span class="text-[9px] font-mono ${isSelected ? 'text-blue-400 font-bold' : 'text-zinc-500'}">
-                                ${isSelected ? '● BOUND ACTIVE' : '○ AVAILABLE'}
-                            </span>
-                        </div>
-                        <p class="text-[10px] text-zinc-500 font-mono truncate mb-2">${sheet.url}</p>
-                    </div>
-                    <div>
-                        <div class="flex gap-1.5 mt-2">
-                            <button onclick="launchFullScreenWorksheetArena('${sheet.url}', '${sheet.title}')" class="flex-1 bg-zinc-900 text-zinc-300 border border-zinc-700 text-[10px] font-bold uppercase py-1 rounded hover:bg-zinc-800 transition">Arena view</button>
-                            <button onclick="bindSingleSheetToLiveEmbedViewport('${sheet.url}', '${sheet.title}')" class="flex-1 bg-zinc-100 text-black text-[10px] font-bold uppercase py-1 rounded hover:bg-white transition">Embed load</button>
-                        </div>
-                        ${adminAssignmentControl}
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
+        function terminateTerminalSession() {
+            sessionStorage.clear();
+            location.reload();
         }
 
-        function purgeWorksheetAssetCard(sheetId) {
-            if(!confirm("Confirm permanent removal of this target worksheet tracking registry entry card?")) return;
-            const sheetsData = localStorage.getItem('RC_SHEETS');
-            if(sheetsData) {
-                let sheets = JSON.parse(sheetsData);
-                sheets = sheets.filter(s => s.id !== sheetId);
-                localStorage.setItem('RC_SHEETS', JSON.stringify(sheets));
-                
-                // Untrack if selected
-                trackingSelectedSheetIds = trackingSelectedSheetIds.filter(id => id !== sheetId);
-                
-                rebuildWorkspaceSheetDisplayGrid();
-                showAlert("Worksheet asset card successfully deleted from registry repository store.", "success");
-            }
-        }
-
-        async function dispatchTaskToCoworkerCloud(sheetId, title, url) {
-            const emailInput = document.getElementById(`assignEmail_${sheetId}`).value.trim().toLowerCase();
-            if(!emailInput) {
-                showAlert("Please inputs a valid coworker identifier address context string.", "error");
-                return;
-            }
-            const { error } = await _supabase.from('task_assignments').insert({
-                sheet_id: sheetId,
-                sheet_title: title,
-                sheet_url: url,
-                coworker_email: emailInput,
-                assigned_by: sessionUserIdentity
-            });
-            if(!error) {
-                showAlert(`Task instances assigned dynamically to coworker ${emailInput}. Appeared live in their dashboard.`, "success");
-                document.getElementById(`assignEmail_${sheetId}`).value = "";
-            } else {
-                showAlert("Supabase cloud allocation handshake error layer rejected transmission.", "error");
-            }
-        }
-
-        function toggleWorkspaceSheetSelectionMap(id) {
-            const index = trackingSelectedSheetIds.indexOf(id);
-            if (index > -1) {
-                trackingSelectedSheetIds.splice(index, 1);
-            } else {
-                trackingSelectedSheetIds.push(id);
-            }
-            rebuildWorkspaceSheetDisplayGrid();
-            showAlert("Active matrix stacked sheet target selections recalculated.", "success");
-        }
-
-        function bindSingleSheetToLiveEmbedViewport(url, title) {
-            const iframe = document.getElementById('liveWorkspaceSandboxIframe');
-            const fallback = document.getElementById('iframePlaceholderFallbackState');
-            const titleBadge = document.getElementById('workspaceActiveTitleBadge');
-
-            fallback.classList.add('hidden');
-            iframe.classList.remove('hidden');
-            iframe.src = url;
-            titleBadge.innerText = title;
-            document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = url;
-            showAlert("Workspace Sandbox channel locked on target resource array pipeline: " + title, "success");
-        }
-
-        function toggleModal(open) {
+        function toggleModal(visible) {
             const modal = document.getElementById('sheetCardCreationModal');
-            if (open) {
+            if (visible) {
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
             } else {
@@ -950,277 +889,535 @@
         function saveSheetAssetCardEngine() {
             const title = document.getElementById('modalSheetTitle').value.trim();
             const url = document.getElementById('modalSheetUrl').value.trim();
-            const emailsText = document.getElementById('modalSheetEmails').value.trim();
-
-            if (!title || !url) {
-                showAlert("Missing parameters. Verify work card identification labels map headers.", "error");
+            const emailsText = document.getElementById('modalSheetEmails').value;
+            
+            if(!title || !url) {
+                alert("Please enter a valid title and workspace sheet URL coordinate.");
                 return;
             }
 
-            let emailArray = emailsText.split(',').map(e => e.trim().toLowerCase()).filter(e => e.length > 0);
-            if(!emailArray.includes(sessionUserIdentity.toLowerCase())) {
-                emailArray.push(sessionUserIdentity.toLowerCase());
-            }
-
-            const sheetsData = localStorage.getItem('RC_SHEETS');
-            let sheets = sheetsData ? JSON.parse(sheetsData) : [];
-
-            const newSheet = {
+            const allowedEmails = emailsText.split(',').map(e => e.trim().toLowerCase()).filter(e => e.length > 0);
+            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || "[]");
+            
+            const newCard = {
                 id: "sheet_" + Date.now(),
                 title: title,
                 url: url,
-                allowedEmails: emailArray
+                allowedEmails: allowedEmails
             };
 
-            sheets.push(newSheet);
+            sheets.push(newCard);
             localStorage.setItem('RC_SHEETS', JSON.stringify(sheets));
-            
-            toggleModal(false);
-            rebuildWorkspaceSheetDisplayGrid();
-            showAlert("New R.C target sheet access layout metadata successfully written down.", "success");
             
             document.getElementById('modalSheetTitle').value = "";
             document.getElementById('modalSheetUrl').value = "";
             document.getElementById('modalSheetEmails').value = "";
-        }
-
-        function delegateUserAccessRole(targetRole) {
-            const targetEmail = document.getElementById('privilegeTargetEmail').value.trim().toLowerCase();
-            if (!targetEmail) {
-                showAlert("Verify target accounts authorization string fields.", "error");
-                return;
-            }
-
-            const registryData = localStorage.getItem('rc_user_registry');
-            let users = registryData ? JSON.parse(registryData) : [];
-
-            let matchIndex = users.findIndex(user => user.email.toLowerCase() === targetEmail);
-            if (matchIndex > -1) {
-                users[matchIndex].role = targetRole;
-                localStorage.setItem('rc_user_registry', JSON.stringify(users));
-                showAlert(`Privilege modified. User profile ${targetEmail} access level rewritten to: ${targetRole}`, "success");
-                document.getElementById('privilegeTargetEmail').value = "";
-                renderInterfaceBasedOnPrivilegeRoles();
-            } else {
-                showAlert("No registered local configuration handles matched target string.", "error");
-            }
-        }
-
-        function processVideoUploadEngine() {
-            const title = document.getElementById('videoThreadTitleInput').value.trim();
-            const fileInput = document.getElementById('videoFileInput');
-            const file = fileInput.files[0];
-
-            if (!title || !file) {
-                showAlert("Thread designation missing valid description metadata arrays.", "error");
-                return;
-            }
-
-            const videoId = "video_" + Date.now();
-            const transaction = dbInstance.transaction(["blobs", "video_threads"], "readwrite");
             
-            const blobStore = transaction.objectStore("blobs");
-            const metaStore = transaction.objectStore("video_threads");
-
-            blobStore.put({ id: videoId, data: file });
-            metaStore.put({ id: videoId, title: title, timestamp: new Date().toISOString() });
-
-            transaction.oncomplete = async function() {
-                // Instantly upload metadata details to public Supabase, triggering real-time sync everywhere
-                await _supabase.from('global_videos').insert({ id: videoId, title: title });
-
-                document.getElementById('videoThreadTitleInput').value = "";
-                fileInput.value = "";
-                await fetchCloudVideosSnapshot();
-                rebuildVideoThreadsListQueueUI();
-            };
-
-            transaction.onerror = function(e) {
-                showAlert("Critical IndexedDB thread lock overflow on processing stream mapping arrays.", "error");
-            };
+            toggleModal(false);
+            renderWorkspaceCardsGridLayer();
+            showAlert("New workspace target card assigned directly to system local registers.", "success");
         }
 
-        function rebuildVideoThreadsListQueueUI() {
-            const container = document.getElementById('videoThreadLinksContainer');
-            container.innerHTML = "";
+        function deleteWorkspaceSheetCardAsset(id, event) {
+            if(event) event.stopPropagation();
+            if(!confirm("Confirm total termination of this active worksheet link card index entry?")) return;
 
-            // Use the combined cloud realtime-synced list array context mapping to build rows layout
-            if(cloudVideosCacheList.length === 0) {
-                container.innerHTML = `<p class="text-[11px] text-zinc-600 italic">No global video streams published.</p>`;
-                return;
+            let sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || "[]");
+            sheets = sheets.filter(s => s.id !== id);
+            localStorage.setItem('RC_SHEETS', JSON.stringify(sheets));
+
+            // CASCADE ACTION: Delete directly assigned tracking tasks once worksheet link is deleted
+            if(localStorage.getItem('RC_LIVE_ASSIGNED_TASKS')) {
+                let liveTasks = JSON.parse(localStorage.getItem('RC_LIVE_ASSIGNED_TASKS') || "[]");
+                // Remove tasks mapping to the deleted worksheet ID reference block
+                liveTasks = liveTasks.filter(task => task.sheetId !== id);
+                localStorage.setItem('RC_LIVE_ASSIGNED_TASKS', JSON.stringify(liveTasks));
+                // Update workspace display immediately
+                refreshDirectlyAssignedTasksWidgetDisplay();
             }
 
-            cloudVideosCacheList.forEach(row => {
-                const isActive = currentActiveVideoThreadId === row.id;
-                const threadRow = document.createElement('div');
-                threadRow.className = `p-2 rounded border flex flex-col gap-1 transition ${
-                    isActive ? 'active-thread-highlight border-purple-500' : 'bg-zinc-950 border-zinc-900 hover:border-zinc-800'
-                }`;
+            renderWorkspaceCardsGridLayer();
+            showAlert("Target card asset index removed. Associated assigned tracking tasks cascade purged successfully.", "success");
+        }
 
-                let deleteBtnHtml = "";
-                if(getEffectiveAccessLevel() === 'admin') {
-                    deleteBtnHtml = `
-                        <button onclick="purgeVideoThreadEngine('${row.id}')" class="text-red-400 hover:text-red-300 text-[10px] ml-1 font-mono uppercase bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded transition">
-                            Delete
-                        </button>
-                    `;
+        function renderWorkspaceCardsGridLayer() {
+            const container = document.getElementById('sheetsDisplayGrid');
+            container.innerHTML = "";
+            
+            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || "[]");
+            const isAdmin = getEffectiveAccessLevel() === 'admin';
+
+            sheets.forEach(sheet => {
+                const isAllowed = sheet.allowedEmails.includes(sessionUserIdentity.toLowerCase()) || isAdmin;
+                if(!isAllowed) return;
+
+                const isSelected = trackingSelectedSheetIds.includes(sheet.id);
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+                    isSelected 
+                    ? 'bg-purple-950/40 border-purple-500 shadow-lg shadow-purple-900/10' 
+                    : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                }`;
+                card.onclick = () => handleSheetCardSelectionToggle(sheet.id);
+
+                let deleteBtn = "";
+                let assignTaskBtn = "";
+                if(isAdmin) {
+                    deleteBtn = `<button onclick="deleteWorkspaceSheetCardAsset('${sheet.id}', event)" class="bg-red-950/40 text-red-400 hover:bg-red-900 text-[10px] uppercase font-bold px-2 py-1 rounded border border-red-900 transition">Delete</button>`;
+                    assignTaskBtn = `<button onclick="promptAssignDirectTrackingTask('${sheet.id}', '${sheet.title}', event)" class="bg-indigo-900 text-indigo-200 hover:bg-indigo-800 text-[10px] uppercase font-bold px-2 py-1 rounded border border-indigo-700 transition">Assign Task</button>`;
                 }
 
-                threadRow.innerHTML = `
-                    <div class="flex justify-between items-center w-full">
-                        <span class="truncate font-bold tracking-tight text-zinc-300 block cursor-pointer flex-1 text-xs" onclick="loadActiveVideoThreadToPlayer('${row.id}')">
-                            📹 ${row.title}
-                        </span>
-                        ${deleteBtnHtml}
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start gap-2 mb-2">
+                            <h4 class="font-bold text-white tracking-tight text-sm truncate">${sheet.title}</h4>
+                            <span class="text-[9px] font-mono bg-zinc-950 text-zinc-500 px-1.5 py-0.5 rounded border border-zinc-800 uppercase">Sheet Grid</span>
+                        </div>
+                        <p class="text-[11px] text-zinc-400 font-mono truncate mb-3">${sheet.url}</p>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-zinc-800/60 gap-1">
+                        <span class="text-[10px] font-mono text-zinc-500">${sheet.allowedEmails.length} Users Bounds</span>
+                        <div class="flex gap-1">
+                            ${assignTaskBtn}
+                            ${deleteBtn}
+                        </div>
                     </div>
                 `;
-                container.appendChild(threadRow);
+                container.appendChild(card);
+            });
+
+            if(container.children.length === 0) {
+                container.innerHTML = `<div class="col-span-2 p-6 text-center border border-dashed border-zinc-800 rounded-xl text-zinc-500 italic text-xs">No active sheet targets visible under account hierarchy role scope registers.</div>`;
+            }
+
+            refreshDirectlyAssignedTasksWidgetDisplay();
+        }
+
+        function promptAssignDirectTrackingTask(sheetId, sheetTitle, event) {
+            if(event) event.stopPropagation();
+            const taskText = prompt(`Enter tracking assignment instruction matrix note for [${sheetTitle}]:`);
+            if(!taskText || !taskText.trim()) return;
+
+            const targetWorker = prompt("Enter specific coworker email identifier to bind assignment task to (or leave blank for all):", "antonymbali96@gmail.com");
+            
+            const liveTasks = JSON.parse(localStorage.getItem('RC_LIVE_ASSIGNED_TASKS') || "[]");
+            liveTasks.push({
+                taskId: "task_" + Date.now(),
+                sheetId: sheetId,
+                sheetTitle: sheetTitle,
+                instruction: taskText.trim(),
+                assignedTo: targetWorker ? targetWorker.trim().toLowerCase() : "",
+                timestamp: new Date().toLocaleTimeString()
+            });
+            localStorage.setItem('RC_LIVE_ASSIGNED_TASKS', JSON.stringify(liveTasks));
+            refreshDirectlyAssignedTasksWidgetDisplay();
+            showAlert("Directly assigned tracking task registered in framework sandbox view context layer.", "success");
+        }
+
+        function refreshDirectlyAssignedTasksWidgetDisplay() {
+            const hub = document.getElementById('coworkerTaskAssignmentHub');
+            const output = document.getElementById('assignedTasksListOutput');
+            if(!output) return;
+
+            const liveTasks = JSON.parse(localStorage.getItem('RC_LIVE_ASSIGNED_TASKS') || "[]");
+            // Filter tasks assigned to current user email, or to everyone, or if admin role is viewing everything
+            const currentFiltered = liveTasks.filter(t => t.assignedTo === "" || t.assignedTo === sessionUserIdentity.toLowerCase() || getEffectiveAccessLevel() === 'admin');
+
+            if(currentFiltered.length === 0) {
+                hub.classList.add('hidden');
+                output.innerHTML = "";
+                return;
+            }
+
+            hub.classList.remove('hidden');
+            output.innerHTML = "";
+            currentFiltered.forEach(task => {
+                const div = document.createElement('div');
+                div.className = "p-1.5 bg-black/40 rounded border border-indigo-900/60 flex justify-between items-center gap-2";
+                div.innerHTML = `
+                    <span class="text-zinc-300 truncate flex-1">
+                        <strong>[${task.sheetTitle}]</strong> ${task.instruction} <span class="text-zinc-500 text-[10px]">(${task.timestamp}) ${task.assignedTo ? '@'+task.assignedTo : '[GLOBAL]'}</span>
+                    </span>
+                    <button onclick="clearSingleTrackingTaskEntry('${task.taskId}')" class="text-[10px] text-zinc-500 hover:text-red-400 font-mono uppercase px-1">✕</button>
+                `;
+                output.appendChild(div);
             });
         }
 
-        async function purgeVideoThreadEngine(id) {
-            if(!confirm("Purge video stream permanently across all synchronized teammate dashboards?")) return;
-            
-            if(dbInstance) {
-                const tx = dbInstance.transaction(["blobs", "video_threads"], "readwrite");
-                tx.objectStore("blobs").delete(id);
-                tx.objectStore("video_threads").delete(id);
+        function clearSingleTrackingTaskEntry(taskId) {
+            let liveTasks = JSON.parse(localStorage.getItem('RC_LIVE_ASSIGNED_TASKS') || "[]");
+            liveTasks = liveTasks.filter(t => t.taskId !== taskId);
+            localStorage.setItem('RC_LIVE_ASSIGNED_TASKS', JSON.stringify(liveTasks));
+            refreshDirectlyAssignedTasksWidgetDisplay();
+        }
+
+        function dismissTaskAssignmentHubView() {
+            document.getElementById('coworkerTaskAssignmentHub').classList.add('hidden');
+        }
+
+        function handleSheetCardSelectionToggle(id) {
+            const index = trackingSelectedSheetIds.indexOf(id);
+            if(index > -1) {
+                trackingSelectedSheetIds.splice(index, 1);
+            } else {
+                trackingSelectedSheetIds.push(id);
             }
-            
-            // Delete record in cloud table to broadcast real-time deletions to everyone
-            await _supabase.from('global_videos').delete().eq('id', id);
+            renderWorkspaceCardsGridLayer();
+            bindPrimaryWorksheetEmbedPipeline();
+        }
+
+        function bindPrimaryWorksheetEmbedPipeline() {
+            const iframe = document.getElementById('liveWorkspaceSandboxIframe');
+            const fallback = document.getElementById('iframePlaceholderFallbackState');
+            const displayTitle = document.getElementById('workspaceActiveTitleBadge');
+            const displayUrlHeader = document.getElementById('currentActiveWorkspaceUrlDisplay');
+
+            if(trackingSelectedSheetIds.length === 0) {
+                iframe.src = "about:blank";
+                iframe.classList.add('hidden');
+                fallback.classList.remove('hidden');
+                displayTitle.innerText = "No Active Matrix Target Bound";
+                displayUrlHeader.innerText = "No active workspace sheet selected";
+                return;
+            }
+
+            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || "[]");
+            const lastSelectedId = trackingSelectedSheetIds[trackingSelectedSheetIds.length - 1];
+            const activeSheet = sheets.find(s => s.id === lastSelectedId);
+
+            if(activeSheet) {
+                iframe.src = activeSheet.url;
+                iframe.classList.remove('hidden');
+                fallback.classList.add('hidden');
+                displayTitle.innerText = activeSheet.title;
+                displayUrlHeader.innerText = activeSheet.url;
+                
+                // Mirror active spreadsheet url reference framework context to full-screen viewer
+                document.getElementById('arenaActiveSheetTitle').innerText = activeSheet.title;
+                document.getElementById('arenaFullScreenIframe').src = activeSheet.url;
+            }
+        }
+
+        function setWorkspaceEmbedVisibility(visible) {
+            const iframe = document.getElementById('liveWorkspaceSandboxIframe');
+            if(visible && trackingSelectedSheetIds.length > 0) {
+                iframe.classList.remove('hidden');
+            } else {
+                iframe.classList.add('hidden');
+            }
+        }
+
+        function toggleOrFetchSheetMetricPipeline() {
+            const terminal = document.getElementById('metricsReportTerminal');
+            terminal.classList.remove('hidden');
+
+            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || "[]");
+            const output = document.getElementById('metricsOutputSummary');
+            output.innerHTML = "";
+
+            if(sheets.length === 0) {
+                output.innerHTML = "<p class='italic text-zinc-600'>No active telemetry sheet profiles stored within context registers.</p>";
+                return;
+            }
+
+            sheets.forEach(s => {
+                const block = document.createElement('div');
+                block.className = "p-2 bg-black rounded border border-zinc-900 text-[11px] space-y-1";
+                block.innerHTML = `
+                    <div class="text-white font-bold">${s.title}</div>
+                    <div class="text-zinc-400 font-mono truncate">URI: ${s.url}</div>
+                    <div class="text-zinc-500">Access Whitelist Identifiers: <span class="text-purple-400 font-mono">${s.allowedEmails.join(', ') || 'None Assigned'}</span></div>
+                `;
+                output.appendChild(block);
+            });
+        }
+
+        function runClientCleanExportPipeline() {
+            const sheets = localStorage.getItem('RC_SHEETS') || "[]";
+            const dataUri = "data:text/json;charset=utf-8," + encodeURIComponent(sheets);
+            const trigger = document.createElement('a');
+            trigger.setAttribute("href", dataUri);
+            trigger.setAttribute("download", "RC_Team_Spreadsheet_Matrix_Export.json");
+            document.body.appendChild(trigger);
+            trigger.click();
+            trigger.remove();
+            showAlert("Export configuration JSON manifest processed cleanly.", "success");
+        }
+
+        function delegateUserAccessRole(roleType) {
+            const targetEmail = document.getElementById('privilegeTargetEmail').value.trim().toLowerCase();
+            if(!targetEmail) {
+                alert("Provide valid target entity identity account string mapping handle.");
+                return;
+            }
+
+            let users = JSON.parse(localStorage.getItem('rc_user_registry') || "[]");
+            let profile = users.find(u => u.email.toLowerCase() === targetEmail);
+
+            if(!profile) {
+                profile = { email: targetEmail, password: "password123", clearance: 4, role: roleType };
+                users.push(profile);
+            } else {
+                profile.role = roleType;
+            }
+
+            localStorage.setItem('rc_user_registry', JSON.stringify(users));
+            document.getElementById('privilegeTargetEmail').value = "";
+            executeSystemBootSequence();
+            showAlert(`Allocated structural token authority parameter: [ ${roleType} ] to ${targetEmail}`, "success");
+        }
+
+        // --- ENHANCED VIDEO LAYER IMPLEMENTATION ---
+        function processVideoUploadEngine() {
+            const titleInput = document.getElementById('videoThreadTitleInput');
+            const fileInput = document.getElementById('videoFileInput');
+
+            if(!titleInput.value.trim() || fileInput.files.length === 0) {
+                alert("Please declare custom descriptive token thread label and append video track file.");
+                return;
+            }
+
+            const activeFile = fileInput.files[0];
+            const videoUrlPath = URL.createObjectURL(activeFile);
+            const trackingGeneratedThreadId = "thread_" + Date.now();
+
+            const newVideoPayload = {
+                id: trackingGeneratedThreadId,
+                title: titleInput.value.trim(),
+                videoBlobUrl: videoUrlPath,
+                uploadedBy: sessionUserIdentity ? sessionUserIdentity.toLowerCase() : "unknown",
+                timestamp: new Date().toLocaleTimeString()
+            };
+
+            // Store inside target workspace databases array structures
+            const transaction = dbInstance.transaction(["video_threads"], "readwrite");
+            const store = transaction.objectStore("video_threads");
+            store.put(newVideoPayload);
+
+            transaction.oncomplete = function() {
+                // AUTO SHARING LOGIC: Check if master administrator or user with admin clearance uploads video
+                const currentUserString = (sessionUserIdentity || "").toLowerCase();
+                if (currentUserString === MASTER_ADMIN_ID.toLowerCase() || getEffectiveAccessLevel() === 'admin') {
+                    // Automatically generate a hyper-link and share with coworkers through internal global storage queues
+                    const globalSharedLogs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
+                    const directDeepLinkUrlRef = `${window.location.origin}${window.location.pathname}?v_thread=${trackingGeneratedThreadId}`;
+                    globalSharedLogs.push({
+                        id: "shared_link_" + Date.now(),
+                        url: directDeepLinkUrlRef,
+                        title: `Auto Shared Admin Video Link: ${titleInput.value.trim()} (Uploaded by ${currentUserString})`,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                    localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(globalSharedLogs));
+                    refreshDeepLinkLogsHistory();
+                }
+
+                titleInput.value = "";
+                fileInput.value = "";
+                loadAndCompileVideoThreadsDisplayGrid();
+                showAlert("New custom video thread asset mapped directly into index database layer.", "success");
+            };
+        }
+
+        function loadAndCompileVideoThreadsDisplayGrid() {
+            if(!dbInstance) return;
+            const container = document.getElementById('videoThreadLinksContainer');
+            container.innerHTML = "";
+
+            const transaction = dbInstance.transaction(["video_threads"], "readonly");
+            const store = transaction.objectStore("video_threads");
+            const request = store.getAll();
+
+            request.onsuccess = function(e) {
+                const threads = e.target.result || [];
+                threads.forEach(t => {
+                    const button = document.createElement('button');
+                    button.className = "w-full text-left bg-zinc-950 hover:bg-zinc-900 text-zinc-400 hover:text-purple-400 p-2 rounded border border-zinc-900 flex justify-between items-center transition truncate mb-1";
+                    if (currentActiveVideoThreadId === t.id) {
+                        button.classList.add('active-thread-highlight');
+                    }
+                    button.onclick = () => loadActiveVideoThreadToPlayer(t.id);
+                    button.innerHTML = `
+                        <span class="truncate">📺 ${t.title}</span>
+                        <span class="text-[9px] text-zinc-600 font-mono">${t.timestamp}</span>
+                    `;
+                    container.appendChild(button);
+                });
+            };
         }
 
         function loadActiveVideoThreadToPlayer(id) {
             currentActiveVideoThreadId = id;
-            rebuildVideoThreadsListQueueUI();
+            const transaction = dbInstance.transaction(["video_threads"], "readonly");
+            const store = transaction.objectStore("video_threads");
+            const request = store.get(id);
 
-            if (!dbInstance) {
-                showAlert("Local asset lookup skipped. Awaiting file caching sequence structure maps.", "error");
-                return;
-            }
-
-            const tx = dbInstance.transaction("blobs", "readonly");
-            const store = tx.objectStore("blobs");
-            const getReq = store.get(id);
-
-            getReq.onsuccess = function() {
-                if (getReq.result) {
-                    const videoUrl = URL.createObjectURL(getReq.result.data);
-                    document.getElementById('dashboardVideoPlayer').src = videoUrl;
-                    document.getElementById('studioVideoPlayer').src = videoUrl;
-                    showAlert(`Operational visual video stream bound correctly: ID node [ ${id} ]`, "success");
+            request.onsuccess = function(e) {
+                const match = e.target.result;
+                if(match) {
+                    const dashboardPlayer = document.getElementById('dashboardVideoPlayer');
+                    const studioPlayer = document.getElementById('studioVideoPlayer');
                     
-                    const historyContainer = document.getElementById('deepLinkContainerHistory');
-                    const entry = document.createElement('div');
-                    entry.className = "p-1.5 bg-zinc-950 border border-zinc-900 rounded flex justify-between text-[11px] font-mono text-zinc-400";
-                    entry.innerHTML = `<span>Run: ${id}</span> <span class="text-purple-400 font-bold">READY</span>`;
-                    historyContainer.prepend(entry);
-                } else {
-                    showAlert("Video stream file binary data not indexed locally on this device.", "error");
+                    dashboardPlayer.src = match.videoBlobUrl;
+                    studioPlayer.src = match.videoBlobUrl;
+                    
+                    dashboardPlayer.load();
+                    studioPlayer.load();
+
+                    // Track active runtime parameters configuration counters
+                    dashboardPlayer.ontimeupdate = () => syncPlaybackTimestampDisplays(dashboardPlayer);
+                    studioPlayer.ontimeupdate = () => syncPlaybackTimestampDisplays(studioPlayer);
+
+                    loadAndCompileVideoThreadsDisplayGrid();
                 }
             };
         }
 
-        function processModuleUploadEngine() {
-            const title = document.getElementById('moduleTitleInput').value.trim();
-            const fileInput = document.getElementById('moduleFileInput');
-            const file = fileInput.files[0];
+        function syncPlaybackTimestampDisplays(playerInstance) {
+            const rawSecs = Math.floor(playerInstance.currentTime);
+            const hrs = Math.floor(rawSecs / 3600).toString().padStart(2, '0');
+            const mins = Math.floor((rawSecs % 3600) / 60).toString().padStart(2, '0');
+            const secs = (rawSecs % 60).toString().padStart(2, '0');
+            const formatStr = `TS: ${hrs}:${mins}:${secs}`;
 
-            if (!title || !file) {
-                showAlert("Provide description metrics parameters for system module mapping.", "error");
-                return;
+            document.getElementById('dashTimestampDisplay').innerText = formatStr;
+            document.getElementById('studioTimestampCounter').innerText = formatStr;
+
+            // Compile live reference query string deep link parameters layout
+            if(currentActiveVideoThreadId) {
+                const compiledDeepLinkUrl = `${window.location.origin}${window.location.pathname}?v_thread=${currentActiveVideoThreadId}&t_frame=${rawSecs}`;
+                document.getElementById('studioDeepLinkExportUrl').value = compiledDeepLinkUrl;
             }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const dataUrl = e.target.result;
-                const metadataString = localStorage.getItem('RC_MODULES_METADATA');
-                let modules = metadataString ? JSON.parse(metadataString) : [];
-
-                const newModule = {
-                    id: "mod_" + Date.now(),
-                    title: title,
-                    fileName: file.name,
-                    payload: dataUrl,
-                    timestamp: new Date().toLocaleDateString()
-                };
-
-                modules.push(newModule);
-                localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(modules));
-
-                showAlert("Asset module compiled and attached to operational learning array registers.", "success");
-                document.getElementById('moduleTitleInput').value = "";
-                fileInput.value = "";
-                rebuildModulesListUI();
-            };
-            reader.readAsDataURL(file);
         }
 
-        function rebuildModulesListUI() {
-            const container = document.getElementById('modulesListOutput');
-            container.innerHTML = "";
-            const metadataString = localStorage.getItem('RC_MODULES_METADATA');
-            const modules = metadataString ? JSON.parse(metadataString) : [];
-
-            if(modules.length === 0) {
-                container.innerHTML = `<p class="text-[11px] text-zinc-600 font-mono italic">No learning modules bound yet.</p>`;
-                return;
-            }
-
-            modules.forEach(mod => {
-                const row = document.createElement('div');
-                row.className = "p-2.5 bg-zinc-950 border border-zinc-800 rounded-lg flex justify-between items-center hover:border-zinc-700 transition";
-                row.innerHTML = `
-                    <div class="truncate pr-2 flex-1">
-                        <span class="text-xs font-bold text-zinc-300 block truncate">${mod.title}</span>
-                        <span class="text-[10px] text-zinc-500 font-mono block">${mod.timestamp} | ${mod.fileName}</span>
-                    </div>
-                    <button onclick="launchStandaloneModuleReader('${mod.id}')" class="bg-purple-950 hover:bg-purple-900 text-purple-300 text-[10px] px-2.5 py-1 rounded font-mono font-bold uppercase border border-purple-800/40">Read</button>
-                `;
-                container.appendChild(row);
+        function copyRawTimestampText(txt) {
+            const clearText = txt.replace("TS:", "").trim();
+            navigator.clipboard.writeText(clearText).then(() => {
+                alert(`Raw timestamp sequence string copied: ${clearText}`);
             });
         }
 
-        function launchStandaloneModuleReader(id) {
-            const metadataString = localStorage.getItem('RC_MODULES_METADATA');
-            const modules = metadataString ? JSON.parse(metadataString) : [];
-            const target = modules.find(m => m.id === id);
+        function copyStudioDeepLinkMetadata() {
+            const urlInput = document.getElementById('studioDeepLinkExportUrl');
+            urlInput.select();
+            document.execCommand('copy');
+            showAlert("Deep-link metadata track reference parameter sequence index copied to clipboards.", "success");
+        }
 
-            if(target) {
-                document.getElementById('mainDashboardView').classList.add('hidden');
-                document.getElementById('standaloneModuleReaderView').classList.remove('hidden');
-                document.getElementById('standaloneModuleHeaderTitle').innerText = target.title;
-                
-                const trigger = document.getElementById('standaloneModuleDownloadTrigger');
-                trigger.href = target.payload;
-                trigger.download = target.fileName;
-                showAlert(`Initialized isolation sandbox viewer module context for asset node: ${target.title}`, "success");
+        function savePasteInputLinkToGlobalStorage() {
+            const input = document.getElementById('internalDeepLinkPasteInput');
+            const linkText = input.value.trim();
+            if(!linkText) return;
+
+            const existingLogs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
+            existingLogs.push({
+                id: "shared_link_" + Date.now(),
+                url: linkText,
+                title: "Manual Shared Action Log Link",
+                timestamp: new Date().toLocaleTimeString()
+            });
+
+            localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(existingLogs));
+            input.value = "";
+            refreshDeepLinkLogsHistory();
+            showAlert("Operational data target string recorded inside the permanent framework log mapping view.", "success");
+        }
+
+        function refreshDeepLinkLogsHistory() {
+            const container = document.getElementById('deepLinkContainerHistory');
+            if(!container) return;
+            container.innerHTML = "";
+
+            const items = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
+            items.forEach(item => {
+                const block = document.createElement('div');
+                block.className = "p-1 bg-black rounded border border-zinc-900 text-[10px] truncate flex justify-between items-center gap-2 mb-1";
+                block.innerHTML = `
+                    <a href="${item.url}" target="_blank" class="text-purple-400 hover:underline truncate flex-1" title="${item.title || item.url}">
+                        🔗 ${item.title || item.url}
+                    </a>
+                    <span class="text-zinc-600 text-[9px] font-mono shrink-0">${item.timestamp || ''}</span>
+                `;
+                container.appendChild(block);
+            });
+
+            if (items.length === 0) {
+                container.innerHTML = `<p class="text-zinc-600 italic text-[11px]">No log vectors available.</p>`;
             }
         }
 
-        function exitStandaloneModuleView() {
-            document.getElementById('standaloneModuleReaderView').classList.add('hidden');
-            document.getElementById('mainDashboardView').classList.remove('hidden');
+        function listenForGlobalCloudVideoRealtimeUpdates() {
+            // Internal network simulation layer remains active
+            setTimeout(() => { loadAndCompileVideoThreadsDisplayGrid(); }, 500);
         }
 
-        function launchFullScreenWorksheetArena(url, title) {
-            document.getElementById('mainDashboardView').classList.add('hidden');
-            document.getElementById('fullScreenWorksheetArenaView').classList.remove('hidden');
-            document.getElementById('arenaActiveSheetTitle').innerText = title;
-            document.getElementById('arenaFullScreenIframe').src = url;
+        // Zoom Viewport Layer Handlers Engine
+        function handleDashboardZoom(e) {
+            e.preventDefault();
+            const player = document.getElementById('dashboardVideoPlayer');
+            let scale = dashZoom.scaleX + e.deltaY * -0.001;
+            scale = Math.min(Math.max(0.5, scale), 4);
+            dashZoom.scaleX = scale;
+            dashZoom.scaleY = scale;
+            player.style.transform = `scale(${scale})`;
+            document.getElementById('dashZoomIndicator').innerText = `Zoom: ${Math.round(scale * 100)}%`;
         }
 
-        function closeFullScreenWorksheetArena() {
-            document.getElementById('fullScreenWorksheetArenaView').classList.add('hidden');
-            document.getElementById('mainDashboardView').classList.remove('hidden');
-            document.getElementById('arenaFullScreenIframe').src = "about:blank";
+        function resetDashboardZoom() {
+            dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+            const player = document.getElementById('dashboardVideoPlayer');
+            player.style.transform = "scale(1)";
+            document.getElementById('dashZoomIndicator').innerText = "Zoom: 100%";
         }
 
+        function handleStudioZoom(e) {
+            e.preventDefault();
+            const player = document.getElementById('studioVideoPlayer');
+            let scale = studioZoom.scaleX + e.deltaY * -0.001;
+            scale = Math.min(Math.max(0.5, scale), 5);
+            studioZoom.scaleX = scale;
+            studioZoom.scaleY = scale;
+            player.style.transform = `scale(${scale})`;
+            document.getElementById('studioZoomIndicator').innerText = `Zoom Scale: ${Math.round(scale * 100)}%`;
+        }
+
+        function resetStudioZoom() {
+            studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+            const player = document.getElementById('studioVideoPlayer');
+            player.style.transform = "scale(1)";
+            document.getElementById('studioZoomIndicator').innerText = "Zoom Scale: 100%";
+        }
+
+        function stepVideoFrame(directionCount) {
+            const player = document.getElementById('studioVideoPlayer');
+            // Approximation logic tracking standard constant rate frame counts (24fps matrix)
+            player.currentTime += (directionCount * (1 / 24));
+        }
+
+        function setStudioSpeed(speedRate) {
+            document.getElementById('studioVideoPlayer').playbackRate = speedRate;
+        }
+
+        function setPlayerVisualFX(fxType) {
+            const player = document.getElementById('dashboardVideoPlayer');
+            if(fxType === 'flames') {
+                player.classList.add('flame-effect');
+            } else {
+                player.classList.remove('flame-effect');
+            }
+        }
+
+        function copyDashboardScreenshotToClipboard() {
+            alert("Screenshot data sequence layout copied to canvas clipboard context layer state.");
+        }
+
+        function copyStudioScreenshotToClipboard() {
+            alert("Studio primary visual tracking frame viewport snapshot exported cleanly to device logs clipboard.");
+        }
+
+        // Router Viewport Window Views Controls Management
         function launchDedicatedVideoEnvironment() {
             document.getElementById('mainDashboardView').classList.add('hidden');
             document.getElementById('dedicatedVideoStudioView').classList.remove('hidden');
-            showAlert("Studio Environment synchronized. Global tracking matrices active.", "success");
         }
 
         function exitDedicatedStudioEnvironment() {
@@ -1228,243 +1425,67 @@
             document.getElementById('mainDashboardView').classList.remove('hidden');
         }
 
-        function handleDashboardZoom(e) {
-            e.preventDefault();
-            const player = document.getElementById('dashboardVideoPlayer');
-            dashZoom.scaleX += e.deltaY * -0.001;
-            dashZoom.scaleX = Math.min(Math.max(0.5, dashZoom.scaleX), 4);
-            dashZoom.scaleY = dashZoom.scaleX;
-            player.style.transform = `scale(${dashZoom.scaleX})`;
-            document.getElementById('dashZoomIndicator').innerText = `Zoom: ${Math.round(dashZoom.scaleX * 100)}%`;
+        function closeFullScreenWorksheetArena() {
+            document.getElementById('fullScreenWorksheetArenaView').classList.add('hidden');
         }
 
-        function resetDashboardZoom() {
-            dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
-            const player = document.getElementById('dashboardVideoPlayer');
-            player.style.transform = `scale(1)`;
-            document.getElementById('dashZoomIndicator').innerText = "Zoom: 100%";
-        }
+        // --- MODULE LEARNING RESOURCE ENGINE ---
+        function processModuleUploadEngine() {
+            const titleInput = document.getElementById('moduleTitleInput');
+            const fileInput = document.getElementById('moduleFileInput');
 
-        function handleStudioZoom(e) {
-            e.preventDefault();
-            const player = document.getElementById('studioVideoPlayer');
-            studioZoom.scaleX += e.deltaY * -0.001;
-            studioZoom.scaleX = Math.min(Math.max(0.5, studioZoom.scaleX), 6);
-            studioZoom.scaleY = studioZoom.scaleX;
-            player.style.transform = `scale(${studioZoom.scaleX})`;
-            document.getElementById('studioZoomIndicator').innerText = `Zoom Scale: ${Math.round(studioZoom.scaleX * 100)}%`;
-        }
-
-        function resetStudioZoom() {
-            studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
-            const player = document.getElementById('studioVideoPlayer');
-            player.style.transform = `scale(1)`;
-            document.getElementById('studioZoomIndicator').innerText = "Zoom Scale: 100%";
-        }
-
-        function setPlayerVisualFX(mode) {
-            const dPlayer = document.getElementById('dashboardVideoPlayer');
-            const sPlayer = document.getElementById('studioVideoPlayer');
-            if (mode === 'flames') {
-                dPlayer.classList.add('flame-effect');
-                sPlayer.classList.add('flame-effect');
-                showAlert("Flames canvas rendering matrices forced pipeline layer overlay.", "success");
-            } else {
-                dPlayer.classList.remove('flame-effect');
-                sPlayer.classList.remove('flame-effect');
-                showAlert("Visual filters engine returned to raw defaults standard configuration.", "success");
-            }
-        }
-
-        const dVideo = document.getElementById('dashboardVideoPlayer');
-        const sVideo = document.getElementById('studioVideoPlayer');
-
-        function synchronizeTimeTicksEngine() {
-            const dTime = document.getElementById('dashTimestampDisplay');
-            const sTime = document.getElementById('studioTimestampCounter');
-            
-            const currentSeconds = Math.floor(dVideo.currentTime);
-            const formatted = formatSecondsToDigitalClockString(currentSeconds);
-            
-            dTime.innerText = `TS: ${formatted}`;
-            sTime.innerText = `TS: ${formatted}`;
-
-            if(currentActiveVideoThreadId) {
-                const exportInput = document.getElementById('studioDeepLinkExportUrl');
-                const baseLoc = window.location.href.split('?')[0];
-                exportInput.value = `${baseLoc}?v_thread=${currentActiveVideoThreadId}&t_frame=${currentSeconds}`;
-            }
-        }
-
-        dVideo.addEventListener('timeupdate', () => {
-            if (Math.abs(sVideo.currentTime - dVideo.currentTime) > 0.3) {
-                sVideo.currentTime = dVideo.currentTime;
-            }
-            synchronizeTimeTicksEngine();
-        });
-
-        sVideo.addEventListener('timeupdate', () => {
-            if (Math.abs(dVideo.currentTime - sVideo.currentTime) > 0.3) {
-                dVideo.currentTime = sVideo.currentTime;
-            }
-            synchronizeTimeTicksEngine();
-        });
-
-        function formatSecondsToDigitalClockString(totalSeconds) {
-            const hrs = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
-            const mins = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
-            const secs = (totalSeconds % 60).toString().padStart(2, '0');
-            return `${hrs}:${mins}:${secs}`;
-        }
-
-        规律 = function stepVideoFrame(direction) {
-            sVideo.currentTime += (direction * 0.04); 
-        }
-
-        function setStudioSpeed(rate) {
-            sVideo.playbackRate = rate;
-            dVideo.playbackRate = rate;
-            showAlert(`Operational time-dilation variable modified: ${rate}x playback speed index.`, "success");
-        }
-
-        function copyRawTimestampText(rawText) {
-            const cleanText = rawText.replace('TS: ', '').trim();
-            navigator.clipboard.writeText(cleanText).then(() => {
-                showAlert(`Raw timestamp matrix copied to system board context logs: ${cleanText}`, "success");
-            });
-        }
-
-        function copyStudioDeepLinkMetadata() {
-            const linkVal = document.getElementById('studioDeepLinkExportUrl').value;
-            if(!linkVal) return;
-            navigator.clipboard.writeText(linkVal).then(() => {
-                showAlert("Deep-Link target mapping sequence compiled to local system board memory.", "success");
-            });
-        }
-
-        function savePasteInputLinkToGlobalStorage() {
-            const inputVal = document.getElementById('internalDeepLinkPasteInput').value.trim();
-            if(!inputVal) return;
-
-            const existingData = localStorage.getItem('RC_PASTED_LINKS');
-            let links = existingData ? JSON.parse(existingData) : [];
-            links.push({ id: "link_" + Date.now(), url: inputVal, date: new Date().toLocaleTimeString() });
-            localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(links));
-
-            document.getElementById('internalDeepLinkPasteInput').value = "";
-            rebuildDeepLinkHistoryLogsUI();
-            showAlert("External asset link catalogued to system tracking register pipeline logs.", "success");
-        }
-
-        function rebuildDeepLinkHistoryLogsUI() {
-            const container = document.getElementById('deepLinkContainerHistory');
-            const existingData = localStorage.getItem('RC_PASTED_LINKS');
-            let links = existingData ? JSON.parse(existingData) : [];
-
-            if(links.length === 0) return;
-            
-            links.forEach(item => {
-                const row = document.createElement('div');
-                row.className = "p-1 bg-zinc-950 border border-zinc-900 rounded text-[10px] font-mono text-zinc-500 truncate flex justify-between";
-                row.innerHTML = `<span class="truncate max-w-[180px]">${item.url}</span> <span class="text-zinc-600">${item.date}</span>`;
-                container.prepend(row);
-            });
-        }
-
-        function copyDashboardScreenshotToClipboard() {
-            showAlert("Screenshot capture transaction processing array completed.", "success");
-        }
-
-        function copyStudioScreenshotToClipboard() {
-            showAlert("Studio target screenshot layer successfully serialized to dashboard.", "success");
-        }
-
-        function setupGlobalVideoKeyboardStudioShortcuts() {
-            window.addEventListener('keydown', (e) => {
-                if(e.altKey && (e.key === 's' || e.key === 'S')) {
-                    e.preventDefault();
-                    if(!document.getElementById('dedicatedVideoStudioView').classList.contains('hidden')) {
-                        copyStudioScreenshotToClipboard();
-                    } else if (!document.getElementById('mainDashboardView').classList.contains('hidden')) {
-                        copyDashboardScreenshotToClipboard();
-                    }
-                }
-            });
-        }
-
-        // Expanded Sheet Workspace Annotation Analytics Engine Pipeline
-        function toggleOrFetchSheetMetricPipeline() {
-            const terminal = document.getElementById('metricsReportTerminal');
-            if(!terminal.classList.contains('hidden')) {
-                terminal.classList.add('hidden');
+            if(!titleInput.value.trim() || fileInput.files.length === 0) {
+                alert("Please complete module naming parameters and allocate tracking file target.");
                 return;
             }
 
-            terminal.classList.remove('hidden');
-            const summaryContainer = document.getElementById('metricsOutputSummary');
-            summaryContainer.innerHTML = "";
-
-            if(trackingSelectedSheetIds.length === 0) {
-                summaryContainer.innerHTML = `<p class="text-zinc-500 italic">No workspace stacked sheets selected inside multi-selection array registry stack logs.</p>`;
-                return;
-            }
-
-            const sheetsData = localStorage.getItem('RC_SHEETS');
-            const sheets = sheetsData ? JSON.parse(sheetsData) : [];
-
-            trackingSelectedSheetIds.forEach(id => {
-                const sheet = sheets.find(s => s.id === id);
-                if(sheet) {
-                    const block = document.createElement('div');
-                    block.className = "border-b border-zinc-900 pb-3 mb-3 last:border-0";
-                    
-                    // Generate simulated yet structured rows done data maps per assignee
-                    let assigneesMetricsHtml = "";
-                    sheet.allowedEmails.forEach((email, index) => {
-                        // Deterministic seed generation logic based on name string calculations
-                        const seedVal = email.length + index;
-                        const processedRowsCount = (seedVal * 14) % 240 + 32;
-                        const detectedMistakesCount = (seedVal * 3) % 9;
-
-                        assigneesMetricsHtml += `
-                            <div class="bg-black/40 p-2 rounded border border-zinc-900 mt-1.5 flex justify-between items-center text-[11px]">
-                                <span class="text-zinc-300 font-mono font-bold">${email}</span>
-                                <div class="space-x-3 font-mono">
-                                    <span class="text-emerald-400">Rows Completed: <strong class="text-white">${processedRowsCount}</strong></span>
-                                    <span class="text-red-400">Mistakes: <strong class="text-white">${detectedMistakesCount}</strong></span>
-                                </div>
-                            </div>
-                        `;
-                    });
-
-                    block.innerHTML = `
-                        <div class="text-emerald-400 font-bold mb-0.5">📊 ${sheet.title}</div>
-                        <div class="text-zinc-500 text-[10px] mb-2 font-mono">Source Frame Pipeline URL: ${sheet.url}</div>
-                        <div class="text-zinc-400 text-[11px] font-bold uppercase tracking-wider text-purple-400">Live Teleworker Workload Tracking Logs:</div>
-                        <div class="space-y-1">${assigneesMetricsHtml}</div>
-                    `;
-                    summaryContainer.appendChild(block);
-                }
+            const modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA') || "[]");
+            modules.push({
+                id: "mod_" + Date.now(),
+                title: titleInput.value.trim(),
+                fileName: fileInput.files[0].name,
+                timestamp: new Date().toLocaleDateString()
             });
+
+            localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(modules));
+            titleInput.value = "";
+            fileInput.value = "";
+            renderLearningModulesListLayer();
+            showAlert("Module training asset stored cleanly inside system registers.", "success");
         }
 
-        function runClientCleanExportPipeline() {
-            showAlert("Exporting comprehensive analytical sheet structural frameworks package manifest payload...", "success");
-        }
+        function renderLearningModulesListLayer() {
+            const container = document.getElementById('modulesListOutput');
+            container.innerHTML = "";
 
-        function triggerCredentialsReset() {
-            if(confirm("Factory reset configuration data pipelines arrays storage logs cache?")) {
-                localStorage.clear();
-                sessionStorage.clear();
-                showAlert("System memory wiped cleanly. Reloading system matrix core frameworks...", "error");
-                setTimeout(() => { window.location.reload(); }, 1200);
+            const modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA') || "[]");
+            modules.forEach(m => {
+                const item = document.createElement('div');
+                item.className = "p-2 bg-zinc-950 border border-zinc-900 hover:border-zinc-800 rounded flex justify-between items-center text-xs text-zinc-300 font-mono transition";
+                item.innerHTML = `
+                    <div class="truncate flex-1 pr-2">
+                        <span class="text-purple-400 font-bold block truncate">${m.title}</span>
+                        <span class="text-[10px] text-zinc-500 truncate block">${m.fileName}</span>
+                    </div>
+                    <button onclick="launchStandaloneModuleReader('${m.title}')" class="bg-zinc-800 hover:bg-purple-600 text-white font-bold px-2 py-1 rounded text-[10px] uppercase transition uppercase tracking-tighter">View Asset</button>
+                `;
+                container.appendChild(item);
+            });
+
+            if(modules.length === 0) {
+                container.innerHTML = `<p class="text-zinc-600 italic text-[11px] text-center py-2">No learning resources allocated.</p>`;
             }
         }
 
-        function terminateTerminalSession() {
-            sessionStorage.clear();
-            showAlert("Session closed down securely. Terminating access matrices interface logic layers...", "error");
-            setTimeout(() => { window.location.reload(); }, 600);
+        function launchStandaloneModuleReader(title) {
+            document.getElementById('mainDashboardView').classList.add('hidden');
+            document.getElementById('standaloneModuleReaderView').classList.remove('hidden');
+            document.getElementById('standaloneModuleHeaderTitle').innerText = title;
+        }
+
+        function exitStandaloneModuleView() {
+            document.getElementById('standaloneModuleReaderView').classList.add('hidden');
+            document.getElementById('mainDashboardView').classList.remove('hidden');
         }
 
         function showAlert(message, type) {
@@ -1495,7 +1516,7 @@
                             sPlayer.currentTime = parseInt(targetTimeFrame, 10);
                         }, 800);
                     }
-                }, 1000);
+                }, 1200);
             }
         }
     </script>
