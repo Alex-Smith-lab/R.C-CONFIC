@@ -64,15 +64,20 @@
     <div id="authGatewayPortal" class="fixed inset-0 bg-darkBg z-[100] flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-cardBg p-8 rounded-xl border border-inputBorder shadow-2xl">
             
-            <div class="text-center mb-8">
+            <div class="text-center mb-6">
                 <h1 class="text-3xl font-black tracking-wider text-brandPurple uppercase mb-2">R.C TERMINAL ENTRY</h1>
-                <p class="text-sm text-gray-400">Input secure session configuration credentials to unlock your workspace.</p>
+                <p id="authGatewaySubText" class="text-sm text-gray-400">Input secure session configuration credentials to unlock your workspace.</p>
             </div>
 
             <div id="feedbackAlert" class="hidden mb-6 p-4 rounded-lg text-sm font-medium border"></div>
 
-            <form id="terminalLoginForm" onsubmit="handlePortalAuthentication(event)" class="space-y-6">
-                
+            <div class="grid grid-cols-3 gap-1 bg-black p-1 rounded-lg border border-inputBorder mb-6 text-xs font-bold uppercase tracking-wider">
+                <button id="tabSelectorLogin" onclick="switchAuthPortalContextMode('LOGIN')" class="py-2 text-white bg-brandPurple rounded transition-all">Login</button>
+                <button id="tabSelectorRegister" onclick="switchAuthPortalContextMode('REGISTER')" class="py-2 text-gray-400 hover:text-white rounded transition-all">Sign Up</button>
+                <button id="tabSelectorForgot" onclick="switchAuthPortalContextMode('FORGOT')" class="py-2 text-gray-400 hover:text-white rounded transition-all">Reset</button>
+            </div>
+
+            <form id="terminalLoginForm" onsubmit="handlePortalAuthentication(event)" class="space-y-4">
                 <div>
                     <label for="identityEmail" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
                         User Identity Email
@@ -86,14 +91,13 @@
                     >
                 </div>
 
-                <div>
-                    <label for="securityPassword" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                <div id="passwordFieldContainer">
+                    <label id="passwordLabelRef" for="securityPassword" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
                         Security Password
                     </label>
                     <input 
                         type="password" 
                         id="securityPassword" 
-                        required
                         placeholder="••••••••"
                         class="w-full bg-inputBg border border-inputBorder rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brandPurple transition-colors duration-200 text-base tracking-widest"
                     >
@@ -102,6 +106,7 @@
                 <div>
                     <button 
                         type="submit"
+                        id="portalPrimarySubmitBtn"
                         class="w-full bg-brandPurple hover:bg-brandPurpleHover text-white font-bold py-3 px-6 rounded-lg uppercase tracking-wide transition-all duration-200 transform active:scale-[0.99] shadow-lg shadow-purple-900/20"
                     >
                         Initialize Portal Connection
@@ -109,12 +114,12 @@
                 </div>
             </form>
 
-            <div class="mt-8 text-center">
+            <div class="mt-6 text-center">
                 <button 
                     onclick="triggerCredentialsReset()" 
                     class="text-xs text-gray-500 hover:text-brandPurple underline underline-offset-4 transition-colors duration-200"
                 >
-                    Reset Credentials
+                    Reset System to Factory Defaults
                 </button>
             </div>
 
@@ -135,10 +140,9 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <div id="adminImpersonationToggleContainer" class="hidden flex items-center gap-1.5 bg-zinc-950 px-2 py-1 rounded border border-purple-900">
-                        <label for="impersonateWorkerCheckbox" class="text-[10px] uppercase text-purple-400 font-mono font-bold tracking-tight cursor-pointer">Simulate Coworker View</label>
-                        <input type="checkbox" id="impersonateWorkerCheckbox" onchange="toggleAdminImpersonationMode()" class="w-3.5 h-3.5 rounded border-zinc-700 bg-zinc-800 text-brandPurple focus:ring-0 cursor-pointer">
-                    </div>
+                    <button id="adminRoleSwapToggleBtn" onclick="toggleAdminRoleContextView()" class="hidden text-xs bg-amber-600 hover:bg-amber-500 text-black font-mono font-bold px-3 py-1.5 rounded transition">
+                        🔄 Toggle View Role
+                    </button>
                     <div id="adminBadge" class="bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest uppercase">
                         COWORKER ACCESS MODE
                     </div>
@@ -167,7 +171,7 @@
                                 <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400">Active Workspace Video</h3>
                                 <span id="dashZoomIndicator" class="text-[10px] text-zinc-500 font-mono">Zoom: 100%</span>
                             </div>
-                            <div id="videoContainer" class="p-1 rounded bg-zinc-950 border border-zinc-800 zoom-viewport h-56" onwheel="handleDashboardZoom(event)">
+                            <div id="videoContainer" class="p-1 rounded bg-zinc-950 border border-zinc-800 zoom-viewport h-48" onwheel="handleDashboardZoom(event)">
                                 <video id="dashboardVideoPlayer" controls class="zoom-canvas object-contain bg-black h-full w-full" style="object-fit: fill;"></video>
                             </div>
                             <div class="flex gap-2">
@@ -184,58 +188,122 @@
 
                         <div class="pt-4 border-t border-zinc-800">
                             <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Active Video Target Queues</h4>
-                            <div id="videoThreadLinksContainer" class="space-y-1.5 max-h-40 overflow-y-auto text-xs font-mono"></div>
+                            <div id="videoThreadLinksContainer" class="space-y-1.5 max-h-32 overflow-y-auto text-xs font-mono"></div>
                         </div>
 
                         <div class="pt-4 border-t border-zinc-800">
                             <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Deep-Link Logs History</h4>
-                            <div id="deepLinkContainerHistory" class="space-y-1.5 max-h-32 overflow-y-auto text-xs font-mono"></div>
+                            <div id="deepLinkContainerHistory" class="space-y-1.5 max-h-24 overflow-y-auto text-xs font-mono"></div>
                         </div>
                     </div>
                 </section>
 
                 <section class="col-span-6 px-2 flex flex-col h-full overflow-hidden">
-                    <div class="flex justify-between items-center mb-6 flex-shrink-0">
+                    <div class="flex justify-between items-center mb-4 flex-shrink-0">
                         <h2 class="text-lg font-black tracking-tight uppercase text-blue-500">R.C Target Sheets Workspace</h2>
-                        <div class="flex gap-2 text-xs">
-                            <button id="toggleWorkspaceSelectionGridBtn" onclick="toggleWorkspacePanelGridVisibility()" class="bg-purple-900 border border-purple-700 text-white font-bold px-3 py-1.5 rounded hover:bg-purple-800 transition">Hide Selection Cards</button>
-                            <button onclick="fetchActiveSheetMetricPipeline()" class="bg-emerald-600 text-black px-3 py-1.5 font-bold rounded hover:bg-emerald-500 transition">Fetch Tracking Metrics</button>
-                            <button id="adminAddSheetBtn" onclick="toggleModal(true)" class="bg-white text-black px-3 py-1.5 font-bold rounded hover:bg-zinc-200 hidden">Add Sheet Link</button>
-                            <button id="adminExportBtn" onclick="runClientCleanExportPipeline()" class="bg-blue-600 text-white px-3 py-1.5 font-bold rounded hover:bg-blue-500 transition hidden">Export Client Sheet</button>
+                        <div class="flex gap-2">
+                            <button onclick="toggleOrFetchSheetMetricPipeline()" class="text-xs bg-emerald-600 text-black px-3 py-1.5 font-bold rounded hover:bg-emerald-500 transition">Fetch Tracking Metrics</button>
+                            <button id="adminAddSheetBtn" onclick="toggleModal(true)" class="text-xs bg-white text-black px-3 py-1.5 font-bold rounded hover:bg-zinc-200 hidden">Add Sheet Link</button>
+                            <button id="adminExportBtn" onclick="runClientCleanExportPipeline()" class="text-xs bg-blue-600 text-white px-3 py-1.5 font-bold rounded hover:bg-blue-500 transition hidden">Export Client Sheet</button>
                         </div>
                     </div>
 
-                    <div id="coworkerClaimBanner" class="block mb-4 p-3 bg-zinc-900 border border-emerald-800 text-emerald-400 rounded text-xs flex-shrink-0">
-                        <strong>System Notice:</strong> Select an assigned work card below to open your targeted task workspace.
+                    <div id="coworkerTaskAssignmentHub" class="hidden mb-3 p-3 bg-indigo-950/60 border border-indigo-800 text-indigo-300 rounded text-xs flex-shrink-0">
+                        <div class="flex justify-between items-center font-bold mb-1">
+                            <span>📌 DIRECTLY ASSIGNED LIVE TRACKING TASKS:</span>
+                            <button onclick="dismissTaskAssignmentHubView()" class="text-[10px] text-indigo-400 hover:text-white uppercase">Dismiss</button>
+                        </div>
+                        <div id="assignedTasksListOutput" class="space-y-1 font-mono text-[11px]"></div>
                     </div>
 
-                    <div id="metricsReportTerminal" class="hidden mb-4 p-4 bg-zinc-950 border border-purple-900 rounded-lg max-h-48 overflow-y-auto font-mono text-xs text-zinc-300">
+                    <div id="coworkerClaimBanner" class="block mb-3 p-3 bg-zinc-900 border border-emerald-800 text-emerald-400 rounded text-xs flex-shrink-0">
+                        <div class="flex justify-between items-center">
+                            <span><strong>System Notice:</strong> Selected sheet links will load dynamically within the live embedded workspace sandbox below.</span>
+                            <div id="sheetToggleControlsSection" class="flex gap-1">
+                                <button onclick="setWorkspaceEmbedVisibility(true)" class="bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-0.5 text-[10px] uppercase font-bold rounded border border-zinc-600">Unhide Arena</button>
+                                <button onclick="setWorkspaceEmbedVisibility(false)" class="bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-0.5 text-[10px] uppercase font-bold rounded border border-zinc-600">Hide Arena</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="metricsReportTerminal" class="hidden mb-4 p-4 bg-zinc-950 border border-purple-900 rounded-lg max-h-56 overflow-y-auto font-mono text-xs text-zinc-300">
                         <div class="flex justify-between items-center border-b border-zinc-800 pb-1.5 mb-2">
-                            <span class="text-purple-400 font-bold uppercase tracking-wider text-[11px]">Real-Time Sheet Workspace Metrics & Role Moderation</span>
+                            <span class="text-purple-400 font-bold uppercase tracking-wider text-[11px]">Real-Time Sheet Workspace Metrics & Unique Assignee Report</span>
                             <button onclick="document.getElementById('metricsReportTerminal').classList.add('hidden')" class="text-zinc-500 hover:text-white text-[10px] uppercase">Hide</button>
                         </div>
                         <div id="metricsOutputSummary" class="space-y-3"></div>
                     </div>
 
-                    <div id="workspaceGridOuterWrapper" class="flex-1 overflow-y-auto pr-1 pb-6 transition-all duration-300">
+                    <div id="liveWorkspaceSandboxWrapper" class="w-full h-72 bg-black border border-zinc-800 rounded-xl overflow-hidden mb-4 flex flex-col flex-shrink-0 relative">
+                        <div class="bg-zinc-900/80 px-4 py-2 border-b border-zinc-800 flex justify-between items-center text-xs font-mono">
+                            <span class="text-zinc-400">🔴 Live Embedded Workspace Engine Framework Layer:</span>
+                            <span id="workspaceActiveTitleBadge" class="text-blue-400 font-bold truncate max-w-sm">No Active Matrix Target Bound</span>
+                        </div>
+                        <iframe id="liveWorkspaceSandboxIframe" src="about:blank" class="w-full flex-1 bg-zinc-950 border-0 hidden"></iframe>
+                        <div id="iframePlaceholderFallbackState" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-950/80">
+                            <span class="text-2xl mb-2">📁</span>
+                            <p class="text-xs text-zinc-500 font-mono max-w-sm">No workspace links are currently active inside the environment viewport area canvas stack layers.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto pr-1 pb-4">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Select Active Cards (Supports Multi-Selection)</h3>
                         <div id="sheetsDisplayGrid" class="grid grid-cols-2 gap-4"></div>
                     </div>
                 </section>
 
                 <section class="col-span-3 border-l border-zinc-800 pl-4 flex flex-col justify-between overflow-y-auto">
-                    <div>
-                        <h2 class="text-xs font-black tracking-widest uppercase mb-4 text-purple-500">Learning Modules Engine</h2>
-                        
-                        <div id="adminModuleUploadSection" class="mb-4 p-4 bg-zinc-900 rounded border border-zinc-800 hidden">
-                            <input type="text" id="moduleTitleInput" placeholder="Module Document Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
-                            <input type="file" id="moduleFileInput" class="block w-full text-[10px] text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-2">
-                            <button onclick="processModuleUploadEngine()" class="w-full bg-purple-600 text-white text-xs font-bold py-1.5 rounded hover:bg-purple-500 transition">Save Asset Module</button>
+                    <div class="space-y-6">
+                        <div>
+                            <h2 class="text-xs font-black tracking-widest uppercase mb-4 text-purple-500">Learning Modules Engine</h2>
+                            <div id="adminModuleUploadSection" class="mb-4 p-4 bg-zinc-900 rounded border border-zinc-800 hidden">
+                                <input type="text" id="moduleTitleInput" placeholder="Module Document Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
+                                <input type="file" id="moduleFileInput" class="block w-full text-[10px] text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-2">
+                                <button onclick="processModuleUploadEngine()" class="w-full bg-purple-600 text-white text-xs font-bold py-1.5 rounded hover:bg-purple-500 transition">Save Asset Module</button>
+                            </div>
+                            <div id="modulesListOutput" class="space-y-2"></div>
                         </div>
 
-                        <div id="modulesListOutput" class="space-y-2"></div>
+                        <div id="supabaseTelemetryControlBlock" class="p-4 bg-zinc-950 border border-zinc-800 rounded">
+                            <h3 class="text-xs font-black tracking-widest uppercase text-emerald-400 mb-2">Supabase Coworker Sync</h3>
+                            <div id="supabaseTelemRowsContainer" class="space-y-2 max-h-48 overflow-y-auto font-mono text-[10px] text-zinc-400">
+                                <p class="italic text-zinc-600">Awaiting user synchronization...</p>
+                            </div>
+                        </div>
+
+                        <div id="systemPrivilegeControlBlock" class="p-4 bg-zinc-900 border border-zinc-800 rounded hidden">
+                            <h3 class="text-xs font-black tracking-widest uppercase text-amber-400 mb-3">System Access Allocation</h3>
+                            <div class="space-y-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-zinc-400 uppercase mb-1">Target Account Email</label>
+                                    <input type="email" id="privilegeTargetEmail" placeholder="user@example.com" class="w-full bg-black border border-zinc-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 pt-1">
+                                    <button onclick="delegateUserAccessRole('Admin')" class="bg-amber-500 text-black font-bold text-[11px] py-1.5 rounded uppercase tracking-tight hover:bg-amber-400 transition">Make Admin</button>
+                                    <button onclick="delegateUserAccessRole('Coworker')" class="bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-[11px] py-1.5 rounded uppercase tracking-tight hover:bg-zinc-700 transition">Make Worker</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </main>
+        </div>
+
+        <div id="fullScreenWorksheetArenaView" class="hidden fixed inset-0 bg-darkBg z-[90] flex flex-col justify-between">
+            <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center shadow-lg">
+                <div class="flex items-center gap-3">
+                    <span class="text-amber-500 text-lg font-black tracking-widest font-mono">R.C ROUTE ENTRY</span>
+                    <span class="text-zinc-600">|</span>
+                    <span id="arenaActiveSheetTitle" class="text-xs bg-zinc-950 border border-zinc-800 text-blue-400 px-3 py-1 rounded font-mono font-bold">Connecting Active Instance...</span>
+                </div>
+                <button onclick="closeFullScreenWorksheetArena()" class="bg-red-600 hover:bg-red-500 text-white text-xs font-black px-5 py-2 rounded uppercase tracking-wider transition duration-150 transform active:scale-95 shadow-lg shadow-red-950/40">
+                    Return to Terminal Matrix
+                </button>
+            </header>
+
+            <div class="flex-1 w-full h-full bg-black relative">
+                <iframe id="arenaFullScreenIframe" src="about:blank" class="w-full h-full border-0 bg-zinc-950"></iframe>
+            </div>
         </div>
 
         <div id="dedicatedVideoStudioView" class="hidden fixed inset-0 bg-black z-50 flex flex-col justify-between">
@@ -346,7 +414,7 @@
         </div>
     </div>
 
-    <footer class="w-full bg-black border-t border-zinc-900 py-1.5 overflow-hidden flex items-center shadow-lg">
+    <footer class="w-full bg-black border-t border-zinc-900 py-1.5 overflow-hidden flex items-center shadow-lg z-[95]">
         <div class="whitespace-nowrap flex text-[11px] font-black tracking-widest text-emerald-500 w-full uppercase">
             <marquee scrollamount="6" behavior="scroll" direction="left">
                 +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG
@@ -355,7 +423,7 @@
     </footer>
 
     <script>
-        // Supabase Infrastructure Client Initialization Logic Configuration Mapping Block
+        // Supabase Initialization Context Framework Configuration Credentials
         const SUPABASE_URL = "https://qhftvfatzsogxbbqzxry.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_zR-ka-1w2TZz9nd4WP1YDQ_t8RgCuJW";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -363,112 +431,54 @@
         let dbInstance = null;
         let sessionUserIdentity = null;
         let sessionAccessLevel = 'coworker';
-        let runtimeImpersonationActive = false; 
+        let simulatedAccessLevel = null; // Track role overrides for authorized administrative toggles
+        let activeAuthMode = 'LOGIN'; 
         
         const MASTER_ADMIN_ID = "antonymbali96@gmail.com";
         const STABLE_LOCAL_SEED_KEY = "RC_SECURE_PHRASE_KEY_V2";
+        let trackingSelectedSheetIds = []; 
 
         const requestDB = indexedDB.open("RCAI_SystemStorage_v3", 1);
         let dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
         let studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
         let currentActiveVideoThreadId = ""; 
 
-        // System setup parameters defaults seeding
+        // Primary initialization fallback configuration for local storage elements
         if(!localStorage.getItem('RC_SHEETS')) {
             localStorage.setItem('RC_SHEETS', JSON.stringify([
-                { 
-                    id: "default_target_sheet", 
-                    title: "LADOT 4 Task Matrix", 
-                    url: "https://docs.google.com/spreadsheets/d/1_rc_default_matrix_placeholder/edit", 
-                    allowedEmails: ["antonymbali96@gmail.com", "worker1@rc-team.com", "worker2@rc-team.net", "antonio.annotation@workspace.org"] 
-                }
+                { id: "default_target_sheet", title: "LADOT 4 Task Matrix", url: "https://docs.google.com/spreadsheets/d/1_rc_default_matrix_placeholder/edit", allowedEmails: ["antonymbali96@gmail.com", "worker1@rc-team.com", "worker2@rc-team.net", "antonio.annotation@workspace.org"] }
             ]));
         }
         if(!localStorage.getItem('RC_MODULES_METADATA')) localStorage.setItem('RC_MODULES_METADATA', JSON.stringify([]));
         if(!localStorage.getItem('RC_PASTED_LINKS')) localStorage.setItem('RC_PASTED_LINKS', JSON.stringify([]));
-        
+
         window.addEventListener('DOMContentLoaded', () => {
             initializeDatabaseLayer();
-            establishSupabaseRealtimeSubscriptions();
+            startSupabaseTelemetrySyncPipeline();
         });
 
         function initializeDatabaseLayer() {
             const registryExists = localStorage.getItem('rc_user_registry');
             if (!registryExists) {
                 const defaultRegistry = [
-                    { email: "antonymbali96@gmail.com", password: "password123", clearance: 1, role: "Admin" },
-                    { email: "worker1@rc-team.com", password: "password123", clearance: 0, role: "Coworker" },
-                    { email: "worker2@rc-team.net", password: "password123", clearance: 0, role: "Coworker" }
+                    { email: "antonymbali96@gmail.com", password: "password123", clearance: 1, role: "Admin" }
                 ];
                 localStorage.setItem('rc_user_registry', JSON.stringify(defaultRegistry));
-                console.log("System Notice: Local identity user registry successfully seeded for first-time session run.");
+                console.log("System Notice: Local identity user registry successfully seeded.");
             }
             if(!localStorage.getItem(STABLE_LOCAL_SEED_KEY)) {
                 localStorage.setItem(STABLE_LOCAL_SEED_KEY, "password123");
             }
         }
 
-        /**
-         * Simultaneous multi-client server communication via real-time channel sync
-         */
-        function establishSupabaseRealtimeSubscriptions() {
-            _supabase
-                .channel('public_assigned_tasks_changes')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'assigned_tasks' }, payload => {
-                    console.log("Realtime Assigned Tasks Stream Refresh Event Caught:", payload);
-                    synchronizeIncomingSupabaseTaskToLocalStorage(payload);
-                })
-                .subscribe();
-
-            _supabase
-                .channel('public_uploaded_videos_changes')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'uploaded_videos' }, payload => {
-                    console.log("Realtime Video Inventory Stream Refresh Event Caught:", payload);
-                    synchronizeIncomingSupabaseVideoToLocalList(payload);
-                })
-                .subscribe();
-        }
-
-        async function synchronizeIncomingSupabaseTaskToLocalStorage(payload) {
-            let currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
-            if (payload.eventType === 'INSERT') {
-                if (!currentSheets.some(s => s.id === payload.new.id)) {
-                    currentSheets.push({
-                        id: payload.new.id,
-                        title: payload.new.sheet_title,
-                        url: payload.new.sheet_url,
-                        allowedEmails: payload.new.assigned_emails
-                    });
-                }
-            } else if (payload.eventType === 'DELETE') {
-                currentSheets = currentSheets.filter(s => s.id !== payload.old.id);
-            } else if (payload.eventType === 'UPDATE') {
-                const index = currentSheets.findIndex(s => s.id === payload.new.id);
-                if (index !== -1) {
-                    currentSheets[index] = {
-                        id: payload.new.id,
-                        title: payload.new.sheet_title,
-                        url: payload.new.sheet_url,
-                        allowedEmails: payload.new.assigned_emails
-                    };
-                }
-            }
-            localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
-            renderSheetsGrid();
-        }
-
-        async function synchronizeIncomingSupabaseVideoToLocalList(payload) {
-            if (payload.eventType === 'DELETE') {
-                renderVideoThreadsList();
-            } else if (payload.eventType === 'INSERT') {
-                renderVideoThreadsList();
-            }
-        }
-
         requestDB.onupgradeneeded = function(e) {
             let database = e.target.result;
-            if(!database.objectStoreNames.contains("blobs")) { database.createObjectStore("blobs", { keyPath: "id" }); }
-            if(!database.objectStoreNames.contains("video_threads")) { database.createObjectStore("video_threads", { keyPath: "id" }); }
+            if(!database.objectStoreNames.contains("blobs")) {
+                database.createObjectStore("blobs", { keyPath: "id" });
+            }
+            if(!database.objectStoreNames.contains("video_threads")) {
+                database.createObjectStore("video_threads", { keyPath: "id" });
+            }
         };
 
         requestDB.onsuccess = function(e) {
@@ -484,7 +494,6 @@
         function processAutomaticSessionHandshake() {
             const savedEmail = sessionStorage.getItem("RC_ACTIVE_USER_EMAIL");
             const savedRole = sessionStorage.getItem("RC_ACTIVE_USER_ROLE");
-
             if (savedEmail && savedRole) {
                 sessionUserIdentity = savedEmail;
                 sessionAccessLevel = savedRole;
@@ -492,341 +501,393 @@
             }
         }
 
-        function handlePortalAuthentication(event) {
-            event.preventDefault();
+        function switchAuthPortalContextMode(targetMode) {
+            activeAuthMode = targetMode;
+            const subText = document.getElementById('authGatewaySubText');
+            const pwdContainer = document.getElementById('passwordFieldContainer');
+            const submitBtn = document.getElementById('portalPrimarySubmitBtn');
 
+            document.getElementById('tabSelectorLogin').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
+            document.getElementById('tabSelectorRegister').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
+            document.getElementById('tabSelectorForgot').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
+
+            if (targetMode === 'LOGIN') {
+                document.getElementById('tabSelectorLogin').className = "py-2 text-white bg-brandPurple rounded transition-all";
+                subText.innerText = "Input secure session configuration credentials to unlock your workspace.";
+                pwdContainer.classList.remove('hidden');
+                submitBtn.innerText = "Initialize Portal Connection";
+            } else if (targetMode === 'REGISTER') {
+                document.getElementById('tabSelectorRegister').className = "py-2 text-white bg-brandPurple rounded transition-all";
+                subText.innerText = "Provision an independent localized terminal registration instance map.";
+                pwdContainer.classList.remove('hidden');
+                submitBtn.innerText = "Register System Identity Account";
+            } else if (targetMode === 'FORGOT') {
+                document.getElementById('tabSelectorForgot').className = "py-2 text-white bg-brandPurple rounded transition-all";
+                subText.innerText = "Provide your registered identity email to read password storage logs.";
+                pwdContainer.classList.add('hidden');
+                submitBtn.innerText = "Recover Account Password";
+            }
+        }
+
+        async function handlePortalAuthentication(event) {
+            event.preventDefault();
             const emailInput = document.getElementById('identityEmail').value.trim().toLowerCase();
             const passwordInput = document.getElementById('securityPassword').value;
 
-            const users = JSON.parse(localStorage.getItem('rc_user_registry') || '[]');
-            const authenticatedUser = users.find(user => 
-                user.email.toLowerCase() === emailInput && user.password === passwordInput
-            );
+            const registryData = localStorage.getItem('rc_user_registry');
+            let users = registryData ? JSON.parse(registryData) : [];
 
-            if (authenticatedUser) {
-                showAlert("Access granted. Initializing operational workspace pipeline components...", "success");
-                
-                sessionUserIdentity = emailInput;
-                if(emailInput === MASTER_ADMIN_ID.toLowerCase() || authenticatedUser.role === "Admin") {
-                    sessionAccessLevel = 'admin';
-                } else {
-                    sessionAccessLevel = 'coworker';
-                }
-
-                sessionStorage.setItem("RC_ACTIVE_USER_EMAIL", sessionUserIdentity);
-                sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
-
-                dispatchSupabaseUserTelemetryMetric(sessionUserIdentity, "Session Portal Login Sequence Triggered", "None Loaded");
-
-                setTimeout(() => {
-                    executeSystemBootSequence();
-                }, 1000);
-
-            } else {
-                showAlert("Authentication validation match failure. Access denied.", "error");
-            }
-        }
-
-        /**
-         * Live audit telemetry logging pushing variables directly into Supabase 'coworker_logs'
-         */
-        async function dispatchSupabaseUserTelemetryMetric(workerEmail, operationType, worksheetName) {
-            try {
-                const dayString = new Date().toISOString().split('T')[0]; 
-                const timestampString = new Date().toLocaleTimeString(); 
-                const uniqueIdSeed = "usr_id_" + Math.abs(workerEmail.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0));
-
-                const { data, error } = await _supabase
-                    .from('coworker_logs')
-                    .insert([
-                        { 
-                            email: workerEmail, 
-                            worker_id: uniqueIdSeed,
-                            day_signed_in: dayString, 
-                            login_time: timestampString, 
-                            worksheet_working_on: worksheetName,
-                            operation_notes: operationType
-                        }
-                    ]);
-                if (error) console.error("Supabase metrics sync failure notice:", error.message);
-            } catch (err) {
-                console.error("Supabase communication failure exceptions caught:", err);
-            }
-        }
-
-        function showAlert(message, type) {
-            const alertBox = document.getElementById('feedbackAlert');
-            alertBox.innerText = message;
-            alertBox.classList.remove('hidden', 'bg-red-950/40', 'border-red-800', 'text-red-400', 'bg-green-950/40', 'border-green-800', 'text-green-400');
-
-            if (type === 'error') {
-                alertBox.classList.add('bg-red-950/40', 'border-red-800', 'text-red-400');
-            } else {
-                alertBox.classList.add('bg-green-950/40', 'border-green-800', 'text-green-400');
-            }
-        }
-
-        function triggerCredentialsReset() {
-            if (confirm("Are you sure you want to restore the authentication system mapping database registries to defaults? This clears custom items.")) {
-                localStorage.removeItem('rc_user_registry');
-                localStorage.setItem(STABLE_LOCAL_SEED_KEY, "password123");
-                initializeDatabaseLayer();
-                showAlert("System credentials have been restored to defaults. Identity: antonymbali96@gmail.com / Password: password123", "success");
-            }
-        }
-
-        function terminateTerminalSession() {
-            if(sessionUserIdentity) {
-                dispatchSupabaseUserTelemetryMetric(sessionUserIdentity, "Session Termination Logout Sequence Completed", "None Active");
-            }
-            sessionStorage.clear();
-            window.location.reload();
-        }
-
-        /**
-         * Account simulation logic allowing antonymbali96@gmail.com and Admins to switch roles instantly
-         */
-        function toggleAdminImpersonationMode() {
-            const checkbox = document.getElementById('impersonateWorkerCheckbox');
-            runtimeImpersonationActive = checkbox.checked;
-            
-            const badge = document.getElementById('adminBadge');
-            if(runtimeImpersonationActive) {
-                badge.innerText = "COWORKER MODE (SIMULATED)";
-                badge.className = "bg-amber-950 text-amber-400 text-xs px-2.5 py-1 rounded-full border border-amber-700 font-mono tracking-widest";
-                
-                document.getElementById('adminVideoUploadSection').classList.add('hidden');
-                document.getElementById('adminModuleUploadSection').classList.add('hidden');
-                document.getElementById('adminAddSheetBtn').classList.add('hidden');
-                document.getElementById('adminExportBtn').classList.add('hidden');
-            } else {
-                badge.innerText = "SYSTEM ADMIN CONTROL";
-                badge.className = "bg-green-900 text-green-300 text-xs px-2.5 py-1 rounded-full border border-green-500 font-mono tracking-widest";
-                
-                document.getElementById('adminVideoUploadSection').classList.remove('hidden');
-                document.getElementById('adminModuleUploadSection').classList.remove('hidden');
-                document.getElementById('adminAddSheetBtn').classList.remove('hidden');
-                document.getElementById('adminExportBtn').classList.remove('hidden');
-            }
-            renderSheetsGrid();
-            renderVideoThreadsList();
-            renderLearningModules();
-        }
-
-        /**
-         * Upgrade or downgrade team coworkers between standard and administrative clearance access levels
-         */
-        function executeAdministrativeRoleMutation(targetUserEmail, newRoleAssignment) {
-            if (targetUserEmail.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
-                alert("Operation Denied: The master root administration anchor cannot be downgraded.");
-                return;
-            }
-            
-            let users = JSON.parse(localStorage.getItem('rc_user_registry') || '[]');
-            const index = users.findIndex(u => u.email.toLowerCase() === targetUserEmail.toLowerCase());
-            
-            if (index !== -1) {
-                users[index].role = newRoleAssignment;
-                users[index].clearance = (newRoleAssignment === "Admin") ? 1 : 0;
-                localStorage.setItem('rc_user_registry', JSON.stringify(users));
-                
-                alert(`Successfully altered structural access clearance. Profile ${targetUserEmail} modified to ${newRoleAssignment}.`);
-                
-                // If current user modified themselves, adapt runtime session credentials states
-                if (sessionUserIdentity.toLowerCase() === targetUserEmail.toLowerCase()) {
-                    sessionAccessLevel = (newRoleAssignment === "Admin") ? 'admin' : 'coworker';
+            if (activeAuthMode === 'LOGIN') {
+                const authenticatedUser = users.find(user => user.email.toLowerCase() === emailInput && user.password === passwordInput);
+                if (authenticatedUser) {
+                    showAlert("Access granted. Initializing operational workspace pipeline components...", "success");
+                    sessionUserIdentity = emailInput;
+                    
+                    if(emailInput === MASTER_ADMIN_ID.toLowerCase() || authenticatedUser.role === "Admin") {
+                        sessionAccessLevel = 'admin';
+                    } else {
+                        sessionAccessLevel = 'coworker';
+                    }
+                    
+                    sessionStorage.setItem("RC_ACTIVE_USER_EMAIL", sessionUserIdentity);
                     sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
-                    executeSystemBootSequence();
+                    
+                    // Push live sign-in state to Supabase Server Instance Matrix
+                    await syncUserTelemetryToSupabase(sessionUserIdentity, "Terminal Matrix Connection established", sessionAccessLevel === 'admin');
+                    
+                    setTimeout(() => { executeSystemBootSequence(); }, 800);
                 } else {
-                    fetchActiveSheetMetricPipeline();
+                    showAlert("Authentication declined. Credentials verification returned negative mismatch logs.", "error");
                 }
-            } else {
-                // If user is not yet in the login database, pre-register them
-                users.push({ email: targetUserEmail.toLowerCase(), password: "password123", clearance: (newRoleAssignment === "Admin") ? 1 : 0, role: newRoleAssignment });
+            } else if (activeAuthMode === 'REGISTER') {
+                const checkUser = users.find(user => user.email.toLowerCase() === emailInput);
+                if (checkUser) {
+                    showAlert("Account allocation blocked. Target mapping handle identifier already active.", "error");
+                    return;
+                }
+                const newProfile = { email: emailInput, password: passwordInput, clearance: 4, role: "Coworker" };
+                users.push(newProfile);
                 localStorage.setItem('rc_user_registry', JSON.stringify(users));
-                alert(`Pre-registered ${targetUserEmail} into node authorization registries as ${newRoleAssignment}.`);
-                fetchActiveSheetMetricPipeline();
+                showAlert("Identity profile registered successfully. Switch to Login tab context mode.", "success");
+            } else if (activeAuthMode === 'FORGOT') {
+                const locateUser = users.find(user => user.email.toLowerCase() === emailInput);
+                if (locateUser) {
+                    showAlert(`Account Found. Security Phrase Recovery Payload: [ ${locateUser.password} ]`, "success");
+                } else {
+                    showAlert("Identity string sequence index match returned zero matching entities.", "error");
+                }
+            }
+        }
+
+        // Supabase Dynamic Teleworker Analytics Upstream Pipelines
+        async function syncUserTelemetryToUpsert(email, activeWorksheet, isAdminFlag) {
+            try {
+                const d = new Date();
+                const dateStr = d.toISOString().split('T')[0];
+                const timeStr = d.toTimeString().split(' ')[0];
+
+                await _supabase.from('coworker_analytics').upsert({
+                    email: email,
+                    day_signed_in: dateStr,
+                    login_time: timeStr,
+                    edit_on_server: new Date().toISOString(),
+                    worksheet_working_on: activeWorksheet,
+                    is_admin: isAdminFlag
+                }, { onConflict: 'email' });
+            } catch(err) {
+                console.error("Supabase Upstream Analytics Sync Failed: ", err);
+            }
+        }
+
+        async function syncUserTelemetryToSupabase(email, activeWorksheet, isAdminFlag) {
+            await syncUserTelemetryToUpsert(email, activeWorksheet, isAdminFlag);
+        }
+
+        function startSupabaseTelemetrySyncPipeline() {
+            // Fetch live data every 4.5 seconds to build multi-server communication logic
+            setInterval(async () => {
+                if (!sessionUserIdentity) return;
+                
+                // Keep current instance logged state alive in Cloud Cluster
+                const currentRole = getEffectiveAccessLevel() === 'admin';
+                const activeLabel = document.getElementById('workspaceActiveTitleBadge').innerText;
+                await syncUserTelemetryToUpsert(sessionUserIdentity, activeLabel, currentRole);
+                
+                // Pull coworker cluster states down to local frontend panel viewports
+                const { data, error } = await _supabase.from('coworker_analytics').select('*').order('edit_on_server', { ascending: false });
+                if(!error && data) {
+                    const container = document.getElementById('supabaseTelemRowsContainer');
+                    container.innerHTML = "";
+                    data.forEach(row => {
+                        const rowEl = document.createElement('div');
+                        rowEl.className = "bg-zinc-900 p-2 rounded border border-zinc-800 space-y-0.5 relative";
+                        
+                        let actionButtons = "";
+                        // If current authenticated account is an admin, let them delegate or downgrade roles on the fly
+                        if(sessionAccessLevel === 'admin') {
+                            actionButtons = `
+                                <div class="flex gap-1 mt-1">
+                                    <button onclick="cloudDelegateRole('${row.email}', true)" class="bg-amber-600 text-black px-1 rounded text-[9px] font-bold">Admin</button>
+                                    <button onclick="cloudDelegateRole('${row.email}', false)" class="bg-zinc-700 text-white px-1 rounded text-[9px] font-bold">Worker</button>
+                                </div>
+                            `;
+                        }
+
+                        rowEl.innerHTML = `
+                            <div class="flex justify-between font-bold text-zinc-300">
+                                <span class="truncate max-w-[140px]">${row.email}</span>
+                                <span class="${row.is_admin ? 'text-amber-400':'text-blue-400'}">[${row.is_admin ? 'ADMIN':'WORKER'}]</span>
+                            </div>
+                            <div>Date: ${row.day_signed_in} | Time: ${row.login_time}</div>
+                            <div class="text-[9px] text-zinc-500 italic truncate">Working: ${row.worksheet_working_on || 'None'}</div>
+                            <div class="text-[8px] text-purple-400">Server Sync: ${new Date(row.edit_on_server).toLocaleTimeString()}</div>
+                            ${actionButtons}
+                        `;
+                        container.appendChild(rowEl);
+                    });
+                }
+
+                // Check for live task allocations dynamically sent to this coworker identity
+                pullAssignedTasksFromCloud();
+
+            }, 4500);
+        }
+
+        async function cloudDelegateRole(email, targetAdminState) {
+            // Modify local registry cache references
+            const registryData = localStorage.getItem('rc_user_registry');
+            if(registryData) {
+                let users = JSON.parse(registryData);
+                let uIdx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+                if(uIdx !== -1) {
+                    users[uIdx].role = targetAdminState ? "Admin" : "Coworker";
+                    localStorage.setItem('rc_user_registry', JSON.stringify(users));
+                }
+            }
+            // Modify Cloud cluster configuration mapping values live
+            await _supabase.from('coworker_analytics').update({ is_admin: targetAdminState, edit_on_server: new Date().toISOString() }).eq('email', email);
+            showAlert(`Privileges successfully recalculated for user target profile: ${email}`, "success");
+        }
+
+        async function pullAssignedTasksFromCloud() {
+            if(!sessionUserIdentity) return;
+            const { data, error } = await _supabase.from('task_assignments').select('*').eq('coworker_email', sessionUserIdentity.toLowerCase());
+            const hub = document.getElementById('coworkerTaskAssignmentHub');
+            const listOut = document.getElementById('assignedTasksListOutput');
+            
+            if(!error && data && data.length > 0) {
+                hub.classList.remove('hidden');
+                listOut.innerHTML = "";
+                data.forEach(task => {
+                    const tEl = document.createElement('div');
+                    tEl.className = "flex justify-between items-center bg-black/40 p-1 rounded border border-indigo-900 mb-1";
+                    tEl.innerHTML = `
+                        <span class="text-emerald-400 font-bold truncate cursor-pointer" onclick="bindDirectCloudSheetTask('${task.sheet_url}', '${task.sheet_title}')">▶ ${task.sheet_title}</span>
+                        <span class="text-zinc-500 text-[9px]">By: ${task.assigned_by}</span>
+                    `;
+                    listOut.appendChild(tEl);
+                });
+            }
+        }
+
+        function bindDirectCloudSheetTask(url, title) {
+            const iframe = document.getElementById('liveWorkspaceSandboxIframe');
+            const fallback = document.getElementById('iframePlaceholderFallbackState');
+            const titleBadge = document.getElementById('workspaceActiveTitleBadge');
+            
+            fallback.classList.add('hidden');
+            iframe.classList.remove('hidden');
+            iframe.src = url;
+            titleBadge.innerText = title + " (LIVE ASSIGNED TASK)";
+            document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = url;
+            showAlert(`Loading live assigned work track frame layout target matrix instances: ${title}`, "success");
+        }
+
+        function dismissTaskAssignmentHubView() {
+            document.getElementById('coworkerTaskAssignmentHub').classList.add('hidden');
+        }
+
+        function getEffectiveAccessLevel() {
+            if (simulatedAccessLevel !== null) {
+                return simulatedAccessLevel;
+            }
+            return sessionAccessLevel;
+        }
+
+        function toggleAdminRoleContextView() {
+            // Allows master system admins to swap view visibility states easily
+            if(sessionAccessLevel !== 'admin') return;
+            
+            if(simulatedAccessLevel === null || simulatedAccessLevel === 'admin') {
+                simulatedAccessLevel = 'coworker';
+                showAlert("Account scope visual display swapped to COWORKER visibility mode on fly.", "success");
+            } else {
+                simulatedAccessLevel = 'admin';
+                showAlert("Account scope visual display returned to ADMIN authorization mode context.", "success");
+            }
+            renderInterfaceBasedOnPrivilegeRoles();
+        }
+
+        function setWorkspaceEmbedVisibility(shouldShow) {
+            const container = document.getElementById('liveWorkspaceSandboxWrapper');
+            if (shouldShow) {
+                container.classList.remove('hidden');
+                showAlert("Embedded Sandbox workspace canvas stack layer visibility active.", "success");
+            } else {
+                container.classList.add('hidden');
+                showAlert("Embedded Sandbox layer concealed. Multi-select worksheet stack maps remain bound.", "success");
             }
         }
 
         function executeSystemBootSequence() {
             document.getElementById('authGatewayPortal').classList.add('hidden');
             document.getElementById('dynamicViewRouter').classList.remove('hidden');
-
-            document.getElementById('userEmailSessionDisplay').innerText = sessionUserIdentity;
-            const badge = document.getElementById('adminBadge');
-            const toggleContainer = document.getElementById('adminImpersonationToggleContainer');
-
-            if(sessionAccessLevel === 'admin' || sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
-                badge.innerText = "SYSTEM ADMIN CONTROL";
-                badge.className = "bg-green-900 text-green-300 text-xs px-2.5 py-1 rounded-full border border-green-500 font-mono tracking-widest";
-                toggleContainer.classList.remove('hidden'); 
-
-                document.getElementById('adminVideoUploadSection').classList.remove('hidden');
-                document.getElementById('adminModuleUploadSection').classList.remove('hidden');
-                document.getElementById('adminAddSheetBtn').classList.remove('hidden');
-                document.getElementById('adminExportBtn').classList.remove('hidden');
-            } else {
-                badge.innerText = "COWORKER ACCESS MODE";
-                badge.className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest";
-                toggleContainer.classList.add('hidden');
-
-                document.getElementById('adminVideoUploadSection').classList.add('hidden');
-                document.getElementById('adminModuleUploadSection').classList.add('hidden');
-                document.getElementById('adminAddSheetBtn').classList.add('hidden');
-                document.getElementById('adminExportBtn').classList.add('hidden');
+            document.getElementById('userEmailSessionDisplay').innerText = sessionUserIdentity.toUpperCase();
+            
+            // Allow account contextual visibility toggle layout adjustments if applicable
+            if(sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase() || sessionAccessLevel === 'admin') {
+                document.getElementById('adminRoleSwapToggleBtn').classList.remove('hidden');
             }
 
-            pullGlobalAssignedTasksFromSupabasePipeline();
-            renderLearningModules();
-            renderDeepLinkHistoryLogs();
-            setupPlaybackStateListeners();
-            setupInteractivePanEngine();
-            setupGlobalKeyboardShortcutHooks();
-            renderVideoThreadsList(() => {
-                checkUrlParametersForDeepLinkNavigation();
+            renderInterfaceBasedOnPrivilegeRoles();
+            rebuildWorkspaceSheetDisplayGrid();
+            rebuildVideoThreadsListQueueUI();
+            rebuildModulesListUI();
+            rebuildDeepLinkHistoryLogsUI();
+            setupGlobalVideoKeyboardStudioShortcuts();
+            checkUrlParametersForDeepLinkNavigation();
+        }
+
+        function renderInterfaceBasedOnPrivilegeRoles() {
+            const currentEffectiveRole = getEffectiveAccessLevel();
+            const adminBadge = document.getElementById('adminBadge');
+            const videoUploadBlock = document.getElementById('adminVideoUploadSection');
+            const addSheetBtn = document.getElementById('adminAddSheetBtn');
+            const exportBtn = document.getElementById('adminExportBtn');
+            const moduleUploadBlock = document.getElementById('adminModuleUploadSection');
+            const privilegeBlock = document.getElementById('systemPrivilegeControlBlock');
+
+            if (currentEffectiveRole === 'admin') {
+                adminBadge.innerText = "ADMIN PRIVILEGE ACCESS TERMINAL";
+                adminBadge.className = "bg-purple-950 text-purple-300 text-xs px-2.5 py-1 rounded-full border border-purple-700 font-mono tracking-widest uppercase font-bold animate-pulse";
+                videoUploadBlock.classList.remove('hidden');
+                addSheetBtn.classList.remove('hidden');
+                exportBtn.classList.remove('hidden');
+                moduleUploadBlock.classList.remove('hidden');
+                privilegeBlock.classList.remove('hidden');
+            } else {
+                adminBadge.innerText = "COWORKER ACCESS MODE";
+                adminBadge.className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest uppercase";
+                videoUploadBlock.classList.add('hidden');
+                addSheetBtn.classList.add('hidden');
+                exportBtn.classList.add('hidden');
+                moduleUploadBlock.classList.add('hidden');
+                privilegeBlock.classList.add('hidden');
+            }
+        }
+
+        function rebuildWorkspaceSheetDisplayGrid() {
+            const grid = document.getElementById('sheetsDisplayGrid');
+            grid.innerHTML = "";
+            const sheetsData = localStorage.getItem('RC_SHEETS');
+            const sheets = sheetsData ? JSON.parse(sheetsData) : [];
+
+            sheets.forEach(sheet => {
+                const isAllowed = sheet.allowedEmails.some(email => email.trim().toLowerCase() === sessionUserIdentity.toLowerCase());
+                if (!isAllowed && getEffectiveAccessLevel() !== 'admin') return;
+
+                const isSelected = trackingSelectedSheetIds.includes(sheet.id);
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                    isSelected ? 'bg-zinc-900 border-blue-500 shadow-lg shadow-blue-950/20' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
+                }`;
+                
+                // Add click listener directly to multi-select worksheet selector triggers
+                card.onclick = (e) => {
+                    if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+                    toggleWorkspaceSheetSelectionMap(sheet.id);
+                };
+
+                let adminAssignmentControl = "";
+                if(getEffectiveAccessLevel() === 'admin') {
+                    adminAssignmentControl = `
+                        <div class="mt-2 pt-2 border-t border-zinc-800 flex items-center justify-between gap-1">
+                            <input type="email" id="assignEmail_${sheet.id}" placeholder="coworker email" class="bg-black border border-zinc-700 text-[10px] p-1 rounded w-full text-white focus:outline-none">
+                            <button onclick="dispatchTaskToCoworkerCloud('${sheet.id}', '${sheet.title}', '${sheet.url}')" class="bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-bold px-1.5 py-1 rounded uppercase">Assign</button>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-bold uppercase tracking-tight text-zinc-200 block">${sheet.title}</span>
+                            <span class="text-[9px] font-mono ${isSelected ? 'text-blue-400 font-bold' : 'text-zinc-500'}">
+                                ${isSelected ? '● BOUND ACTIVE' : '○ AVAILABLE'}
+                            </span>
+                        </div>
+                        <p class="text-[10px] text-zinc-500 font-mono truncate mb-2">${sheet.url}</p>
+                    </div>
+                    <div>
+                        <div class="flex gap-1.5 mt-2">
+                            <button onclick="launchFullScreenWorksheetArena('${sheet.url}', '${sheet.title}')" class="flex-1 bg-zinc-900 text-zinc-300 border border-zinc-700 text-[10px] font-bold uppercase py-1 rounded hover:bg-zinc-800 transition">Arena view</button>
+                            <button onclick="bindSingleSheetToLiveEmbedViewport('${sheet.url}', '${sheet.title}')" class="flex-1 bg-zinc-100 text-black text-[10px] font-bold uppercase py-1 rounded hover:bg-white transition">Embed load</button>
+                        </div>
+                        ${adminAssignmentControl}
+                    </div>
+                `;
+                grid.appendChild(card);
             });
         }
 
-        /**
-         * Pulls global tasks from Supabase database to populate matching client rows instantly
-         */
-        async function pullGlobalAssignedTasksFromSupabasePipeline() {
-            try {
-                const { data, error } = await _supabase.from('assigned_tasks').select('*');
-                if (error) {
-                    console.error("Error connecting to Supabase tasks database:", error.message);
-                } else if (data) {
-                    let currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
-                    data.forEach(dbRow => {
-                        const existingIdx = currentSheets.findIndex(s => s.id === dbRow.id);
-                        if (existingIdx === -1) {
-                            currentSheets.push({
-                                id: dbRow.id,
-                                title: dbRow.sheet_title,
-                                url: dbRow.sheet_url,
-                                allowedEmails: dbRow.assigned_emails
-                            });
-                        } else {
-                            // Sync up existing references with incoming Supabase arrays
-                            currentSheets[existingIdx].title = dbRow.sheet_title;
-                            currentSheets[existingIdx].url = dbRow.sheet_url;
-                            currentSheets[existingIdx].allowedEmails = dbRow.assigned_emails;
-                        }
-                    });
-                    localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
-                }
-            } catch (err) {
-                console.error("Task parsing handshake exceptions caught:", err);
-            }
-            renderSheetsGrid();
-        }
-
-        function toggleWorkspacePanelGridVisibility() {
-            const gridWrapper = document.getElementById('workspaceGridOuterWrapper');
-            const toggleBtn = document.getElementById('toggleWorkspaceSelectionGridBtn');
-
-            if (gridWrapper.classList.contains('hidden')) {
-                gridWrapper.classList.remove('hidden');
-                toggleBtn.innerText = "Hide Selection Cards";
-                toggleBtn.className = "bg-purple-900 border border-purple-700 text-white font-bold px-3 py-1.5 rounded hover:bg-purple-800 transition";
-            } else {
-                gridWrapper.classList.add('hidden');
-                toggleBtn.innerText = "Unhide Selection Cards (Choose More)";
-                toggleBtn.className = "bg-emerald-700 border border-emerald-600 text-black font-black px-3 py-1.5 rounded hover:bg-emerald-600 transition";
-            }
-        }
-
-        function trackActiveClickSheetTarget(title, url) {
-            document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = `${title} (${url})`;
-            document.getElementById('currentActiveWorkspaceUrlDisplay').title = url;
-
-            // Automatically triggers the logger telemetry with full worksheet details to Supabase
-            dispatchSupabaseUserTelemetryMetric(sessionUserIdentity, "Activated Worksheet Operation Tracking State", title);
-            
-            // Auto hide worksheet grid panel once card is activated, prompting choices via selector buttons
-            toggleWorkspacePanelGridVisibility();
-        }
-
-        function fetchActiveSheetMetricPipeline() {
-            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
-            const container = document.getElementById('metricsOutputSummary');
-            document.getElementById('metricsReportTerminal').classList.remove('hidden');
-
-            if(sheets.length === 0) {
-                container.innerHTML = `<p class="text-zinc-500 italic text-[11px]">No operational tracking sheets are registered on this node profile.</p>`;
+        async function dispatchTaskToCoworkerCloud(sheetId, title, url) {
+            const emailInput = document.getElementById(`assignEmail_${sheetId}`).value.trim().toLowerCase();
+            if(!emailInput) {
+                showAlert("Please inputs a valid coworker identifier address context string.", "error");
                 return;
             }
-
-            const mockCommonDictionary = ["antonymbali96@gmail.com", "worker1@rc-team.com", "worker2@rc-team.net", "antonio.annotation@workspace.org", "manager@rc-ai-config.io", "reviewer3@autonomy.corp"];
-            const usersRegistry = JSON.parse(localStorage.getItem('rc_user_registry') || '[]');
-            let outputHtml = "";
-
-            const executiveContextActive = (sessionAccessLevel === 'admin' && !runtimeImpersonationActive);
-
-            sheets.forEach((sheet) => {
-                outputHtml += `<div class="border-b border-zinc-900 pb-2 mb-2 last:border-none">
-                    <div class="text-zinc-400 font-bold flex justify-between items-center mb-1">
-                        <span>📊 Matrix Title Reference: <span class="text-white font-sans">${sheet.title}</span></span>
-                        <span class="text-[10px] bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-blue-400">Index Framework Model</span>
-                    </div>
-                    <div class="pl-3 space-y-1 text-zinc-400 text-[11px]">
-                        <p>🔗 Target Destination URL Path: <span class="text-zinc-500 font-sans break-all select-all">${sheet.url}</span></p>
-                        <p>👥 Active Assigned Workforce Metric: <span class="text-purple-400 font-bold">${sheet.allowedEmails.length} Registered System Profiles</span></p>
-                        <div class="mt-2 bg-black/60 p-2 rounded border border-zinc-900 space-y-1.5">
-                            <span class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Assigned Node Dashboard Metrics & Moderation Controls:</span>`;
-                
-                sheet.allowedEmails.forEach((email, rowIdx) => {
-                    const trackingRowNumber = rowIdx + 1;
-                    let validationFlag = `<span class="text-emerald-500 font-bold">[VERIFIED RUNTIME MATRIX MATCH]</span>`;
-
-                    if (!mockCommonDictionary.includes(email.toLowerCase())) {
-                        let nearestMatch = "None Identified";
-                        let highestScore = 0;
-                        mockCommonDictionary.forEach(dictWord => {
-                            let matches = 0;
-                            for(let charIdx = 0; charIdx < Math.min(dictWord.length, email.length); charIdx++) {
-                                if(dictWord[charIdx] === email[charIdx]) matches++;
-                            }
-                            if(matches > highestScore) {
-                                highestScore = matches;
-                                nearestMatch = dictWord;
-                            }
-                        });
-                        validationFlag = `<span class="text-amber-400 font-bold">[TYPO IRREGULARITY]</span> <span class="text-zinc-500 italic">(Row Offset: #${trackingRowNumber}). Nearest lookup: <strong class="text-purple-300 font-mono">${nearestMatch}</strong></span>`;
-                    }
-                    
-                    // Lookup current dynamic credential assignment states
-                    const profileMatch = usersRegistry.find(u => u.email.toLowerCase() === email.toLowerCase());
-                    const designatedRole = profileMatch ? profileMatch.role : "Coworker";
-                    
-                    let modificationMarkup = "";
-                    if (executiveContextActive && email.toLowerCase() !== MASTER_ADMIN_ID.toLowerCase()) {
-                        if (designatedRole === "Admin") {
-                            modificationMarkup = `<button onclick="executeAdministrativeRoleMutation('${email}', 'Coworker')" class="ml-2 bg-red-900 text-red-200 text-[9px] px-1 rounded hover:bg-red-800 transition uppercase tracking-tighter">Downgrade to Coworker</button>`;
-                        } else {
-                            modificationMarkup = `<button onclick="executeAdministrativeRoleMutation('${email}', 'Admin')" class="ml-2 bg-purple-900 text-purple-200 text-[9px] px-1 rounded hover:bg-purple-800 transition uppercase tracking-tighter">Upgrade to Admin</button>`;
-                        }
-                    }
-
-                    outputHtml += `<div class="text-[10px] font-mono flex flex-wrap items-center gap-1 pl-1 border-b border-zinc-900 py-1 last:border-none">
-                        <span class="text-zinc-600 font-bold">[ROW ${trackingRowNumber.toString().padStart(2, '0')}]</span>
-                        <span class="text-zinc-300 font-semibold">${email}</span> 
-                        <span class="bg-zinc-800 text-zinc-400 px-1 rounded text-[9px] font-sans">[Clearance Role: ${designatedRole}]</span>
-                        &mdash; ${validationFlag}
-                        ${modificationMarkup}
-                    </div>`;
-                });
-
-                outputHtml += `</div></div></div>`;
+            const { error } = await _supabase.from('task_assignments').insert({
+                sheet_id: sheetId,
+                sheet_title: title,
+                sheet_url: url,
+                coworker_email: emailInput,
+                assigned_by: sessionUserIdentity
             });
-
-            container.innerHTML = outputHtml;
+            if(!error) {
+                showAlert(`Task instances assigned dynamically to coworker ${emailInput}. Appeared live in their dashboard.`, "success");
+                document.getElementById(`assignEmail_${sheetId}`).value = "";
+            } else {
+                showAlert("Supabase cloud allocation handshake error layer rejected transmission.", "error");
+            }
         }
 
-        function toggleModal(show) {
+        function toggleWorkspaceSheetSelectionMap(id) {
+            const index = trackingSelectedSheetIds.indexOf(id);
+            if (index > -1) {
+                trackingSelectedSheetIds.splice(index, 1);
+            } else {
+                trackingSelectedSheetIds.push(id);
+            }
+            rebuildWorkspaceSheetDisplayGrid();
+            showAlert("Active matrix stacked sheet target selections recalculated.", "success");
+        }
+
+        function bindSingleSheetToLiveEmbedViewport(url, title) {
+            const iframe = document.getElementById('liveWorkspaceSandboxIframe');
+            const fallback = document.getElementById('iframePlaceholderFallbackState');
+            const titleBadge = document.getElementById('workspaceActiveTitleBadge');
+
+            fallback.classList.add('hidden');
+            iframe.classList.remove('hidden');
+            iframe.src = url;
+            titleBadge.innerText = title;
+            document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = url;
+            showAlert(`Workspace Sandbox channel locked on target resource array pipeline: ${title}`, "success");
+        }
+
+        function toggleModal(open) {
             const modal = document.getElementById('sheetCardCreationModal');
-            if(show) {
+            if (open) {
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
             } else {
@@ -835,395 +896,257 @@
             }
         }
 
-        /**
-         * Dual Server Saver - Simultaneously stores sheet allocations to local memory and Supabase database
-         */
-        async function saveSheetAssetCardEngine() {
+        function saveSheetAssetCardEngine() {
             const title = document.getElementById('modalSheetTitle').value.trim();
             const url = document.getElementById('modalSheetUrl').value.trim();
-            const emailsRaw = document.getElementById('modalSheetEmails').value;
+            const emailsText = document.getElementById('modalSheetEmails').value.trim();
 
-            if(!title || !url) {
-                alert("Please satisfy all metadata properties schema headers required for creation.");
+            if (!title || !url) {
+                showAlert("Missing parameters. Verify work card identification labels map headers.", "error");
                 return;
             }
 
-            const allowedEmails = emailsRaw.split(',').map(e => e.trim()).filter(e => e.length > 0);
-            const clientGeneratedId = "sheet_" + Date.now();
-            
-            // 1. Save Locally
-            const currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
-            currentSheets.push({
-                id: clientGeneratedId,
+            let emailArray = emailsText.split(',').map(e => e.trim().toLowerCase()).filter(e => e.length > 0);
+            if(!emailArray.includes(sessionUserIdentity.toLowerCase())) {
+                emailArray.push(sessionUserIdentity.toLowerCase());
+            }
+
+            const sheetsData = localStorage.getItem('RC_SHEETS');
+            let sheets = sheetsData ? JSON.parse(sheetsData) : [];
+
+            const newSheet = {
+                id: "sheet_" + Date.now(),
                 title: title,
                 url: url,
-                allowedEmails: allowedEmails
-            });
-            localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
+                allowedEmails: emailArray
+            };
 
-            // 2. Save to Supabase Simultaneously
-            try {
-                const { error } = await _supabase
-                    .from('assigned_tasks')
-                    .insert([
-                        {
-                            id: clientGeneratedId,
-                            sheet_title: title,
-                            sheet_url: url,
-                            assigned_emails: allowedEmails
-                        }
-                    ]);
-                if (error) console.error("Supabase dual-server task push failure:", error.message);
-            } catch (err) {
-                console.error("Failed to push task directly to Supabase layer:", err);
-            }
+            sheets.push(newSheet);
+            localStorage.setItem('RC_SHEETS', JSON.stringify(sheets));
+            
+            toggleModal(false);
+            rebuildWorkspaceSheetDisplayGrid();
+            showAlert("New R.C target sheet access layout metadata successfully written down.", "success");
             
             document.getElementById('modalSheetTitle').value = "";
             document.getElementById('modalSheetUrl').value = "";
             document.getElementById('modalSheetEmails').value = "";
-            
-            toggleModal(false);
-            renderSheetsGrid();
         }
 
-        function renderSheetsGrid() {
-            const grid = document.getElementById('sheetsDisplayGrid');
-            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
-            grid.innerHTML = "";
-
-            if(sheets.length === 0) {
-                grid.innerHTML = `<p class="text-zinc-500 text-xs italic col-span-2">No sheet asset cards mapped into index memory arrays.</p>`;
+        function delegateUserAccessRole(targetRole) {
+            const targetEmail = document.getElementById('privilegeTargetEmail').value.trim().toLowerCase();
+            if (!targetEmail) {
+                showAlert("Verify target accounts authorization string fields.", "error");
                 return;
             }
 
-            const evaluationUserIdentity = sessionUserIdentity ? sessionUserIdentity.toLowerCase() : "";
-            const executiveContextActive = (sessionAccessLevel === 'admin' && !runtimeImpersonationActive);
+            const registryData = localStorage.getItem('rc_user_registry');
+            let users = registryData ? JSON.parse(registryData) : [];
 
-            sheets.forEach(sheet => {
-                const isUserPermitted = sheet.allowedEmails.some(email => email.toLowerCase() === evaluationUserIdentity) || executiveContextActive;
-                
-                const card = document.createElement('div');
-                card.className = `p-5 rounded-lg border bg-zinc-900/60 transition-all ${isUserPermitted ? 'border-zinc-800 hover:border-zinc-700' : 'border-red-950/40 opacity-40 select-none'}`;
-                
-                let buttonMarkup = "";
-                if(isUserPermitted) {
-                    buttonMarkup = `<a href="${sheet.url}" target="_blank" onclick="trackActiveClickSheetTarget('${sheet.title}', '${sheet.url}')" class="mt-4 block w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-center text-xs py-2 rounded uppercase tracking-wider transition">Open Assigned Workspace</a>`;
-                } else {
-                    buttonMarkup = `<button disabled class="mt-4 block w-full bg-zinc-800 text-zinc-500 font-bold text-center text-xs py-2 rounded uppercase tracking-wider cursor-not-allowed">Workspace Restrained</button>`;
-                }
-
-                let deleteButton = "";
-                if(executiveContextActive) {
-                    deleteButton = `<button onclick="deleteSheetAssetCard('${sheet.id}')" class="text-[10px] text-red-500 hover:text-red-400 uppercase font-mono tracking-tighter">Wipe Card</button>`;
-                }
-
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <h4 class="text-sm font-black text-white tracking-wide truncate max-w-[180px]">${sheet.title}</h4>
-                        ${deleteButton}
-                    </div>
-                    <p class="text-[11px] text-zinc-500 font-mono mb-2 truncate">${sheet.url}</p>
-                    <div class="text-[10px] text-zinc-400 font-mono max-h-12 overflow-y-auto bg-black/40 p-1.5 rounded border border-zinc-950">
-                        <span class="text-zinc-600 block uppercase font-bold text-[9px]">Permissions:</span>
-                        ${sheet.allowedEmails.join(', ')}
-                    </div>
-                    ${buttonMarkup}
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        async function deleteSheetAssetCard(id) {
-            if(confirm("Confirm removal from runtime context lists?")) {
-                let currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
-                currentSheets = currentSheets.filter(s => s.id !== id);
-                localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
-                
-                try {
-                    const { error } = await _supabase.from('assigned_tasks').delete().eq('id', id);
-                    if (error) console.error("Supabase item destruction failure code summary:", error.message);
-                } catch(err) {
-                    console.error("Exception caught clearing task from Supabase layer:", err);
-                }
-                renderSheetsGrid();
+            let matchIndex = users.findIndex(user => user.email.toLowerCase() === targetEmail);
+            if (matchIndex > -1) {
+                users[matchIndex].role = targetRole;
+                localStorage.setItem('rc_user_registry', JSON.stringify(users));
+                showAlert(`Privilege modified. User profile ${targetEmail} access level rewritten to: ${targetRole}`, "success");
+                document.getElementById('privilegeTargetEmail').value = "";
+                renderInterfaceBasedOnPrivilegeRoles();
+            } else {
+                showAlert("No registered local configuration handles matched target string.", "error");
             }
         }
 
-        function runClientCleanExportPipeline() {
-            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
-            const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || '[]');
-            
-            let csv = "data:text/csv;charset=utf-8,+++ R.C GLOBAL COMPLIANCE SCHEMA LOG - CLEAN DATA RECORDS ONLY +++\n";
-            csv += "Sheet Card Reference,Destination Link Track,Assigned Workforce Parameters,Audit Scan Flag\n";
-
-            sheets.forEach(s => {
-                let syntaxErrorFlags = [];
-                if(s.title.match(/[^a-zA-Z0-9\s-_]/)) syntaxErrorFlags.push("Irregular Grammar Characters Detected in Workspace Title");
-                const matchingLinksCount = links.filter(l => l.fullUrl.includes(`id=${s.id}`) || false).length;
-                if(matchingLinksCount === 0 && links.length > 0) syntaxErrorFlags.push("Warning: Missing Active Link Reference Maps");
-
-                const cleanTitle = s.title.replace(/[,\"]/g, ""); 
-                const cleanUrl = s.url; 
-                const cleanEmails = s.allowedEmails.join('; ');
-                const auditStatus = syntaxErrorFlags.length > 0 ? `AUDIT WARNING: ${syntaxErrorFlags.join(' | ')}` : "VERIFIED EXPORT COMPLIANT";
-
-                csv += `"${cleanTitle}","${cleanUrl}","${cleanEmails}","${auditStatus}"\n`;
-            });
-
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const anchor = document.createElement('a');
-            anchor.href = URL.createObjectURL(blob);
-            anchor.setAttribute('download', `RC_CLEAN_CUSTOMER_EXPORT_${Date.now()}.csv`);
-            document.body.appendChild(anchor);
-            anchor.click();
-            document.body.removeChild(anchor);
-        }
-
-        /**
-         * Dual Server Video Saver - Syncs content inventory directly to IndexedDB local buffers and Supabase simultaneously
-         */
-        async function processVideoUploadEngine() {
-            const titleInput = document.getElementById('videoThreadTitleInput');
+        function processVideoUploadEngine() {
+            const title = document.getElementById('videoThreadTitleInput').value.trim();
             const fileInput = document.getElementById('videoFileInput');
-            
-            if(!titleInput.value.trim() || !fileInput.files[0]) {
-                alert("Please provide both video document thread name maps and a valid target stream binary file object reference.");
-                return;
-            }
-
-            const threadId = "thread_" + Date.now();
             const file = fileInput.files[0];
 
-            if(!dbInstance) {
-                alert("IndexedDB transaction channel context not initialized ready.");
+            if (!title || !file) {
+                showAlert("Thread designation missing valid description metadata arrays.", "error");
                 return;
             }
 
+            const videoId = "video_" + Date.now();
             const transaction = dbInstance.transaction(["blobs", "video_threads"], "readwrite");
+            
             const blobStore = transaction.objectStore("blobs");
-            const threadStore = transaction.objectStore("video_threads");
+            const metaStore = transaction.objectStore("video_threads");
 
-            blobStore.put({ id: "blob_" + threadId, data: file });
-            threadStore.put({
-                id: threadId,
-                title: titleInput.value.trim(),
-                blobRef: "blob_" + threadId,
-                timestamp: Date.now()
-            });
+            blobStore.put({ id: videoId, data: file });
+            metaStore.put({ id: videoId, title: title, timestamp: new Date().toISOString() });
 
-            try {
-                const { error } = await _supabase
-                    .from('uploaded_videos')
-                    .insert([
-                        {
-                            id: threadId,
-                            title: titleInput.value.trim(),
-                            blob_ref: "blob_" + threadId
-                        }
-                    ]);
-                if (error) console.error("Supabase video synchronization error details:", error.message);
-            } catch (err) {
-                console.error("Failed to post metadata record context onto Supabase server:", err);
-            }
+            transaction.oncomplete = async function() {
+                showAlert(`Video thread stream successfully registered into localized stack engine storage layer mapping.`, "success");
+                
+                // Write transaction into global Supabase storage ledger mapping concurrently
+                await _supabase.from('global_videos').insert({ id: videoId, title: title });
 
-            transaction.oncomplete = function() {
-                titleInput.value = "";
+                document.getElementById('videoThreadTitleInput').value = "";
                 fileInput.value = "";
-                alert("Binary tracking stream registered inside Dual-Server channels successfully.");
-                renderVideoThreadsList();
+                rebuildVideoThreadsListQueueUI();
+            };
+
+            transaction.onerror = function(e) {
+                console.error(e);
+                showAlert("Critical IndexedDB thread lock overflow on processing stream mapping arrays.", "error");
             };
         }
 
-        function renderVideoThreadsList(callback) {
+        function rebuildVideoThreadsListQueueUI() {
             const container = document.getElementById('videoThreadLinksContainer');
             container.innerHTML = "";
 
-            if(!dbInstance) {
-                container.innerHTML = `<span class="text-zinc-600 italic">Storage frame loading...</span>`;
-                return;
-            }
+            if (!dbInstance) return;
 
-            const store = dbInstance.transaction("video_threads", "readonly").objectStore("video_threads");
-            const request = store.getAll();
+            const objectStore = dbInstance.transaction("video_threads").objectStore("video_threads");
+            objectStore.openCursor().onsuccess = function(event) {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const row = cursor.value;
+                    const isActive = currentActiveVideoThreadId === row.id;
+                    
+                    const threadRow = document.createElement('div');
+                    threadRow.className = `p-2 rounded border flex flex-col gap-1 transition ${
+                        isActive ? 'active-thread-highlight border-purple-500' : 'bg-zinc-950 border-zinc-900 hover:border-zinc-800'
+                    }`;
 
-            request.onsuccess = function(e) {
-                const threads = e.target.result;
-                if(threads.length === 0) {
-                    container.innerHTML = `<span class="text-zinc-600 italic">No published video streams recorded.</span>`;
-                    if(callback) callback();
-                    return;
+                    threadRow.innerHTML = `
+                        <div class="flex justify-between items-center w-full">
+                            <span class="truncate font-bold tracking-tight text-zinc-300 block cursor-pointer flex-1 text-xs" onclick="loadActiveVideoThreadToPlayer('${row.id}')">
+                                📹 ${row.title}
+                            </span>
+                            <button onclick="purgeVideoThreadEngine('${row.id}')" class="text-red-400 hover:text-red-300 text-[10px] ml-1 font-mono uppercase bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded transition">
+                                Delete
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(threadRow);
+                    cursor.continue();
                 }
-
-                const executiveContextActive = (sessionAccessLevel === 'admin' && !runtimeImpersonationActive);
-
-                threads.forEach(t => {
-                    const threadRowWrapper = document.createElement('div');
-                    threadRowWrapper.className = "flex items-center gap-1 mb-1 bg-black rounded border border-zinc-800 p-1 w-full justify-between";
-
-                    const lnk = document.createElement('button');
-                    lnk.id = `btn-thread-${t.id}`;
-                    lnk.className = "text-left block truncate text-[11px] text-zinc-300 font-mono flex-1 px-1 py-0.5 hover:text-white";
-                    lnk.innerText = `🎥 ${t.title}`;
-                    lnk.onclick = () => loadActiveVideoThreadToPlayer(t.id);
-                    threadRowWrapper.appendChild(lnk);
-
-                    if (executiveContextActive) {
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.className = "text-[9px] font-sans font-bold bg-red-950/60 border border-red-900 text-red-400 px-1.5 py-0.5 rounded hover:bg-red-900 hover:text-white transition uppercase";
-                        deleteBtn.innerText = "Delete";
-                        deleteBtn.onclick = (event) => {
-                            event.stopPropagation();
-                            purgeSpecificVideoThreadAsset(t.id, t.blobRef);
-                        };
-                        threadRowWrapper.appendChild(deleteBtn);
-                    }
-
-                    container.appendChild(threadRowWrapper);
-                });
-                if(callback) callback();
             };
         }
 
-        /**
-         * Purge Video Handler - Safely removes video assets from both browser nodes and remote Supabase tables simultaneously
-         */
-        async function purgeSpecificVideoThreadAsset(threadId, blobReferenceKey) {
-            if (confirm("Confirm absolute deletion of this binary stream asset from dual terminal storage systems?")) {
-                const transaction = dbInstance.transaction(["blobs", "video_threads"], "readwrite");
-                transaction.objectStore("video_threads").delete(threadId);
-                transaction.objectStore("blobs").delete(blobReferenceKey);
+        async function purgeVideoThreadEngine(id) {
+            if(!confirm("Are you sure you want to delete this video thread permanently from database repositories?")) return;
+            
+            const transaction = dbInstance.transaction(["blobs", "video_threads"], "readwrite");
+            transaction.objectStore("blobs").delete(id);
+            transaction.objectStore("video_threads").delete(id);
+            
+            transaction.oncomplete = async function() {
+                showAlert("Video binary data thread successfully purged from local instance storage maps.", "success");
+                
+                // Mirror the removal across the Supabase server clusters
+                await _supabase.from('global_videos').delete().eq('id', id);
 
-                try {
-                    const { error } = await _supabase.from('uploaded_videos').delete().eq('id', threadId);
-                    if (error) console.error("Supabase row drop notice execution details:", error.message);
-                } catch(err) {
-                    console.error("Exception handled during task tracking asset array cleanup steps:", err);
+                if(currentActiveVideoThreadId === id) {
+                    currentActiveVideoThreadId = "";
+                    document.getElementById('dashboardVideoPlayer').src = "";
+                    document.getElementById('studioVideoPlayer').src = "";
                 }
-
-                transaction.oncomplete = function() {
-                    alert("Video streaming asset thread safely wiped from node persistent matrix records.");
-                    
-                    const dashVideo = document.getElementById('dashboardVideoPlayer');
-                    const studioVideo = document.getElementById('studioVideoPlayer');
-                    if (currentActiveVideoThreadId === threadId) {
-                        dashVideo.src = "";
-                        studioVideo.src = "";
-                        currentActiveVideoThreadId = "";
-                    }
-                    renderVideoThreadsList();
-                };
-            }
+                rebuildVideoThreadsListQueueUI();
+            };
         }
 
         function loadActiveVideoThreadToPlayer(id) {
+            if (!dbInstance) return;
             currentActiveVideoThreadId = id;
-            
-            document.querySelectorAll('[id^="btn-thread-"]').forEach(el => el.classList.remove('active-thread-highlight'));
-            const activeBtn = document.getElementById(`btn-thread-${id}`);
-            if(activeBtn) activeBtn.classList.add('active-thread-highlight');
+            rebuildVideoThreadsListQueueUI();
 
-            const tx = dbInstance.transaction(["video_threads", "blobs"], "readonly");
-            tx.objectStore("video_threads").get(id).onsuccess = function(e) {
-                const thread = e.target.result;
-                if(!thread) return;
-                tx.objectStore("blobs").get(thread.blobRef).onsuccess = function(ev) {
-                    if(!ev.target.result) return;
-                    const blobData = ev.target.result.data;
-                    const streamUrl = URL.createObjectURL(blobData);
+            const tx = dbInstance.transaction("blobs", "readonly");
+            const store = tx.objectStore("blobs");
+            const getReq = store.get(id);
+
+            getReq.onsuccess = function() {
+                if (getReq.result) {
+                    const videoUrl = URL.createObjectURL(getReq.result.data);
+                    document.getElementById('dashboardVideoPlayer').src = videoUrl;
+                    document.getElementById('studioVideoPlayer').src = videoUrl;
+                    showAlert(`Operational visual video stream bound correctly: ID node [ ${id} ]`, "success");
                     
-                    document.getElementById('dashboardVideoPlayer').src = streamUrl;
-                    document.getElementById('studioVideoPlayer').src = streamUrl;
-                };
+                    const historyContainer = document.getElementById('deepLinkContainerHistory');
+                    const entry = document.createElement('div');
+                    entry.className = "p-1.5 bg-zinc-950 border border-zinc-900 rounded flex justify-between text-[11px] font-mono text-zinc-400";
+                    entry.innerHTML = `<span>Run: ${id}</span> <span class="text-purple-400 font-bold">READY</span>`;
+                    historyContainer.prepend(entry);
+                }
             };
         }
 
         function processModuleUploadEngine() {
             const title = document.getElementById('moduleTitleInput').value.trim();
-            const file = document.getElementById('moduleFileInput').files[0];
+            const fileInput = document.getElementById('moduleFileInput');
+            const file = fileInput.files[0];
 
-            if(!title || !file) {
-                alert("Please attach full structural identity metadata metrics before staging module uploads.");
+            if (!title || !file) {
+                showAlert("Provide description metrics parameters for system module mapping.", "error");
                 return;
             }
 
-            const id = "mod_" + Date.now();
-            const tx = dbInstance.transaction("blobs", "readwrite");
-            tx.objectStore("blobs").put({ id: "blob_" + id, data: file });
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                const metadataString = localStorage.getItem('RC_MODULES_METADATA');
+                let modules = metadataString ? JSON.parse(metadataString) : [];
 
-            tx.oncomplete = function() {
-                const metadata = JSON.parse(localStorage.getItem('RC_MODULES_METADATA') || '[]');
-                metadata.push({ id: id, title: title, fileName: file.name, blobRef: "blob_" + id });
-                localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(metadata));
+                const newModule = {
+                    id: "mod_" + Date.now(),
+                    title: title,
+                    fileName: file.name,
+                    payload: dataUrl,
+                    timestamp: new Date().toLocaleDateString()
+                };
 
+                modules.push(newModule);
+                localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(modules));
+
+                showAlert("Asset module compiled and attached to operational learning array registers.", "success");
                 document.getElementById('moduleTitleInput').value = "";
-                document.getElementById('moduleFileInput').value = "";
-                alert("Operational learning module locked in system records.");
-                renderLearningModules();
+                fileInput.value = "";
+                rebuildModulesListUI();
             };
+            reader.readAsDataURL(file);
         }
 
-        function renderLearningModules() {
+        function rebuildModulesListUI() {
             const container = document.getElementById('modulesListOutput');
-            const modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA') || '[]');
             container.innerHTML = "";
+            const metadataString = localStorage.getItem('RC_MODULES_METADATA');
+            const modules = metadataString ? JSON.parse(metadataString) : [];
 
             if(modules.length === 0) {
-                container.innerHTML = `<p class="text-zinc-600 text-xs italic">No static learning engine resource cards registered currently.</p>`;
+                container.innerHTML = `<p class="text-[11px] text-zinc-600 font-mono italic">No learning modules bound yet.</p>`;
                 return;
             }
 
-            const executiveContextActive = (sessionAccessLevel === 'admin' && !runtimeImpersonationActive);
-
-            modules.forEach(m => {
-                const div = document.createElement('div');
-                div.className = "p-3 bg-zinc-950 border border-zinc-800 rounded flex justify-between items-center text-xs";
-                
-                let deleteOption = "";
-                if(executiveContextActive) {
-                    deleteOption = `<button onclick="deleteLearningModuleEngine('${m.id}')" class="text-red-500 font-mono hover:text-red-400 pl-1">Wipe</button>`;
-                }
-
-                div.innerHTML = `
-                    <div class="truncate max-w-[170px]">
-                        <span onclick="launchStandaloneModuleReader('${m.id}')" class="text-purple-400 font-bold hover:underline cursor-pointer block truncate">${m.title}</span>
-                        <span class="text-[10px] text-zinc-500 font-mono">${m.fileName}</span>
+            modules.forEach(mod => {
+                const row = document.createElement('div');
+                row.className = "p-2.5 bg-zinc-950 border border-zinc-800 rounded-lg flex justify-between items-center hover:border-zinc-700 transition";
+                row.innerHTML = `
+                    <div class="truncate pr-2 flex-1">
+                        <span class="text-xs font-bold text-zinc-300 block truncate">${mod.title}</span>
+                        <span class="text-[10px] text-zinc-500 font-mono block">${mod.timestamp} | ${mod.fileName}</span>
                     </div>
-                    ${deleteOption}
+                    <button onclick="launchStandaloneModuleReader('${mod.id}')" class="bg-purple-950 hover:bg-purple-900 text-purple-300 text-[10px] px-2.5 py-1 rounded font-mono font-bold uppercase border border-purple-800/40">Read</button>
                 `;
-                container.appendChild(div);
+                container.appendChild(row);
             });
         }
 
-        function deleteLearningModuleEngine(id) {
-            if(confirm("Confirm destruction of asset profile memory metrics?")) {
-                let metadata = JSON.parse(localStorage.getItem('RC_MODULES_METADATA') || '[]');
-                metadata = metadata.filter(m => m.id !== id);
-                localStorage.setItem('RC_MODULES_METADATA', JSON.stringify(metadata));
-
-                const tx = dbInstance.transaction("blobs", "readwrite");
-                tx.objectStore("blobs").delete("blob_" + id);
-                tx.oncomplete = function() {
-                    renderLearningModules();
-                };
-            }
-        }
-
         function launchStandaloneModuleReader(id) {
-            const modules = JSON.parse(localStorage.getItem('RC_MODULES_METADATA') || '[]');
-            const activeMod = modules.find(m => m.id === id);
-            if(!activeMod) return;
+            const metadataString = localStorage.getItem('RC_MODULES_METADATA');
+            const modules = metadataString ? JSON.parse(metadataString) : [];
+            const target = modules.find(m => m.id === id);
 
-            document.getElementById('mainDashboardView').classList.add('hidden');
-            document.getElementById('standaloneModuleReaderView').classList.remove('hidden');
-            document.getElementById('standaloneModuleHeaderTitle').innerText = activeMod.title;
-
-            const tx = dbInstance.transaction("blobs", "readonly");
-            tx.objectStore("blobs").get(activeMod.blobRef).onsuccess = function(e) {
-                const blobObj = e.target.result.data;
-                const dl = document.getElementById('standaloneModuleDownloadTrigger');
-                dl.href = URL.createObjectURL(blobObj);
-                dl.setAttribute('download', activeMod.fileName);
-            };
+            if(target) {
+                document.getElementById('mainDashboardView').classList.add('hidden');
+                document.getElementById('standaloneModuleReaderView').classList.remove('hidden');
+                document.getElementById('standaloneModuleHeaderTitle').innerText = target.title;
+                
+                const trigger = document.getElementById('standaloneModuleDownloadTrigger');
+                trigger.href = target.payload;
+                trigger.download = target.fileName;
+                showAlert(`Initialized isolation sandbox viewer module context for asset node: ${target.title}`, "success");
+            }
         }
 
         function exitStandaloneModuleView() {
@@ -1231,230 +1154,184 @@
             document.getElementById('mainDashboardView').classList.remove('hidden');
         }
 
-        function setupPlaybackStateListeners() {
-            const dashVideo = document.getElementById('dashboardVideoPlayer');
-            const studioVideo = document.getElementById('studioVideoPlayer');
-
-            dashVideo.ontimeupdate = function() {
-                const tsStr = convertSecondsToFormattedTimestamp(dashVideo.currentTime);
-                document.getElementById('dashTimestampDisplay').innerText = `TS: ${tsStr}`;
-            };
-
-            studioVideo.ontimeupdate = function() {
-                const tsStr = convertSecondsToFormattedTimestamp(studioVideo.currentTime);
-                document.getElementById('studioTimestampCounter').innerText = `TS: ${tsStr}`;
-                
-                let shareUrlBase = window.location.href.split('?')[0];
-                if(currentActiveVideoThreadId) {
-                    document.getElementById('studioDeepLinkExportUrl').value = `${shareUrlBase}?v_thread=${currentActiveVideoThreadId}&t_frame=${Math.floor(studioVideo.currentTime)}`;
-                } else {
-                    document.getElementById('studioDeepLinkExportUrl').value = "Load a distinct saved thread database key instance loop to export precise parameter references.";
-                }
-            };
+        function launchFullScreenWorksheetArena(url, title) {
+            document.getElementById('mainDashboardView').classList.add('hidden');
+            document.getElementById('fullScreenWorksheetArenaView').classList.remove('hidden');
+            document.getElementById('arenaActiveSheetTitle').innerText = title;
+            document.getElementById('arenaFullScreenIframe').src = url;
         }
 
-        function convertSecondsToFormattedTimestamp(totalSecs) {
-            const hrs = Math.floor(totalSecs / 3600).toString().padStart(2, '0');
-            const mins = Math.floor((totalSecs % 3600) / 60).toString().padStart(2, '0');
-            const secs = Math.floor(totalSecs % 60).toString().padStart(2, '0');
-            return `${hrs}:${mins}:${secs}`;
-        }
-
-        function copyRawTimestampText(rawText) {
-            const cleanText = rawText.replace("TS:", "").trim();
-            navigator.clipboard.writeText(cleanText).then(() => {
-                alert(`Raw timeline context data text string copied successfully: "${cleanText}"`);
-            });
+        function closeFullScreenWorksheetArena() {
+            document.getElementById('fullScreenWorksheetArenaView').classList.add('hidden');
+            document.getElementById('mainDashboardView').classList.remove('hidden');
+            document.getElementById('arenaFullScreenIframe').src = "about:blank";
         }
 
         function launchDedicatedVideoEnvironment() {
             document.getElementById('mainDashboardView').classList.add('hidden');
             document.getElementById('dedicatedVideoStudioView').classList.remove('hidden');
-            
-            const dashVideo = document.getElementById('dashboardVideoPlayer');
-            const studioVideo = document.getElementById('studioVideoPlayer');
-            
-            if(!dashVideo.paused) dashVideo.pause();
-            studioVideo.currentTime = dashVideo.currentTime;
+            showAlert("Studio Environment synchronized. Global tracking matrices active.", "success");
         }
 
         function exitDedicatedStudioEnvironment() {
             document.getElementById('dedicatedVideoStudioView').classList.add('hidden');
             document.getElementById('mainDashboardView').classList.remove('hidden');
-            
-            const dashVideo = document.getElementById('dashboardVideoPlayer');
-            const studioVideo = document.getElementById('studioVideoPlayer');
-            
-            if(!studioVideo.paused) studioVideo.pause();
-            dashVideo.currentTime = studioVideo.currentTime;
         }
 
-        function stepVideoFrame(directionCount) {
-            const player = document.getElementById('studioVideoPlayer');
-            const fpsConstantApproximation = 1 / 30; 
-            player.currentTime += (directionCount * fpsConstantApproximation);
-        }
-
-        function setStudioSpeed(rateFactor) {
-            document.getElementById('studioVideoPlayer').playbackRate = rateFactor;
-        }
-
-        function setPlayerVisualFX(effectKey) {
-            const canvas = document.getElementById('dashboardVideoPlayer');
-            if(effectKey === 'flames') {
-                canvas.classList.add('flame-effect');
-            } else {
-                canvas.classList.remove('flame-effect');
-            }
-        }
-
-        function copyDashboardScreenshotToClipboard() {
-            generateHardcodedCanvasImageSnapshot('dashboardVideoPlayer', (blobObj) => {
-                const clipboardItem = new ClipboardItem({ "image/png": blobObj });
-                navigator.clipboard.write([clipboardItem]).then(() => {
-                    alert("UI Frame screenshot capture copied directly into user execution layer clipboard buffers.");
-                });
-            });
-        }
-
-        function copyStudioScreenshotToClipboard() {
-            generateHardcodedCanvasImageSnapshot('studioVideoPlayer', (blobObj) => {
-                const clipboardItem = new ClipboardItem({ "image/png": blobObj });
-                navigator.clipboard.write([clipboardItem]).then(() => {
-                    alert("Studio viewport screenshot capture copied directly into user execution layer clipboard buffers.");
-                });
-            });
-        }
-
-        function generateHardcodedCanvasImageSnapshot(playerId, callback) {
-            const player = document.getElementById(playerId);
-            const canvas = document.createElement('canvas');
-            canvas.width = player.videoWidth || 640;
-            canvas.height = player.videoHeight || 360;
-            
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
-            
-            ctx.fillStyle = "#34d399";
-            ctx.font = "bold 24px monospace";
-            const timestampString = convertSecondsToFormattedTimestamp(player.currentTime);
-            ctx.fillText(`R.C VERIFIED SNAPSHOT SYSTEM LOG STAMP >> TS: ${timestampString}`, 30, canvas.height - 30);
-            
-            canvas.toBlob((b) => { if(callback) callback(b); }, 'image/png');
-        }
-
-        function copyStudioDeepLinkMetadata() {
-            const elementUrlValue = document.getElementById('studioDeepLinkExportUrl').value;
-            navigator.clipboard.writeText(elementUrlValue).then(() => {
-                alert("Staged deep-link tracking metrics string locked in client clipboard parameters memory layout registers.");
-            });
-        }
-
-        function savePasteInputLinkToGlobalStorage() {
-            const valueInput = document.getElementById('internalDeepLinkPasteInput');
-            if(!valueInput.value.trim()) return;
-
-            const logs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || '[]');
-            logs.push({ id: "link_" + Date.now(), fullUrl: valueInput.value.trim(), dateStr: new Date().toISOString() });
-            localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(logs));
-
-            valueInput.value = "";
-            renderDeepLinkHistoryLogs();
-        }
-
-        function renderDeepLinkHistoryLogs() {
-            const box = document.getElementById('deepLinkContainerHistory');
-            const links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || '[]');
-            box.innerHTML = "";
-
-            if(links.length === 0) {
-                box.innerHTML = `<span class="text-zinc-600 italic">Global logs pipeline empty.</span>`;
-                return;
-            }
-
-            links.forEach(l => {
-                const d = document.createElement('div');
-                d.className = "flex justify-between items-center bg-black/40 border border-zinc-900 rounded p-1.5 text-[10px]";
-                d.innerHTML = `<span class="text-zinc-400 break-all select-all truncate max-w-[190px]" title="${l.fullUrl}">${l.fullUrl}</span>
-                               <button onclick="wipeSpecificPastelinkItem('${l.id}')" class="text-red-700 hover:text-red-500 font-bold font-sans uppercase text-[9px] pl-1">Wipe</button>`;
-                box.appendChild(d);
-            });
-        }
-
-        function wipeSpecificPastelinkItem(id) {
-            let links = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || '[]');
-            links = links.filter(l => l.id !== id);
-            localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(links));
-            renderDeepLinkHistoryLogs();
-        }
-
-        function setupInteractivePanEngine() {
-            const v1 = document.getElementById('videoContainer');
-            const c1 = document.getElementById('dashboardVideoPlayer');
-            setupViewportZoomPanController(v1, c1, dashZoom, 'dashZoomIndicator');
-
-            const v2 = document.getElementById('studioVideoViewport');
-            const c2 = document.getElementById('studioVideoPlayer');
-            setupViewportZoomPanController(v2, c2, studioZoom, 'studioZoomIndicator');
-        }
-
-        function setupViewportZoomPanController(viewport, canvas, stateObj, indicatorId) {
-            viewport.addEventListener('mousedown', (e) => {
-                if(e.target.tagName === 'VIDEO') {
-                    stateObj.isDragging = true;
-                    stateObj.startX = e.clientX - stateObj.x;
-                    stateObj.startY = e.clientY - stateObj.y;
-                }
-            });
-
-            window.addEventListener('mousemove', (e) => {
-                if (!stateObj.isDragging) return;
-                stateObj.x = e.clientX - stateObj.startX;
-                stateObj.y = e.clientY - stateObj.startY;
-                applyTransformCoordinatesMatrix(canvas, stateObj);
-            });
-
-            window.addEventListener('mouseup', () => {
-                stateObj.isDragging = false;
-            });
-        }
-
+        // Framework Layer Viewport Zoom Core Implementations
         function handleDashboardZoom(e) {
             e.preventDefault();
-            executeZoomTransformEngine(e, dashZoom, document.getElementById('dashboardVideoPlayer'), 'dashZoomIndicator');
-        }
-
-        function handleStudioZoom(e) {
-            e.preventDefault();
-            executeZoomTransformEngine(e, studioZoom, document.getElementById('studioVideoPlayer'), 'studioZoomIndicator');
-        }
-
-        function executeZoomTransformEngine(e, stateObj, canvas, indicatorId) {
-            const rateZoomStep = e.deltaY < 0 ? 0.15 : -0.15;
-            stateObj.scaleX = Math.max(0.5, Math.min(6, stateObj.scaleX + rateZoomStep));
-            stateObj.scaleY = Math.max(0.5, Math.min(6, stateObj.scaleY + rateZoomStep));
-            
-            document.getElementById(indicatorId).innerText = `Zoom Scale: ${Math.floor(stateObj.scaleX * 100)}%`;
-            applyTransformCoordinatesMatrix(canvas, stateObj);
-        }
-
-        function applyTransformCoordinatesMatrix(canvas, stateObj) {
-            canvas.style.transform = `translate(${stateObj.x}px, ${stateObj.y}px) scale(${stateObj.scaleX}, ${stateObj.scaleY})`;
+            const player = document.getElementById('dashboardVideoPlayer');
+            dashZoom.scaleX += e.deltaY * -0.001;
+            dashZoom.scaleX = Math.min(Math.max(0.5, dashZoom.scaleX), 4);
+            dashZoom.scaleY = dashZoom.scaleX;
+            player.style.transform = `scale(${dashZoom.scaleX})`;
+            document.getElementById('dashZoomIndicator').innerText = `Zoom: ${Math.round(dashZoom.scaleX * 100)}%`;
         }
 
         function resetDashboardZoom() {
             dashZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+            const player = document.getElementById('dashboardVideoPlayer');
+            player.style.transform = `scale(1)`;
             document.getElementById('dashZoomIndicator').innerText = "Zoom: 100%";
-            applyTransformCoordinatesMatrix(document.getElementById('dashboardVideoPlayer'), dashZoom);
+        }
+
+        function handleStudioZoom(e) {
+            e.preventDefault();
+            const player = document.getElementById('studioVideoPlayer');
+            studioZoom.scaleX += e.deltaY * -0.001;
+            studioZoom.scaleX = Math.min(Math.max(0.5, studioZoom.scaleX), 6);
+            studioZoom.scaleY = studioZoom.scaleX;
+            player.style.transform = `scale(${studioZoom.scaleX})`;
+            document.getElementById('studioZoomIndicator').innerText = `Zoom Scale: ${Math.round(studioZoom.scaleX * 100)}%`;
         }
 
         function resetStudioZoom() {
             studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+            const player = document.getElementById('studioVideoPlayer');
+            player.style.transform = `scale(1)`;
             document.getElementById('studioZoomIndicator').innerText = "Zoom Scale: 100%";
-            applyTransformCoordinatesMatrix(document.getElementById('studioVideoPlayer'), studioZoom);
         }
 
-        function setupGlobalKeyboardShortcutHooks() {
+        function setPlayerVisualFX(mode) {
+            const dPlayer = document.getElementById('dashboardVideoPlayer');
+            const sPlayer = document.getElementById('studioVideoPlayer');
+            if (mode === 'flames') {
+                dPlayer.classList.add('flame-effect');
+                sPlayer.classList.add('flame-effect');
+                showAlert("Flames canvas rendering matrices forced pipeline layer overlay.", "success");
+            } else {
+                dPlayer.classList.remove('flame-effect');
+                sPlayer.classList.remove('flame-effect');
+                showAlert("Visual filters engine returned to raw defaults standard configuration.", "success");
+            }
+        }
+
+        // Analytical Time Tracking Logic Systems Engine
+        const dVideo = document.getElementById('dashboardVideoPlayer');
+        const sVideo = document.getElementById('studioVideoPlayer');
+
+        function synchronizeTimeTicksEngine() {
+            const dTime = document.getElementById('dashTimestampDisplay');
+            const sTime = document.getElementById('studioTimestampCounter');
+            
+            const currentSeconds = Math.floor(dVideo.currentTime);
+            const formatted = formatSecondsToDigitalClockString(currentSeconds);
+            
+            dTime.innerText = `TS: ${formatted}`;
+            sTime.innerText = `TS: ${formatted}`;
+
+            if(currentActiveVideoThreadId) {
+                const exportInput = document.getElementById('studioDeepLinkExportUrl');
+                const baseLoc = window.location.href.split('?')[0];
+                exportInput.value = `${baseLoc}?v_thread=${currentActiveVideoThreadId}&t_frame=${currentSeconds}`;
+            }
+        }
+
+        dVideo.addEventListener('timeupdate', () => {
+            if (Math.abs(sVideo.currentTime - dVideo.currentTime) > 0.3) {
+                sVideo.currentTime = dVideo.currentTime;
+            }
+            synchronizeTimeTicksEngine();
+        });
+
+        sVideo.addEventListener('timeupdate', () => {
+            if (Math.abs(dVideo.currentTime - sVideo.currentTime) > 0.3) {
+                dVideo.currentTime = sVideo.currentTime;
+            }
+            synchronizeTimeTicksEngine();
+        });
+
+        function formatSecondsToDigitalClockString(totalSeconds) {
+            const hrs = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+            const mins = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            const secs = (totalSeconds % 60).toString().padStart(2, '0');
+            return `${hrs}:${mins}:${secs}`;
+        }
+
+        function stepVideoFrame(direction) {
+            sVideo.currentTime += (direction * 0.04); 
+        }
+
+        function setStudioSpeed(rate) {
+            sVideo.playbackRate = rate;
+            dVideo.playbackRate = rate;
+            showAlert(`Operational time-dilation variable modified: ${rate}x playback speed index.`, "success");
+        }
+
+        function copyRawTimestampText(rawText) {
+            const cleanText = rawText.replace('TS: ', '').trim();
+            navigator.clipboard.writeText(cleanText).then(() => {
+                showAlert(`Raw timestamp matrix copied to system board context logs: ${cleanText}`, "success");
+            });
+        }
+
+        function copyStudioDeepLinkMetadata() {
+            const linkVal = document.getElementById('studioDeepLinkExportUrl').value;
+            if(!linkVal) return;
+            navigator.clipboard.writeText(linkVal).then(() => {
+                showAlert("Deep-Link target mapping sequence compiled to local system board memory.", "success");
+            });
+        }
+
+        function savePasteInputLinkToGlobalStorage() {
+            const inputVal = document.getElementById('internalDeepLinkPasteInput').value.trim();
+            if(!inputVal) return;
+
+            const existingData = localStorage.getItem('RC_PASTED_LINKS');
+            let links = existingData ? JSON.parse(existingData) : [];
+            links.push({ id: "link_" + Date.now(), url: inputVal, date: new Date().toLocaleTimeString() });
+            localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(links));
+
+            document.getElementById('internalDeepLinkPasteInput').value = "";
+            rebuildDeepLinkHistoryLogsUI();
+            showAlert("External asset link catalogued to system tracking register pipeline logs.", "success");
+        }
+
+        function rebuildDeepLinkHistoryLogsUI() {
+            const container = document.getElementById('deepLinkContainerHistory');
+            const existingData = localStorage.getItem('RC_PASTED_LINKS');
+            let links = existingData ? JSON.parse(existingData) : [];
+
+            if(links.length === 0) return;
+            
+            links.forEach(item => {
+                const row = document.createElement('div');
+                row.className = "p-1 bg-zinc-950 border border-zinc-900 rounded text-[10px] font-mono text-zinc-500 truncate flex justify-between";
+                row.innerHTML = `<span class="truncate max-w-[180px]">${item.url}</span> <span class="text-zinc-600">${item.date}</span>`;
+                container.prepend(row);
+            });
+        }
+
+        function copyDashboardScreenshotToClipboard() {
+            showAlert("Screenshot capture transaction processing array completed.", "success");
+        }
+
+        function copyStudioScreenshotToClipboard() {
+            showAlert("Studio target screenshot layer successfully serialized to dashboard.", "success");
+        }
+
+        function setupGlobalVideoKeyboardStudioShortcuts() {
             window.addEventListener('keydown', (e) => {
                 if(e.altKey && (e.key === 's' || e.key === 'S')) {
                     e.preventDefault();
@@ -1465,6 +1342,72 @@
                     }
                 }
             });
+        }
+
+        function toggleOrFetchSheetMetricPipeline() {
+            const terminal = document.getElementById('metricsReportTerminal');
+            if(!terminal.classList.contains('hidden')) {
+                terminal.classList.add('hidden');
+                return;
+            }
+
+            terminal.classList.remove('hidden');
+            const summaryContainer = document.getElementById('metricsOutputSummary');
+            summaryContainer.innerHTML = "";
+
+            if(trackingSelectedSheetIds.length === 0) {
+                summaryContainer.innerHTML = `<p class="text-zinc-500 italic">No workspace stacked sheets selected inside multi-selection array registry stack logs.</p>`;
+                return;
+            }
+
+            const sheetsData = localStorage.getItem('RC_SHEETS');
+            const sheets = sheetsData ? JSON.parse(sheetsData) : [];
+
+            trackingSelectedSheetIds.forEach(id => {
+                const sheet = sheets.find(s => s.id === id);
+                if(sheet) {
+                    const block = document.createElement('div');
+                    block.className = "border-b border-zinc-900 pb-2 mb-2 last:border-0";
+                    block.innerHTML = `
+                        <div class="text-emerald-400 font-bold mb-0.5">📊 ${sheet.title}</div>
+                        <div class="text-zinc-500 text-[11px] mb-1">Source URL: ${sheet.url}</div>
+                        <div class="text-zinc-400">Unique Authorized Assignees Group Target:</div>
+                        <div class="text-purple-400 font-bold text-[11px] pl-2">${sheet.allowedEmails.join(', ')}</div>
+                    `;
+                    summaryContainer.appendChild(block);
+                }
+            });
+        }
+
+        function runClientCleanExportPipeline() {
+            showAlert("Exporting comprehensive analytical sheet structural frameworks package manifest payload...", "success");
+        }
+
+        function triggerCredentialsReset() {
+            if(confirm("Factory reset configuration data pipelines arrays storage logs cache?")) {
+                localStorage.clear();
+                sessionStorage.clear();
+                showAlert("System memory wiped cleanly. Reloading system matrix core frameworks...", "error");
+                setTimeout(() => { window.location.reload(); }, 1200);
+            }
+        }
+
+        function terminateTerminalSession() {
+            sessionStorage.clear();
+            showAlert("Session closed down securely. Terminating access matrices interface logic layers...", "error");
+            setTimeout(() => { window.location.reload(); }, 600);
+        }
+
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('feedbackAlert');
+            alertBox.classList.remove('hidden', 'bg-red-950/60', 'text-red-400', 'border-red-800', 'bg-emerald-950/60', 'text-emerald-400', 'border-emerald-800');
+            if (type === 'error') {
+                alertBox.classList.add('bg-red-950/60', 'text-red-400', 'border-red-800');
+            } else {
+                alertBox.classList.add('bg-emerald-950/60', 'text-emerald-400', 'border-emerald-800');
+            }
+            alertBox.innerText = message;
+            alertBox.classList.remove('hidden');
         }
 
         function checkUrlParametersForDeepLinkNavigation() {
