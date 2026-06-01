@@ -269,9 +269,8 @@
                                 <h3 class="text-xs font-black tracking-widest uppercase text-emerald-400">Supabase Coworker Sync</h3>
                                 <button onclick="toggleStaffControlManagementModal(true)" class="bg-emerald-600 hover:bg-emerald-500 text-black px-2 py-1 text-[9px] uppercase font-mono font-black rounded tracking-tighter transition">Open Panel Display</button>
                             </div>
-                            <div id="supabaseTelemRowsContainer" class="space-y-2 max-h-48 overflow-y-auto font-mono text-[10px] text-zinc-400">
-                                <p class="italic text-zinc-600">Awaiting user synchronization...</p>
-                            </div>
+                            <div id="supabaseTelemRowsContainer" class="space-y-2 max-h-48 overflow-y-auto font-mono text-[10px] text-zinc-400 hidden">
+                                </div>
                         </div>
 
                         <div id="systemPrivilegeControlBlock" class="p-4 bg-zinc-900 border border-zinc-800 rounded hidden">
@@ -295,7 +294,7 @@
         <div id="fullScreenWorksheetArenaView" class="hidden fixed inset-0 bg-darkBg z-[90] flex flex-col justify-between">
             <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center shadow-lg">
                 <div class="flex items-center gap-3">
-                    <span class="text-amber-500 text-lg font-black tracking-widest font-mono">R.C ROUTE ENTRY</span>
+                    <span class="text-amber-500 text-lg font-black tracking-widest font-mono">ROUTE CONFIG ENTRY</span>
                     <span class="text-zinc-600">|</span>
                     <span id="arenaActiveSheetTitle" class="text-xs bg-zinc-950 border border-zinc-800 text-blue-400 px-3 py-1 rounded font-mono font-bold">Connecting Active Instance...</span>
                 </div>
@@ -496,6 +495,7 @@
         let userLastActiveTime = Date.now();
         let totalActiveSecondsCalculated = parseInt(localStorage.getItem('RC_ACTIVE_TRACKING_SECS') || "0", 10);
         let liveStaffDatabaseArray = [];
+        let isWorksheetOpenActive = false;
 
         if(!localStorage.getItem('RC_SHEETS')) {
             localStorage.setItem('RC_SHEETS', JSON.stringify([
@@ -504,6 +504,7 @@
         }
         if(!localStorage.getItem('RC_MODULES_METADATA')) localStorage.setItem('RC_MODULES_METADATA', JSON.stringify([]));
         if(!localStorage.getItem('RC_PASTED_LINKS')) localStorage.setItem('RC_PASTED_LINKS', JSON.stringify([]));
+        if(!localStorage.getItem('RC_LIVE_ASSIGNED_TASKS')) localStorage.setItem('RC_LIVE_ASSIGNED_TASKS', JSON.stringify([]));
 
         window.addEventListener('DOMContentLoaded', () => {
             initializeDatabaseLayer();
@@ -633,7 +634,8 @@
         }
 
         function isUserCurrentlyActiveInSession() {
-            // Evaluates if user moved mouse or engaged within past 60 seconds (1 minute inactive timeout rule)
+            // ONLY track hours when someone opens a worksheet link assigned and is active
+            if (!isWorksheetOpenActive) return false;
             return (Date.now() - userLastActiveTime) < 60000;
         }
 
@@ -694,29 +696,6 @@
                 if(!error && data) {
                     liveStaffDatabaseArray = data; 
                     renderStaffControlGrid();
-
-                    // Keep existing left telemetry list fully active and intact
-                    if(sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
-                        const container = document.getElementById('supabaseTelemRowsContainer');
-                        container.innerHTML = "";
-                        data.forEach(row => {
-                            const rowEl = document.createElement('div');
-                            rowEl.className = "bg-zinc-900 p-2 rounded border border-zinc-800 space-y-0.5 relative";
-                            let actionButtons = `
-                                <div class="flex gap-1 mt-1">
-                                    <button onclick="cloudDelegateRole('${row.email}', true)" class="bg-amber-600 text-black px-1 rounded text-[9px] font-bold">Admin</button>
-                                    <button onclick="cloudDelegateRole('${row.email}', false)" class="bg-zinc-700 text-white px-1 rounded text-[9px]">Worker</button>
-                                </div>
-                            `;
-                            rowEl.innerHTML = `
-                                <div class="text-white font-bold truncate">${row.email}</div>
-                                <div class="text-zinc-500 text-[9px]">Sheet: ${row.worksheet_working_on || 'None'}</div>
-                                <div class="text-[9px] text-emerald-400">Sync: ${new Date(row.edit_on_server).toLocaleTimeString()} | Status: ${row.working_status || 'ACTIVE'}</div>
-                                ${actionButtons}
-                            `;
-                            container.appendChild(rowEl);
-                        });
-                    }
                 }
             }, 3000);
         }
@@ -826,6 +805,7 @@
                 document.getElementById('adminExportBtn').classList.remove('hidden');
                 document.getElementById('adminModuleUploadSection').classList.remove('hidden');
                 document.getElementById('systemPrivilegeControlBlock').classList.remove('hidden');
+                document.getElementById('supabaseTelemetryControlBlock').classList.remove('hidden');
             } else {
                 badge.innerText = "COWORKER ACCESS MODE";
                 badge.className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest uppercase";
@@ -834,15 +814,15 @@
                 document.getElementById('adminExportBtn').classList.add('hidden');
                 document.getElementById('adminModuleUploadSection').classList.add('hidden');
                 document.getElementById('systemPrivilegeControlBlock').classList.add('hidden');
+                
+                // REMOVE access to coworkers: Only admin antonymbali96@gmail or assigned admin has it
+                document.getElementById('supabaseTelemetryControlBlock').classList.add('hidden');
             }
 
             if(sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
                 document.getElementById('adminRoleSwapToggleBtn').classList.remove('hidden');
-                document.getElementById('supabaseTelemetryControlBlock').classList.remove('hidden');
             } else {
                 document.getElementById('adminRoleSwapToggleBtn').classList.add('hidden');
-                // Suppabase sync panel button stays visible or invisible depending on admin role permissions
-                document.getElementById('supabaseTelemetryControlBlock').classList.remove('hidden');
             }
 
             renderWorkspaceCardsGridLayer();
@@ -929,15 +909,27 @@
             // CASCADE ACTION: Delete directly assigned tracking tasks once worksheet link is deleted
             if(localStorage.getItem('RC_LIVE_ASSIGNED_TASKS')) {
                 let liveTasks = JSON.parse(localStorage.getItem('RC_LIVE_ASSIGNED_TASKS') || "[]");
-                // Remove tasks mapping to the deleted worksheet ID reference block
                 liveTasks = liveTasks.filter(task => task.sheetId !== id);
                 localStorage.setItem('RC_LIVE_ASSIGNED_TASKS', JSON.stringify(liveTasks));
-                // Update workspace display immediately
-                refreshDirectlyAssignedTasksWidgetDisplay();
+            }
+
+            // DELETE EVERYTHING INCLUDING VIDEO on each coworker account layout sync
+            if(id === trackingSelectedSheetIds[trackingSelectedSheetIds.length - 1]) {
+                const dashboardPlayer = document.getElementById('dashboardVideoPlayer');
+                const studioPlayer = document.getElementById('studioVideoPlayer');
+                dashboardPlayer.src = "";
+                studioPlayer.src = "";
+                currentActiveVideoThreadId = "";
+                isWorksheetOpenActive = false;
+                document.getElementById('liveWorkspaceSandboxIframe').src = "about:blank";
+                document.getElementById('liveWorkspaceSandboxIframe').classList.add('hidden');
+                document.getElementById('iframePlaceholderFallbackState').classList.remove('hidden');
+                document.getElementById('workspaceActiveTitleBadge').innerText = "No Active Matrix Target Bound";
+                document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = "No active workspace sheet selected";
             }
 
             renderWorkspaceCardsGridLayer();
-            showAlert("Target card asset index removed. Associated assigned tracking tasks cascade purged successfully.", "success");
+            showAlert("Target card asset index and corresponding coworker logs cascade purged.", "success");
         }
 
         function renderWorkspaceCardsGridLayer() {
@@ -998,7 +990,7 @@
             const taskText = prompt(`Enter tracking assignment instruction matrix note for [${sheetTitle}]:`);
             if(!taskText || !taskText.trim()) return;
 
-            const targetWorker = prompt("Enter specific coworker email identifier to bind assignment task to (or leave blank for all):", "antonymbali96@gmail.com");
+            const targetWorker = prompt("Enter specific coworker email identifier to bind assignment task to (or leave blank for all):", "");
             
             const liveTasks = JSON.parse(localStorage.getItem('RC_LIVE_ASSIGNED_TASKS') || "[]");
             liveTasks.push({
@@ -1011,7 +1003,7 @@
             });
             localStorage.setItem('RC_LIVE_ASSIGNED_TASKS', JSON.stringify(liveTasks));
             refreshDirectlyAssignedTasksWidgetDisplay();
-            showAlert("Directly assigned tracking task registered in framework sandbox view context layer.", "success");
+            showAlert("Directly assigned tracking task registered and made available on coworker accounts.", "success");
         }
 
         function refreshDirectlyAssignedTasksWidgetDisplay() {
@@ -1020,7 +1012,6 @@
             if(!output) return;
 
             const liveTasks = JSON.parse(localStorage.getItem('RC_LIVE_ASSIGNED_TASKS') || "[]");
-            // Filter tasks assigned to current user email, or to everyone, or if admin role is viewing everything
             const currentFiltered = liveTasks.filter(t => t.assignedTo === "" || t.assignedTo === sessionUserIdentity.toLowerCase() || getEffectiveAccessLevel() === 'admin');
 
             if(currentFiltered.length === 0) {
@@ -1078,6 +1069,7 @@
                 fallback.classList.remove('hidden');
                 displayTitle.innerText = "No Active Matrix Target Bound";
                 displayUrlHeader.innerText = "No active workspace sheet selected";
+                isWorksheetOpenActive = false;
                 return;
             }
 
@@ -1092,7 +1084,10 @@
                 displayTitle.innerText = activeSheet.title;
                 displayUrlHeader.innerText = activeSheet.url;
                 
-                // Mirror active spreadsheet url reference framework context to full-screen viewer
+                // Active Sheet opened state: activate hours counter tracking immediately
+                isWorksheetOpenActive = true;
+                
+                // Show title at top of the server container screen layout view
                 document.getElementById('arenaActiveSheetTitle').innerText = activeSheet.title;
                 document.getElementById('arenaFullScreenIframe').src = activeSheet.url;
             }
@@ -1109,6 +1104,13 @@
 
         function toggleOrFetchSheetMetricPipeline() {
             const terminal = document.getElementById('metricsReportTerminal');
+            
+            // Toggle view visibility window layer block on duplicate clicks
+            if(!terminal.classList.contains('hidden')) {
+                terminal.classList.add('hidden');
+                return;
+            }
+            
             terminal.classList.remove('hidden');
 
             const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || "[]");
@@ -1167,7 +1169,6 @@
             showAlert(`Allocated structural token authority parameter: [ ${roleType} ] to ${targetEmail}`, "success");
         }
 
-        // --- ENHANCED VIDEO LAYER IMPLEMENTATION ---
         function processVideoUploadEngine() {
             const titleInput = document.getElementById('videoThreadTitleInput');
             const fileInput = document.getElementById('videoFileInput');
@@ -1189,16 +1190,13 @@
                 timestamp: new Date().toLocaleTimeString()
             };
 
-            // Store inside target workspace databases array structures
             const transaction = dbInstance.transaction(["video_threads"], "readwrite");
             const store = transaction.objectStore("video_threads");
             store.put(newVideoPayload);
 
             transaction.oncomplete = function() {
-                // AUTO SHARING LOGIC: Check if master administrator or user with admin clearance uploads video
                 const currentUserString = (sessionUserIdentity || "").toLowerCase();
                 if (currentUserString === MASTER_ADMIN_ID.toLowerCase() || getEffectiveAccessLevel() === 'admin') {
-                    // Automatically generate a hyper-link and share with coworkers through internal global storage queues
                     const globalSharedLogs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
                     const directDeepLinkUrlRef = `${window.location.origin}${window.location.pathname}?v_thread=${trackingGeneratedThreadId}`;
                     globalSharedLogs.push({
@@ -1214,7 +1212,7 @@
                 titleInput.value = "";
                 fileInput.value = "";
                 loadAndCompileVideoThreadsDisplayGrid();
-                showAlert("New custom video thread asset mapped directly into index database layer.", "success");
+                showAlert("New video thread asset mapped into workspace layers.", "success");
             };
         }
 
@@ -1263,7 +1261,6 @@
                     dashboardPlayer.load();
                     studioPlayer.load();
 
-                    // Track active runtime parameters configuration counters
                     dashboardPlayer.ontimeupdate = () => syncPlaybackTimestampDisplays(dashboardPlayer);
                     studioPlayer.ontimeupdate = () => syncPlaybackTimestampDisplays(studioPlayer);
 
@@ -1282,7 +1279,6 @@
             document.getElementById('dashTimestampDisplay').innerText = formatStr;
             document.getElementById('studioTimestampCounter').innerText = formatStr;
 
-            // Compile live reference query string deep link parameters layout
             if(currentActiveVideoThreadId) {
                 const compiledDeepLinkUrl = `${window.location.origin}${window.location.pathname}?v_thread=${currentActiveVideoThreadId}&t_frame=${rawSecs}`;
                 document.getElementById('studioDeepLinkExportUrl').value = compiledDeepLinkUrl;
@@ -1346,11 +1342,9 @@
         }
 
         function listenForGlobalCloudVideoRealtimeUpdates() {
-            // Internal network simulation layer remains active
             setTimeout(() => { loadAndCompileVideoThreadsDisplayGrid(); }, 500);
         }
 
-        // Zoom Viewport Layer Handlers Engine
         function handleDashboardZoom(e) {
             e.preventDefault();
             const player = document.getElementById('dashboardVideoPlayer');
@@ -1389,7 +1383,6 @@
 
         function stepVideoFrame(directionCount) {
             const player = document.getElementById('studioVideoPlayer');
-            // Approximation logic tracking standard constant rate frame counts (24fps matrix)
             player.currentTime += (directionCount * (1 / 24));
         }
 
@@ -1414,7 +1407,6 @@
             alert("Studio primary visual tracking frame viewport snapshot exported cleanly to device logs clipboard.");
         }
 
-        // Router Viewport Window Views Controls Management
         function launchDedicatedVideoEnvironment() {
             document.getElementById('mainDashboardView').classList.add('hidden');
             document.getElementById('dedicatedVideoStudioView').classList.remove('hidden');
@@ -1429,7 +1421,6 @@
             document.getElementById('fullScreenWorksheetArenaView').classList.add('hidden');
         }
 
-        // --- MODULE LEARNING RESOURCE ENGINE ---
         function processModuleUploadEngine() {
             const titleInput = document.getElementById('moduleTitleInput');
             const fileInput = document.getElementById('moduleFileInput');
