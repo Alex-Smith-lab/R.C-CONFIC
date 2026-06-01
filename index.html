@@ -211,7 +211,7 @@
 
                     <div id="metricsReportTerminal" class="hidden mb-4 p-4 bg-zinc-950 border border-purple-900 rounded-lg max-h-48 overflow-y-auto font-mono text-xs text-zinc-300">
                         <div class="flex justify-between items-center border-b border-zinc-800 pb-1.5 mb-2">
-                            <span class="text-purple-400 font-bold uppercase tracking-wider text-[11px]">Real-Time Sheet Workspace Metrics Report</span>
+                            <span class="text-purple-400 font-bold uppercase tracking-wider text-[11px]">Real-Time Sheet Workspace Metrics & Role Moderation</span>
                             <button onclick="document.getElementById('metricsReportTerminal').classList.add('hidden')" class="text-zinc-500 hover:text-white text-[10px] uppercase">Hide</button>
                         </div>
                         <div id="metricsOutputSummary" class="space-y-3"></div>
@@ -363,7 +363,7 @@
         let dbInstance = null;
         let sessionUserIdentity = null;
         let sessionAccessLevel = 'coworker';
-        let runtimeImpersonationActive = false; // State management parameter tracking administrative viewport modes
+        let runtimeImpersonationActive = false; 
         
         const MASTER_ADMIN_ID = "antonymbali96@gmail.com";
         const STABLE_LOCAL_SEED_KEY = "RC_SECURE_PHRASE_KEY_V2";
@@ -459,7 +459,6 @@
 
         async function synchronizeIncomingSupabaseVideoToLocalList(payload) {
             if (payload.eventType === 'DELETE') {
-                // If another client wipes a video from Supabase, remove it if it's no longer present locally
                 renderVideoThreadsList();
             } else if (payload.eventType === 'INSERT') {
                 renderVideoThreadsList();
@@ -499,9 +498,7 @@
             const emailInput = document.getElementById('identityEmail').value.trim().toLowerCase();
             const passwordInput = document.getElementById('securityPassword').value;
 
-            const registryData = localStorage.getItem('rc_user_registry');
-            const users = registryData ? JSON.parse(registryData) : [];
-
+            const users = JSON.parse(localStorage.getItem('rc_user_registry') || '[]');
             const authenticatedUser = users.find(user => 
                 user.email.toLowerCase() === emailInput && user.password === passwordInput
             );
@@ -616,6 +613,42 @@
             renderLearningModules();
         }
 
+        /**
+         * Upgrade or downgrade team coworkers between standard and administrative clearance access levels
+         */
+        function executeAdministrativeRoleMutation(targetUserEmail, newRoleAssignment) {
+            if (targetUserEmail.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
+                alert("Operation Denied: The master root administration anchor cannot be downgraded.");
+                return;
+            }
+            
+            let users = JSON.parse(localStorage.getItem('rc_user_registry') || '[]');
+            const index = users.findIndex(u => u.email.toLowerCase() === targetUserEmail.toLowerCase());
+            
+            if (index !== -1) {
+                users[index].role = newRoleAssignment;
+                users[index].clearance = (newRoleAssignment === "Admin") ? 1 : 0;
+                localStorage.setItem('rc_user_registry', JSON.stringify(users));
+                
+                alert(`Successfully altered structural access clearance. Profile ${targetUserEmail} modified to ${newRoleAssignment}.`);
+                
+                // If current user modified themselves, adapt runtime session credentials states
+                if (sessionUserIdentity.toLowerCase() === targetUserEmail.toLowerCase()) {
+                    sessionAccessLevel = (newRoleAssignment === "Admin") ? 'admin' : 'coworker';
+                    sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
+                    executeSystemBootSequence();
+                } else {
+                    fetchActiveSheetMetricPipeline();
+                }
+            } else {
+                // If user is not yet in the login database, pre-register them
+                users.push({ email: targetUserEmail.toLowerCase(), password: "password123", clearance: (newRoleAssignment === "Admin") ? 1 : 0, role: newRoleAssignment });
+                localStorage.setItem('rc_user_registry', JSON.stringify(users));
+                alert(`Pre-registered ${targetUserEmail} into node authorization registries as ${newRoleAssignment}.`);
+                fetchActiveSheetMetricPipeline();
+            }
+        }
+
         function executeSystemBootSequence() {
             document.getElementById('authGatewayPortal').classList.add('hidden');
             document.getElementById('dynamicViewRouter').classList.remove('hidden');
@@ -666,13 +699,19 @@
                 } else if (data) {
                     let currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
                     data.forEach(dbRow => {
-                        if (!currentSheets.some(s => s.id === dbRow.id)) {
+                        const existingIdx = currentSheets.findIndex(s => s.id === dbRow.id);
+                        if (existingIdx === -1) {
                             currentSheets.push({
                                 id: dbRow.id,
                                 title: dbRow.sheet_title,
                                 url: dbRow.sheet_url,
                                 allowedEmails: dbRow.assigned_emails
                             });
+                        } else {
+                            // Sync up existing references with incoming Supabase arrays
+                            currentSheets[existingIdx].title = dbRow.sheet_title;
+                            currentSheets[existingIdx].url = dbRow.sheet_url;
+                            currentSheets[existingIdx].allowedEmails = dbRow.assigned_emails;
                         }
                     });
                     localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
@@ -710,7 +749,7 @@
         }
 
         function fetchActiveSheetMetricPipeline() {
-            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS'));
+            const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
             const container = document.getElementById('metricsOutputSummary');
             document.getElementById('metricsReportTerminal').classList.remove('hidden');
 
@@ -720,9 +759,12 @@
             }
 
             const mockCommonDictionary = ["antonymbali96@gmail.com", "worker1@rc-team.com", "worker2@rc-team.net", "antonio.annotation@workspace.org", "manager@rc-ai-config.io", "reviewer3@autonomy.corp"];
+            const usersRegistry = JSON.parse(localStorage.getItem('rc_user_registry') || '[]');
             let outputHtml = "";
 
-            sheets.forEach((sheet, idx) => {
+            const executiveContextActive = (sessionAccessLevel === 'admin' && !runtimeImpersonationActive);
+
+            sheets.forEach((sheet) => {
                 outputHtml += `<div class="border-b border-zinc-900 pb-2 mb-2 last:border-none">
                     <div class="text-zinc-400 font-bold flex justify-between items-center mb-1">
                         <span>📊 Matrix Title Reference: <span class="text-white font-sans">${sheet.title}</span></span>
@@ -732,7 +774,7 @@
                         <p>🔗 Target Destination URL Path: <span class="text-zinc-500 font-sans break-all select-all">${sheet.url}</span></p>
                         <p>👥 Active Assigned Workforce Metric: <span class="text-purple-400 font-bold">${sheet.allowedEmails.length} Registered System Profiles</span></p>
                         <div class="mt-2 bg-black/60 p-2 rounded border border-zinc-900 space-y-1.5">
-                            <span class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Assigned Node Diagnostic Inspection Logs:</span>`;
+                            <span class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Assigned Node Dashboard Metrics & Moderation Controls:</span>`;
                 
                 sheet.allowedEmails.forEach((email, rowIdx) => {
                     const trackingRowNumber = rowIdx + 1;
@@ -751,11 +793,28 @@
                                 nearestMatch = dictWord;
                             }
                         });
-                        validationFlag = `<span class="text-amber-400 font-bold">[TYPO / SYNTAX IRREGULARITY DETECTED]</span> <span class="text-zinc-500 italic">(Target Row Matrix Offset: #${trackingRowNumber}). Nearest lookup string replacement match: <strong class="text-purple-300 font-mono">${nearestMatch}</strong></span>`;
+                        validationFlag = `<span class="text-amber-400 font-bold">[TYPO IRREGULARITY]</span> <span class="text-zinc-500 italic">(Row Offset: #${trackingRowNumber}). Nearest lookup: <strong class="text-purple-300 font-mono">${nearestMatch}</strong></span>`;
                     }
-                    outputHtml += `<div class="text-[10px] font-mono flex items-start gap-1 pl-1">
+                    
+                    // Lookup current dynamic credential assignment states
+                    const profileMatch = usersRegistry.find(u => u.email.toLowerCase() === email.toLowerCase());
+                    const designatedRole = profileMatch ? profileMatch.role : "Coworker";
+                    
+                    let modificationMarkup = "";
+                    if (executiveContextActive && email.toLowerCase() !== MASTER_ADMIN_ID.toLowerCase()) {
+                        if (designatedRole === "Admin") {
+                            modificationMarkup = `<button onclick="executeAdministrativeRoleMutation('${email}', 'Coworker')" class="ml-2 bg-red-900 text-red-200 text-[9px] px-1 rounded hover:bg-red-800 transition uppercase tracking-tighter">Downgrade to Coworker</button>`;
+                        } else {
+                            modificationMarkup = `<button onclick="executeAdministrativeRoleMutation('${email}', 'Admin')" class="ml-2 bg-purple-900 text-purple-200 text-[9px] px-1 rounded hover:bg-purple-800 transition uppercase tracking-tighter">Upgrade to Admin</button>`;
+                        }
+                    }
+
+                    outputHtml += `<div class="text-[10px] font-mono flex flex-wrap items-center gap-1 pl-1 border-b border-zinc-900 py-1 last:border-none">
                         <span class="text-zinc-600 font-bold">[ROW ${trackingRowNumber.toString().padStart(2, '0')}]</span>
-                        <span class="text-zinc-300">${email}</span> &mdash; ${validationFlag}
+                        <span class="text-zinc-300 font-semibold">${email}</span> 
+                        <span class="bg-zinc-800 text-zinc-400 px-1 rounded text-[9px] font-sans">[Clearance Role: ${designatedRole}]</span>
+                        &mdash; ${validationFlag}
+                        ${modificationMarkup}
                     </div>`;
                 });
 
@@ -876,12 +935,10 @@
 
         async function deleteSheetAssetCard(id) {
             if(confirm("Confirm removal from runtime context lists?")) {
-                // Remove locally
                 let currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
                 currentSheets = currentSheets.filter(s => s.id !== id);
                 localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
                 
-                // Wipe from Supabase
                 try {
                     const { error } = await _supabase.from('assigned_tasks').delete().eq('id', id);
                     if (error) console.error("Supabase item destruction failure code summary:", error.message);
@@ -942,7 +999,6 @@
                 return;
             }
 
-            // 1. Save binary file chunks locally inside browser IndexedDB
             const transaction = dbInstance.transaction(["blobs", "video_threads"], "readwrite");
             const blobStore = transaction.objectStore("blobs");
             const threadStore = transaction.objectStore("video_threads");
@@ -955,7 +1011,6 @@
                 timestamp: Date.now()
             });
 
-            // 2. Publish tracking layout configurations out to Supabase index layers simultaneously
             try {
                 const { error } = await _supabase
                     .from('uploaded_videos')
@@ -1034,12 +1089,10 @@
          */
         async function purgeSpecificVideoThreadAsset(threadId, blobReferenceKey) {
             if (confirm("Confirm absolute deletion of this binary stream asset from dual terminal storage systems?")) {
-                // 1. Wipe locally
                 const transaction = dbInstance.transaction(["blobs", "video_threads"], "readwrite");
                 transaction.objectStore("video_threads").delete(threadId);
                 transaction.objectStore("blobs").delete(blobReferenceKey);
 
-                // 2. Wipe from Supabase
                 try {
                     const { error } = await _supabase.from('uploaded_videos').delete().eq('id', threadId);
                     if (error) console.error("Supabase row drop notice execution details:", error.message);
