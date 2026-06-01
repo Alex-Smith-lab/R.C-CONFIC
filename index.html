@@ -373,6 +373,7 @@
         let studioZoom = { scaleX: 1, scaleY: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
         let currentActiveVideoThreadId = ""; 
 
+        // System setup parameters defaults seeding
         if(!localStorage.getItem('RC_SHEETS')) {
             localStorage.setItem('RC_SHEETS', JSON.stringify([
                 { 
@@ -388,6 +389,7 @@
         
         window.addEventListener('DOMContentLoaded', () => {
             initializeDatabaseLayer();
+            establishSupabaseRealtimeSubscriptions();
         });
 
         function initializeDatabaseLayer() {
@@ -403,6 +405,64 @@
             }
             if(!localStorage.getItem(STABLE_LOCAL_SEED_KEY)) {
                 localStorage.setItem(STABLE_LOCAL_SEED_KEY, "password123");
+            }
+        }
+
+        /**
+         * Simultaneous multi-client server communication via real-time channel sync
+         */
+        function establishSupabaseRealtimeSubscriptions() {
+            _supabase
+                .channel('public_assigned_tasks_changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'assigned_tasks' }, payload => {
+                    console.log("Realtime Assigned Tasks Stream Refresh Event Caught:", payload);
+                    synchronizeIncomingSupabaseTaskToLocalStorage(payload);
+                })
+                .subscribe();
+
+            _supabase
+                .channel('public_uploaded_videos_changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'uploaded_videos' }, payload => {
+                    console.log("Realtime Video Inventory Stream Refresh Event Caught:", payload);
+                    synchronizeIncomingSupabaseVideoToLocalList(payload);
+                })
+                .subscribe();
+        }
+
+        async function synchronizeIncomingSupabaseTaskToLocalStorage(payload) {
+            let currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
+            if (payload.eventType === 'INSERT') {
+                if (!currentSheets.some(s => s.id === payload.new.id)) {
+                    currentSheets.push({
+                        id: payload.new.id,
+                        title: payload.new.sheet_title,
+                        url: payload.new.sheet_url,
+                        allowedEmails: payload.new.assigned_emails
+                    });
+                }
+            } else if (payload.eventType === 'DELETE') {
+                currentSheets = currentSheets.filter(s => s.id !== payload.old.id);
+            } else if (payload.eventType === 'UPDATE') {
+                const index = currentSheets.findIndex(s => s.id === payload.new.id);
+                if (index !== -1) {
+                    currentSheets[index] = {
+                        id: payload.new.id,
+                        title: payload.new.sheet_title,
+                        url: payload.new.sheet_url,
+                        allowedEmails: payload.new.assigned_emails
+                    };
+                }
+            }
+            localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
+            renderSheetsGrid();
+        }
+
+        async function synchronizeIncomingSupabaseVideoToLocalList(payload) {
+            if (payload.eventType === 'DELETE') {
+                // If another client wipes a video from Supabase, remove it if it's no longer present locally
+                renderVideoThreadsList();
+            } else if (payload.eventType === 'INSERT') {
+                renderVideoThreadsList();
             }
         }
 
@@ -459,7 +519,6 @@
                 sessionStorage.setItem("RC_ACTIVE_USER_EMAIL", sessionUserIdentity);
                 sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
 
-                // Push login audit telemetry log events directly to Supabase storage mapping matrix tables 
                 dispatchSupabaseUserTelemetryMetric(sessionUserIdentity, "Session Portal Login Sequence Triggered", "None Loaded");
 
                 setTimeout(() => {
@@ -472,7 +531,7 @@
         }
 
         /**
-         * Interface component pushing live interaction data arrays to Supabase
+         * Live audit telemetry logging pushing variables directly into Supabase 'coworker_logs'
          */
         async function dispatchSupabaseUserTelemetryMetric(workerEmail, operationType, worksheetName) {
             try {
@@ -528,7 +587,7 @@
         }
 
         /**
-         * Operational mode toggle button permitting administrators to drop down to teammate context levels smoothly.
+         * Account simulation logic allowing antonymbali96@gmail.com and Admins to switch roles instantly
          */
         function toggleAdminImpersonationMode() {
             const checkbox = document.getElementById('impersonateWorkerCheckbox');
@@ -539,7 +598,6 @@
                 badge.innerText = "COWORKER MODE (SIMULATED)";
                 badge.className = "bg-amber-950 text-amber-400 text-xs px-2.5 py-1 rounded-full border border-amber-700 font-mono tracking-widest";
                 
-                // Hide specific executive component frames
                 document.getElementById('adminVideoUploadSection').classList.add('hidden');
                 document.getElementById('adminModuleUploadSection').classList.add('hidden');
                 document.getElementById('adminAddSheetBtn').classList.add('hidden');
@@ -566,10 +624,10 @@
             const badge = document.getElementById('adminBadge');
             const toggleContainer = document.getElementById('adminImpersonationToggleContainer');
 
-            if(sessionAccessLevel === 'admin') {
+            if(sessionAccessLevel === 'admin' || sessionUserIdentity.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
                 badge.innerText = "SYSTEM ADMIN CONTROL";
                 badge.className = "bg-green-900 text-green-300 text-xs px-2.5 py-1 rounded-full border border-green-500 font-mono tracking-widest";
-                toggleContainer.classList.remove('hidden'); // Expose toggle control for auth profiles matching validation specs
+                toggleContainer.classList.remove('hidden'); 
 
                 document.getElementById('adminVideoUploadSection').classList.remove('hidden');
                 document.getElementById('adminModuleUploadSection').classList.remove('hidden');
@@ -586,7 +644,7 @@
                 document.getElementById('adminExportBtn').classList.add('hidden');
             }
 
-            renderSheetsGrid();
+            pullGlobalAssignedTasksFromSupabasePipeline();
             renderLearningModules();
             renderDeepLinkHistoryLogs();
             setupPlaybackStateListeners();
@@ -598,8 +656,33 @@
         }
 
         /**
-         * Hide/Unhide toggle function interface managing visibility allocations across spreadsheet workspace selection layout components.
+         * Pulls global tasks from Supabase database to populate matching client rows instantly
          */
+        async function pullGlobalAssignedTasksFromSupabasePipeline() {
+            try {
+                const { data, error } = await _supabase.from('assigned_tasks').select('*');
+                if (error) {
+                    console.error("Error connecting to Supabase tasks database:", error.message);
+                } else if (data) {
+                    let currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
+                    data.forEach(dbRow => {
+                        if (!currentSheets.some(s => s.id === dbRow.id)) {
+                            currentSheets.push({
+                                id: dbRow.id,
+                                title: dbRow.sheet_title,
+                                url: dbRow.sheet_url,
+                                allowedEmails: dbRow.assigned_emails
+                            });
+                        }
+                    });
+                    localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
+                }
+            } catch (err) {
+                console.error("Task parsing handshake exceptions caught:", err);
+            }
+            renderSheetsGrid();
+        }
+
         function toggleWorkspacePanelGridVisibility() {
             const gridWrapper = document.getElementById('workspaceGridOuterWrapper');
             const toggleBtn = document.getElementById('toggleWorkspaceSelectionGridBtn');
@@ -619,8 +702,11 @@
             document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = `${title} (${url})`;
             document.getElementById('currentActiveWorkspaceUrlDisplay').title = url;
 
-            // Push worksheet action record events instantly out to the active Supabase logger profile endpoints
-            dispatchSupabaseUserTelemetryMetric(sessionUserIdentity, "Opened Active Targeted Tracking Matrix Assignment Card", title);
+            // Automatically triggers the logger telemetry with full worksheet details to Supabase
+            dispatchSupabaseUserTelemetryMetric(sessionUserIdentity, "Activated Worksheet Operation Tracking State", title);
+            
+            // Auto hide worksheet grid panel once card is activated, prompting choices via selector buttons
+            toggleWorkspacePanelGridVisibility();
         }
 
         function fetchActiveSheetMetricPipeline() {
@@ -690,7 +776,10 @@
             }
         }
 
-        function saveSheetAssetCardEngine() {
+        /**
+         * Dual Server Saver - Simultaneously stores sheet allocations to local memory and Supabase database
+         */
+        async function saveSheetAssetCardEngine() {
             const title = document.getElementById('modalSheetTitle').value.trim();
             const url = document.getElementById('modalSheetUrl').value.trim();
             const emailsRaw = document.getElementById('modalSheetEmails').value;
@@ -701,16 +790,34 @@
             }
 
             const allowedEmails = emailsRaw.split(',').map(e => e.trim()).filter(e => e.length > 0);
-            const currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
+            const clientGeneratedId = "sheet_" + Date.now();
             
+            // 1. Save Locally
+            const currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
             currentSheets.push({
-                id: "sheet_" + Date.now(),
+                id: clientGeneratedId,
                 title: title,
                 url: url,
                 allowedEmails: allowedEmails
             });
-
             localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
+
+            // 2. Save to Supabase Simultaneously
+            try {
+                const { error } = await _supabase
+                    .from('assigned_tasks')
+                    .insert([
+                        {
+                            id: clientGeneratedId,
+                            sheet_title: title,
+                            sheet_url: url,
+                            assigned_emails: allowedEmails
+                        }
+                    ]);
+                if (error) console.error("Supabase dual-server task push failure:", error.message);
+            } catch (err) {
+                console.error("Failed to push task directly to Supabase layer:", err);
+            }
             
             document.getElementById('modalSheetTitle').value = "";
             document.getElementById('modalSheetUrl').value = "";
@@ -720,10 +827,6 @@
             renderSheetsGrid();
         }
 
-        /**
-         * System layout rendering component logic processing user dashboards.
-         * Handles permissions so assigned tasks display dynamically on their personal profiles.
-         */
         function renderSheetsGrid() {
             const grid = document.getElementById('sheetsDisplayGrid');
             const sheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
@@ -734,7 +837,6 @@
                 return;
             }
 
-            // Fallback authorization tracking logic setup boundaries 
             const evaluationUserIdentity = sessionUserIdentity ? sessionUserIdentity.toLowerCase() : "";
             const executiveContextActive = (sessionAccessLevel === 'admin' && !runtimeImpersonationActive);
 
@@ -772,11 +874,20 @@
             });
         }
 
-        function deleteSheetAssetCard(id) {
+        async function deleteSheetAssetCard(id) {
             if(confirm("Confirm removal from runtime context lists?")) {
+                // Remove locally
                 let currentSheets = JSON.parse(localStorage.getItem('RC_SHEETS') || '[]');
                 currentSheets = currentSheets.filter(s => s.id !== id);
                 localStorage.setItem('RC_SHEETS', JSON.stringify(currentSheets));
+                
+                // Wipe from Supabase
+                try {
+                    const { error } = await _supabase.from('assigned_tasks').delete().eq('id', id);
+                    if (error) console.error("Supabase item destruction failure code summary:", error.message);
+                } catch(err) {
+                    console.error("Exception caught clearing task from Supabase layer:", err);
+                }
                 renderSheetsGrid();
             }
         }
@@ -811,7 +922,10 @@
             document.body.removeChild(anchor);
         }
 
-        function processVideoUploadEngine() {
+        /**
+         * Dual Server Video Saver - Syncs content inventory directly to IndexedDB local buffers and Supabase simultaneously
+         */
+        async function processVideoUploadEngine() {
             const titleInput = document.getElementById('videoThreadTitleInput');
             const fileInput = document.getElementById('videoFileInput');
             
@@ -828,6 +942,7 @@
                 return;
             }
 
+            // 1. Save binary file chunks locally inside browser IndexedDB
             const transaction = dbInstance.transaction(["blobs", "video_threads"], "readwrite");
             const blobStore = transaction.objectStore("blobs");
             const threadStore = transaction.objectStore("video_threads");
@@ -840,17 +955,30 @@
                 timestamp: Date.now()
             });
 
+            // 2. Publish tracking layout configurations out to Supabase index layers simultaneously
+            try {
+                const { error } = await _supabase
+                    .from('uploaded_videos')
+                    .insert([
+                        {
+                            id: threadId,
+                            title: titleInput.value.trim(),
+                            blob_ref: "blob_" + threadId
+                        }
+                    ]);
+                if (error) console.error("Supabase video synchronization error details:", error.message);
+            } catch (err) {
+                console.error("Failed to post metadata record context onto Supabase server:", err);
+            }
+
             transaction.oncomplete = function() {
                 titleInput.value = "";
                 fileInput.value = "";
-                alert("Binary tracking stream registered inside IndexedDB storage frame pipeline matrix layers cleanly.");
+                alert("Binary tracking stream registered inside Dual-Server channels successfully.");
                 renderVideoThreadsList();
             };
         }
 
-        /**
-         * Expanded interface component permitting video file entry deletion directly from client lists.
-         */
         function renderVideoThreadsList(callback) {
             const container = document.getElementById('videoThreadLinksContainer');
             container.innerHTML = "";
@@ -884,7 +1012,6 @@
                     lnk.onclick = () => loadActiveVideoThreadToPlayer(t.id);
                     threadRowWrapper.appendChild(lnk);
 
-                    // Add dynamic deletion capability interface mechanism if administrative clearance rules permit it 
                     if (executiveContextActive) {
                         const deleteBtn = document.createElement('button');
                         deleteBtn.className = "text-[9px] font-sans font-bold bg-red-950/60 border border-red-900 text-red-400 px-1.5 py-0.5 rounded hover:bg-red-900 hover:text-white transition uppercase";
@@ -903,19 +1030,26 @@
         }
 
         /**
-         * Clears data records and asset streams from IndexedDB memory contexts cleanly.
+         * Purge Video Handler - Safely removes video assets from both browser nodes and remote Supabase tables simultaneously
          */
-        function purgeSpecificVideoThreadAsset(threadId, blobReferenceKey) {
-            if (confirm("Confirm absolute deletion of this binary stream asset from terminal workspace contexts?")) {
+        async function purgeSpecificVideoThreadAsset(threadId, blobReferenceKey) {
+            if (confirm("Confirm absolute deletion of this binary stream asset from dual terminal storage systems?")) {
+                // 1. Wipe locally
                 const transaction = dbInstance.transaction(["blobs", "video_threads"], "readwrite");
-                
                 transaction.objectStore("video_threads").delete(threadId);
                 transaction.objectStore("blobs").delete(blobReferenceKey);
+
+                // 2. Wipe from Supabase
+                try {
+                    const { error } = await _supabase.from('uploaded_videos').delete().eq('id', threadId);
+                    if (error) console.error("Supabase row drop notice execution details:", error.message);
+                } catch(err) {
+                    console.error("Exception handled during task tracking asset array cleanup steps:", err);
+                }
 
                 transaction.oncomplete = function() {
                     alert("Video streaming asset thread safely wiped from node persistent matrix records.");
                     
-                    // Fallback reset tracking player context parameters if active target stream was removed
                     const dashVideo = document.getElementById('dashboardVideoPlayer');
                     const studioVideo = document.getElementById('studioVideoPlayer');
                     if (currentActiveVideoThreadId === threadId) {
