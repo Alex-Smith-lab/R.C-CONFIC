@@ -937,7 +937,7 @@
             if(!title || !f) { alert("Please define module label and choose target binaries."); return; }
             try {
                 const ext = f.name.split('.').pop();
-                const path = `mod_${Date.now()}.${ext}`;
+                const path = `mod_${Date.now}.${ext}`;
                 const { error: uploadErr } = await sbClient.storage.from('modules').upload(path, f);
                 if(uploadErr) throw uploadErr;
 
@@ -1182,8 +1182,9 @@
         }
 
         (async function initializeSystemDatabaseClient() {
-            const storedUrl = localStorage.getItem('supabaseUrl') || "";
-            const storedKey = localStorage.getItem('supabaseAnonKey') || "";
+            // Live Project Configurations Configured Cleanly below:
+            const storedUrl = "https://qhftvfatzsogxbbqzxry.supabase.co/rest/v1/";
+            const storedKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiNzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA8ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w";
             
             if(storedUrl && storedKey) {
                 try {
@@ -1191,7 +1192,7 @@
                     const { data: { session } } = await sbClient.auth.getSession();
                     if(session) { evaluateUserSessionStateChannel(session.user); }
                     return;
-                } catch(err) { console.error("Failed initialization sequence layout.", err); }
+                } catch(err) { console.error("Failed live backend client connection pipeline mapping sequence.", err); }
             }
 
             const mockUrl = "https://placeholder-project-id.supabase.co";
