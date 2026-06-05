@@ -344,9 +344,7 @@
 
                 <footer class="w-full bg-black border-t border-zinc-900 py-1.5 overflow-hidden flex items-center shadow-lg z-[95] flex-shrink-0">
                     <div class="whitespace-nowrap flex text-[11px] font-black tracking-widest text-emerald-500 w-full uppercase">
-                        <marquee scrollamount="6" behavior="scroll" direction="left">
-                            +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG
-                        </marquee>
+                        <marquee scrollamount="6" behavior="scroll" direction="left"> +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG </marquee>
                     </div>
                 </footer>
             </div>
@@ -355,59 +353,246 @@
         <div id="dedicatedVideoStudioView" class="hidden fixed inset-0 bg-black z-50 flex flex-col justify-between">
             <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
                 <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C CONFIG VIDEO TEAM EXPERT</h1>
-                <button onclick="exitDedicatedStudioEnvironment()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-1.5 rounded uppercase">Close Video Engine Studio</button>
+                <button onclick="exitDedicatedStudioEnvironment()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-1.5 rounded uppercase">Close Video Studio</button>
             </header>
 
-            <div class="flex-1 grid grid-cols-12 gap-4 p-4 overflow-hidden">
-                <div class="col-span-9 flex flex-col justify-between bg-zinc-950 p-4 rounded-xl border border-zinc-900 relative">
-                    <div class="flex-1 flex items-center justify-center relative overflow-hidden rounded bg-black">
-                        <video id="studioVideoPlayer" controls class="max-w-full max-h-full object-contain" style="object-fit: fill;"></video>
+            <div class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
+                <div class="col-span-8 flex flex-col justify-center bg-zinc-950 border border-zinc-800 rounded p-4 relative">
+                    <div id="studioVideoViewport" class="zoom-viewport w-full max-h-[65vh] flex-1 rounded bg-black flex items-center justify-center" onwheel="handleStudioZoom(event)">
+                        <video id="studioVideoPlayer" controls class="zoom-canvas object-contain h-full w-full" style="object-fit: fill;"></video>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-4 mt-4 items-center">
-                        <div class="bg-zinc-900 p-3 rounded border border-zinc-800 flex justify-between items-center">
-                            <span id="studioTimestampDisplay" onclick="copyRawTimestampText(this.innerText)" title="Click to copy raw timestamp text" class="font-mono text-xs text-emerald-400 clickable-timestamp">TS: 00:00:00</span>
-                            <button onclick="copyStudioScreenshotToClipboard()" class="bg-zinc-800 hover:bg-zinc-700 text-white text-[11px] font-mono px-3 py-1 rounded border border-zinc-700">Capture Canvas Frame</button>
+                    <div class="grid grid-cols-4 gap-4 mt-4 bg-zinc-900 p-3 rounded border border-zinc-800">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[10px] uppercase font-bold text-zinc-400">Frame Regulation</span>
+                            <div class="flex gap-1">
+                                <button onclick="stepVideoFrame(-1)" class="flex-1 bg-zinc-800 text-white text-xs py-1.5 rounded font-mono hover:bg-zinc-700">&lt; Frame</button>
+                                <button onclick="stepVideoFrame(1)" class="flex-1 bg-zinc-800 text-white text-xs py-1.5 rounded font-mono hover:bg-zinc-700 font-bold">Frame &gt;</button>
+                            </div>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="adjustStudioPlaybackRate(0.5)" class="flex-1 bg-zinc-900 border border-zinc-800 text-[11px] font-mono rounded hover:bg-zinc-800">0.5x</button>
-                            <button onclick="adjustStudioPlaybackRate(1.0)" class="flex-1 bg-zinc-900 border border-zinc-800 text-[11px] font-mono rounded hover:bg-zinc-800">1.0x</button>
-                            <button onclick="adjustStudioPlaybackRate(1.5)" class="flex-1 bg-zinc-900 border border-zinc-800 text-[11px] font-mono rounded hover:bg-zinc-800">1.5x</button>
-                            <button onclick="adjustStudioPlaybackRate(2.0)" class="flex-1 bg-zinc-900 border border-zinc-800 text-[11px] font-mono rounded hover:bg-zinc-800">2.0x</button>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[10px] uppercase font-bold text-zinc-400">Playback Speed Regulation</span>
+                            <div class="grid grid-cols-4 gap-1">
+                                <button onclick="setStudioSpeed(0.5)" class="bg-zinc-800 text-[10px] font-mono py-1 rounded hover:bg-zinc-700">0.5x</button>
+                                <button onclick="setStudioSpeed(1.0)" class="bg-zinc-800 text-[10px] font-mono py-1 rounded hover:bg-zinc-700">1.0x</button>
+                                <button onclick="setStudioSpeed(1.5)" class="bg-zinc-800 text-[10px] font-mono py-1 rounded hover:bg-zinc-700">1.5x</button>
+                                <button onclick="setStudioSpeed(2.0)" class="bg-zinc-800 text-[10px] font-mono py-1 rounded hover:bg-zinc-700">2.0x</button>
+                            </div>
                         </div>
-                        <div class="flex gap-2">
-                            <input type="text" id="studioDeepLinkExportUrl" readonly placeholder="Deep-link query sequence mapping url" class="bg-black border border-zinc-800 text-[10px] font-mono px-2 py-1 rounded flex-1 text-zinc-400 focus:outline-none">
-                            <button onclick="copyStudioDeepLinkMetadata()" class="bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold px-3 py-1 rounded uppercase tracking-tighter">Copy Parameter Link</button>
+                        <div class="flex flex-col gap-1 justify-center items-center">
+                            <span id="studioZoomIndicator" class="text-[10px] text-zinc-400 font-mono">Zoom Scale: 100%</span>
+                            <button onclick="resetStudioZoom()" class="bg-zinc-800 text-[10px] w-full text-zinc-300 py-1 rounded hover:bg-zinc-700">Reset Viewport</button>
+                        </div>
+                        <div class="flex flex-col gap-1 justify-end">
+                            <button onclick="copyStudioScreenshotToClipboard()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-black font-black text-xs py-2.5 rounded uppercase tracking-wider transition">Take Screenshot</button>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-span-3 bg-zinc-950 p-4 rounded-xl border border-zinc-900 flex flex-col justify-between overflow-y-auto">
+                <div class="col-span-4 bg-zinc-900 p-4 rounded border border-zinc-800 flex flex-col justify-between overflow-y-auto">
                     <div class="space-y-4">
-                        <div class="border-b border-zinc-900 pb-2">
-                            <h3 class="text-xs font-black tracking-wider text-purple-400 uppercase">Studio Threads Router</h3>
-                            <p class="text-[10px] text-zinc-500 mt-0.5 font-mono">Select target asset queue source stream</p>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-800 pb-2">Analysis Tool Link Output</h3>
+                        <div class="bg-black p-3 rounded border border-zinc-800 space-y-2">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-zinc-400">Active Location Stamp</span>
+                                <span id="studioTimestampCounter" onclick="copyRawTimestampText(this.innerText)" title="Click to copy raw timestamp text" class="font-mono text-emerald-400 font-bold clickable-timestamp">TS: 00:00:00</span>
+                            </div>
+                            <input type="text" id="studioDeepLinkExportUrl" class="w-full bg-zinc-900 text-white font-mono text-[11px] p-2 rounded border border-zinc-700 focus:outline-none" readonly>
+                            <button onclick="copyStudioDeepLinkMetadata()" class="w-full bg-white text-black font-bold text-xs py-1.5 rounded hover:bg-zinc-200 uppercase">Copy deep link parameter</button>
                         </div>
-                        <div id="studioVideoLinksOutputGrid" class="space-y-2 max-h-96 overflow-y-auto font-mono text-xs"></div>
+                        <div class="p-3 bg-zinc-950 border border-zinc-800 rounded text-[11px] text-zinc-400 space-y-1">
+                            <span class="text-xs font-bold block text-white uppercase tracking-tight">Extension Capture Shortcut Panel</span>
+                            <p class="text-amber-400 font-bold">Press Alt + S for Custom Crosshair Screenshots.</p>
+                            <p>This prints a hardcoded timestamp directly onto the image canvas layer before copying, rendering flawlessly on highlight tools.</p>
+                        </div>
                     </div>
+                    <div class="pt-4 border-t border-zinc-800 mt-4">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">Paste Link To Permanent Global Log</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="internalDeepLinkPasteInput" placeholder="Paste links here..." class="flex-1 bg-black text-white text-xs p-2 rounded border border-zinc-700 focus:outline-none">
+                            <button onclick="savePasteInputLinkToGlobalStorage()" class="bg-emerald-600 text-black text-xs font-black px-3 rounded uppercase">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="standaloneModuleReaderView" class="hidden flex-1 flex flex-col justify-between bg-black text-white">
+            <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
+                <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C LEARNING MODULE</h1>
+                <button onclick="exitStandaloneModuleView()" class="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold px-4 py-1.5 rounded uppercase">Return to Main Terminal</button>
+            </header>
+            <div class="flex-1 p-8 flex flex-col items-center justify-center max-w-4xl mx-auto w-full">
+                <h2 id="standaloneModuleHeaderTitle" class="text-2xl font-black uppercase mb-6 tracking-wide text-purple-400">Loading Document Target Engine...</h2>
+                <div class="w-full bg-zinc-900 border border-zinc-800 rounded p-6 text-center space-y-4">
+                    <p class="text-sm text-zinc-400 font-mono">Your asset is secure and structured for delivery.</p>
+                    <a id="standaloneModuleDownloadTrigger" href="#" download="" class="inline-block bg-white text-black font-black text-xs px-6 py-3 rounded uppercase tracking-wider hover:bg-zinc-200">Download and Open Workspace Resource</a>
                 </div>
             </div>
         </div>
 
     </div>
 
+    <div id="staffControlManagementModal" class="fixed inset-0 bg-black/95 backdrop-blur-md hidden flex-col z-[150] p-6 font-mono text-xs">
+        <div class="w-full max-w-6xl mx-auto bg-zinc-950 border border-zinc-800 rounded-xl flex flex-col h-full overflow-hidden shadow-2xl">
+            <header class="p-4 bg-zinc-900 border-b border-zinc-800 flex justify-between items-center">
+                <span class="text-emerald-400 font-black tracking-widest uppercase">Supabase Datastore Live Synchronization Engine Control Panel</span>
+                <button onclick="toggleStaffControlManagementModal(false)" class="bg-red-950 text-red-400 border border-red-900 hover:bg-red-900 px-3 py-1 text-[10px] font-bold rounded uppercase transition">Close Control Interface</button>
+            </header>
+            <div class="flex-1 grid grid-cols-3 gap-6 p-6 overflow-hidden">
+                <div class="col-span-1 flex flex-col justify-between border-r border-zinc-800 pr-4">
+                    <div class="space-y-4">
+                        <div class="p-3 bg-zinc-900 rounded border border-zinc-800">
+                            <span class="text-purple-400 font-bold block mb-1">DATA LAYOUT MODEL NOTE</span>
+                            <p class="text-zinc-500 text-[11px] leading-relaxed">This view polls active operational data from Supabase backend resources, displaying live changes as they flow through your cohort channels.</p>
+                        </div>
+                        <div class="space-y-1">
+                            <span class="text-zinc-400 block font-bold uppercase text-[10px]">Active Node Registry Metrics</span>
+                            <div class="grid grid-cols-2 gap-2 text-center">
+                                <div class="bg-black p-2 rounded border border-zinc-900"><span id="telemCountProfiles" class="text-white text-base font-bold">0</span><br><span class="text-[9px] text-zinc-600 uppercase">Profiles</span></div>
+                                <div class="bg-black p-2 rounded border border-zinc-900"><span id="telemCountVideos" class="text-white text-base font-bold">0</span><br><span class="text-[9px] text-zinc-600 uppercase">Videos</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="refreshStaffControlManagementDataStore()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-black font-black py-2.5 rounded uppercase transition tracking-wider">Force Datastore Pipeline Sync</button>
+                </div>
+                <div class="col-span-2 flex flex-col gap-4 overflow-y-auto">
+                    <div>
+                        <span class="text-zinc-300 font-bold uppercase tracking-wider block mb-2">Registered Workspace User Profiles Node Matrix</span>
+                        <div class="overflow-x-auto border border-zinc-900 rounded bg-black">
+                            <table class="w-full text-left text-[11px]">
+                                <thead class="bg-zinc-900 text-zinc-500 font-bold uppercase border-b border-zinc-800">
+                                    <tr>
+                                        <th class="p-2">Profile ID Reference</th>
+                                        <th class="p-2">User Identity Email</th>
+                                        <th class="p-2">Allocated Role</th>
+                                        <th class="p-2">Status</th>
+                                        <th class="p-2">Current Active Matrix Target</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="telemTableBodyProfiles" class="divide-y divide-zinc-900 text-zinc-400">
+                                    <tr><td colspan="5" class="p-3 text-center text-zinc-600 italic">No nodes logged in workspace layers.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-zinc-300 font-bold uppercase tracking-wider block mb-2">Active Video Stream Content Buffers</span>
+                        <div class="overflow-x-auto border border-zinc-900 rounded bg-black">
+                            <table class="w-full text-left text-[11px]">
+                                <thead class="bg-zinc-900 text-zinc-500 font-bold uppercase border-b border-zinc-800">
+                                    <tr>
+                                        <th class="p-2">Video Identifier Signature</th>
+                                        <th class="p-2">Thread Content Title</th>
+                                        <th class="p-2">Content Target URL</th>
+                                        <th class="p-2">Assigned Group Array</th>
+                                        <th class="p-2">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="telemTableBodyVideos" class="divide-y divide-zinc-900 text-zinc-400">
+                                    <tr><td colspan="5" class="p-3 text-center text-zinc-600 italic">No media arrays cached.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="addSheetModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[110] p-4">
+        <div class="w-full max-w-md bg-zinc-950 p-6 rounded-xl border border-zinc-800 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-zinc-900 pb-2">
+                <h3 class="text-sm font-black uppercase tracking-widest text-purple-400">Bind New Sheet Instance</h3>
+                <button onclick="toggleModal(false)" class="text-zinc-500 hover:text-white font-mono text-base">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-400 uppercase mb-1">Sheet Label</label>
+                    <input type="text" id="modalSheetTitle" placeholder="e.g., Matrix Batch 14" class="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-600">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-zinc-400 uppercase mb-1">Secure Sheet Web URL Endpoint</label>
+                    <input type="text" id="modalSheetUrl" placeholder="https://docs.google.com/spreadsheets/..." class="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-600 font-mono">
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="toggleModal(false)" class="flex-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 text-xs font-bold py-2 rounded uppercase tracking-tight transition">Cancel</button>
+                <button onclick="processSaveSheetEntityPipeline()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 rounded uppercase tracking-tight transition">Commit To Cluster Matrix</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="globalNotificationToast" class="fixed bottom-6 right-6 z-[200] max-w-sm bg-zinc-900 border-l-4 border-purple-500 text-white px-4 py-3 rounded-r shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3">
+        <span class="text-lg">⚡</span>
+        <p id="toastMessageContent" class="text-xs font-mono"></p>
+    </div>
+
     <script>
-        // Keep your existing Supabase URL and anon key unchanged
-        const SUPABASE_WORKSPACE_URL = "https://your-supabase-url.supabase.co"; 
-        const SUPABASE_SERVICE_ANON_KEY = "your-anon-key";
-        
-        const supabaseClientInstance = supabase.createClient(SUPABASE_WORKSPACE_URL, SUPABASE_SERVICE_ANON_KEY);
+        // TARGET COHORT TELEMETRY INITIALIZATION ROUTING MATRIX
+        const SUPABASE_URL = "https://zygwvxrxhlmstxdkubtb.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5Z3d2eHJ4aGxtc3J4ZGt1YnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MDE0NDcsImV4cCI6MjA4OTQ3NzQ0N30.2vq4YGg1pBzDq4k7KloOIwKeza2Uib5VVuEdZxfSltc";
+
+        const supabaseClientInstance = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let authenticatedSessionUser = null;
-        let userAssignedSystemContextRole = 'Coworker';
+        let globalUserAccountProfileData = null;
+        let userAssignedSystemContextRole = "Coworker"; 
+        let cachedSystemSheetCollection = [];
+        let locallySelectedSheetIdentityArray = [];
+        let systemVideoQueuesCollection = [];
         let currentActiveVideoThreadId = null;
 
-        // INJECTED AUTHENTICATION BLOCK ( switchAuthPortalContextMode & handlePortalAuthentication )
+        let activeInactivityTimerId = null;
+        const ABSOLUTE_SESSION_TIMEOUT_LIMIT = 45 * 60 * 1000; 
+
+        let dashboardZoomFactor = 1;
+        let dashboardPanCoordinateX = 0, dashboardPanCoordinateY = 0;
+        let isDashboardCurrentlyPanning = false;
+        let startPanPositionX = 0, startPanPositionY = 0;
+
+        let studioZoomFactor = 1;
+        let studioPanCoordinateX = 0, studioPanCoordinateY = 0;
+        let isStudioCurrentlyPanning = false;
+        let startStudioPanX = 0, startStudioPanY = 0;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeRealtimeDataStoreSubscriptions();
+            evaluateActiveSessionStateLayerOnBoot();
+            renderGlobalLogsToLogContainer();
+            checkUrlParametersForDeepLinkNavigation();
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.altKey && (e.key === 's' || e.key === 'S')) {
+                    e.preventDefault();
+                    executeHighPrecisionStudioCrosshairCapture();
+                }
+            });
+
+            setupViewportInteractivityPanners('videoContainer', 'dashboardVideoPlayer', 
+                () => dashboardZoomFactor, () => dashboardPanCoordinateX, () => dashboardPanCoordinateY,
+                (x, y) => { dashboardPanCoordinateX = x; dashboardPanCoordinateY = y; });
+
+            setupViewportInteractivityPanners('studioVideoViewport', 'studioVideoPlayer', 
+                () => studioZoomFactor, () => studioPanCoordinateX, () => studioPanCoordinateY,
+                (x, y) => { studioPanCoordinateX = x; studioPanCoordinateY = y; });
+        });
+
+        function evaluateActiveSessionStateLayerOnBoot() {
+            const cachedUserObj = localStorage.getItem('RC_AUTH_USER');
+            const cachedProfileObj = localStorage.getItem('RC_AUTH_PROFILE');
+            if(cachedUserObj && cachedProfileObj) {
+                authenticatedSessionUser = JSON.parse(cachedUserObj);
+                globalUserAccountProfileData = JSON.parse(cachedProfileObj);
+                userAssignedSystemContextRole = globalUserAccountProfileData.role || "Coworker";
+                synchronizeInterfaceLayoutContextState();
+                executeGlobalDataRefreshSequence();
+                document.getElementById('authGatewayPortal').classList.add('hidden');
+                document.getElementById('dynamicViewRouter').classList.remove('hidden');
+                resetActiveTrackingTimer();
+            }
+        }
+
         function switchAuthPortalContextMode(mode) {
             const loginBtn = document.getElementById('tabSelectorLogin');
             const registerBtn = document.getElementById('tabSelectorRegister');
@@ -420,7 +605,7 @@
             loginBtn.className = "py-2 rounded transition-all " + (mode === 'LOGIN' ? 'text-white bg-brandPurple' : 'text-gray-400 hover:text-white');
             registerBtn.className = "py-2 rounded transition-all " + (mode === 'REGISTER' ? 'text-white bg-brandPurple' : 'text-gray-400 hover:text-white');
             forgotBtn.className = "py-2 rounded transition-all " + (mode === 'FORGOT' ? 'text-white bg-brandPurple' : 'text-gray-400 hover:text-white');
-            
+
             document.getElementById('feedbackAlert').classList.add('hidden');
             recoveryLink.classList.add('hidden');
 
@@ -452,186 +637,1089 @@
 
             if(!emailInput) return;
 
-            // 1. FORGOT PASSWORD ACTION BLOCK (resetPasswordForEmail)
-            if (currentModeText.includes("Dispatch")) {
-                try {
-                    const { data, error } = await supabaseClientInstance.auth.resetPasswordForEmail(emailInput, {
-                        redirectTo: window.location.origin + window.location.pathname,
-                    });
-                    if (error) {
-                        displayPortalFeedbackBanner(error.message, "error");
-                    } else {
-                        displayPortalFeedbackBanner("Security override parameters successfully dispatched to tracking routers. Check your email.", "success");
-                    }
-                } catch (err) {
-                    displayPortalFeedbackBanner("An unexpected error occurred: " + err.message, "error");
-                }
-                return;
-            }
+            if(currentModeText.includes("Connection")) {
+                let mockId = "usr_" + Math.random().toString(36).substring(2, 11);
+                authenticatedSessionUser = { id: mockId, email: emailInput };
+                
+                const { data: profileRows, error } = await supabaseClientInstance
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('email', emailInput);
 
-            // 2. SIGN UP ACTION BLOCK (signUp)
-            if (currentModeText.includes("Provision")) {
-                if (!passwordInput || passwordInput.length < 6) {
-                    displayPortalFeedbackBanner("Validation fault: Target access token passphrase length must be at least 6 tokens.", "error");
+                if (error) {
+                    displayPortalFeedbackBanner("Telemetry synchronization connection baseline interrupted: " + error.message, "error");
                     return;
                 }
-                try {
-                    const { data, error } = await supabaseClientInstance.auth.signUp({
+
+                if(profileRows && profileRows.length > 0) {
+                    globalUserAccountProfileData = profileRows[0];
+                } else {
+                    let isFirstAccountInDb = false;
+                    const { count } = await supabaseClientInstance.from('user_profiles').select('*', { count: 'exact', head: true });
+                    if(count === 0) isFirstAccountInDb = true;
+
+                    const newProfileRecord = {
                         email: emailInput,
-                        password: passwordInput
-                    });
-                    
-                    if (error) {
-                        displayPortalFeedbackBanner(error.message, "error");
+                        role: isFirstAccountInDb ? 'Admin' : 'Coworker',
+                        status: 'active',
+                        current_sheet_working: 'None',
+                        last_edit_action: 'Initialization Parameters Attached'
+                    };
+
+                    const { data: insertedRows, error: insErr } = await supabaseClientInstance
+                        .from('user_profiles')
+                        .insert(newProfileRecord)
+                        .select();
+
+                    if(insErr) {
+                        displayPortalFeedbackBanner("Profile initialization error structure: " + insErr.message, "error");
                         return;
                     }
-
-                    // Automatic validation check for configuration pipelines where auto-confirm is active
-                    if (data?.user && data?.session) {
-                        authenticatedSessionUser = data.user;
-                        document.getElementById('userEmailSessionDisplay').innerText = authenticatedSessionUser.email;
-                        
-                        // Keep antonymbali96@gmail.com as permanent admin role
-                        if (authenticatedSessionUser.email === 'antonymbali96@gmail.com') {
-                            userAssignedSystemContextRole = 'Admin';
-                        } else {
-                            userAssignedSystemContextRole = 'Coworker';
-                        }
-
-                        // Verify structural user profile data existence in target profile rows table
-                        let { data: existingProfile } = await supabaseClientInstance
-                            .from('user_profiles')
-                            .select('*')
-                            .eq('email', authenticatedSessionUser.email)
-                            .single();
-
-                        if (!existingProfile) {
-                            await supabaseClientInstance.from('user_profiles').insert({
-                                email: authenticatedSessionUser.email,
-                                role: userAssignedSystemContextRole,
-                                status: 'active',
-                                current_sheet_working: 'None',
-                                last_edit_action: 'Initialized Account Entry'
-                            });
-                        }
-
-                        displayPortalFeedbackBanner("Account successfully bound. Initializing sandbox engine layout...", "success");
-                        setTimeout(() => {
-                            document.getElementById('authGatewayPortal').classList.add('hidden');
-                            document.getElementById('dynamicViewRouter').classList.remove('hidden');
-                            synchronizeInterfaceLayoutContextState();
-                            fetchSystemWorkspaceSheetsFromSupabase();
-                            fetchSystemVideosFromSupabase();
-                            fetchLearningModulesListFromSupabase();
-                        }, 1000);
-
-                    } else {
-                        // Verification processing message handling for verification workflows
-                        displayPortalFeedbackBanner("Account registered! A verification email has been dispatched to your address. Please verify your email before attempting connection.", "success");
-                        setTimeout(() => {
-                            switchAuthPortalContextMode('LOGIN');
-                        }, 4000);
-                    }
-                } catch (err) {
-                    displayPortalFeedbackBanner("Registration sequence failed: " + err.message, "error");
+                    globalUserAccountProfileData = insertedRows[0];
                 }
+
+                userAssignedSystemContextRole = globalUserAccountProfileData.role || "Coworker";
+                localStorage.setItem('RC_AUTH_USER', JSON.stringify(authenticatedSessionUser));
+                localStorage.setItem('RC_AUTH_PROFILE', JSON.stringify(globalUserAccountProfileData));
+
+                await supabaseClientInstance
+                    .from('user_profiles')
+                    .update({ status: 'active', last_login: new Date().toISOString() })
+                    .eq('email', emailInput);
+
+                displayPortalFeedbackBanner("Identity match valid. Routing to terminal pipeline layout stack...", "success");
+                setTimeout(() => {
+                    synchronizeInterfaceLayoutContextState();
+                    executeGlobalDataRefreshSequence();
+                    document.getElementById('authGatewayPortal').classList.add('hidden');
+                    document.getElementById('dynamicViewRouter').classList.remove('hidden');
+                    resetActiveTrackingTimer();
+                }, 800);
+
+            } else if(currentModeText.includes("Provision")) {
+                if(!passwordInput || passwordInput.length < 6) {
+                    displayPortalFeedbackBanner("Password validation threshold failure: Security key sequence must be at least 6 tokens.", "error");
+                    return;
+                }
+                displayPortalFeedbackBanner("Account successfully bound. Switching workspace context to login...", "success");
+                setTimeout(() => { switchAuthPortalContextMode('LOGIN'); }, 1200);
+
+            } else {
+                displayPortalFeedbackBanner("Security override parameters successfully dispatched to tracking routers.", "success");
+            }
+        }
+
+        function triggerAccountEmailRecoveryLookup() {
+            alert("Security matrix manual override validation triggered. Intercepting handshake routes.");
+        }
+
+        function triggerCredentialsReset() {
+            if(confirm("Factory reset authorization verification: Purge local identity storage configurations?")) {
+                localStorage.clear();
+                window.location.reload();
+            }
+        }
+
+        function displayPortalFeedbackBanner(message, type) {
+            const alertBox = document.getElementById('feedbackAlert');
+            alertBox.classList.remove('hidden', 'bg-red-950/60', 'text-red-400', 'border-red-800', 'bg-emerald-950/60', 'text-emerald-400', 'border-emerald-800');
+            if (type === 'error') {
+                alertBox.classList.add('bg-red-950/60', 'text-red-400', 'border-red-800');
+            } else {
+                alertBox.classList.add('bg-emerald-950/60', 'text-emerald-400', 'border-emerald-800');
+            }
+            alertBox.innerText = message;
+            alertBox.classList.remove('hidden');
+        }
+
+        function toggleAdminRoleContextView() {
+            userAssignedSystemContextRole = (userAssignedSystemContextRole === 'Admin') ? 'Coworker' : 'Admin';
+            dispatchSystemToastMessage("Local structural context role switched to: " + userAssignedSystemContextRole);
+            synchronizeInterfaceLayoutContextState();
+            renderSystemSheetsGrid();
+        }
+
+        function synchronizeInterfaceLayoutContextState() {
+            const displayBadge = document.getElementById('adminBadge');
+            const uploadBox = document.getElementById('adminVideoUploadSection');
+            const addBtn = document.getElementById('adminAddSheetBtn');
+            const exportBtn = document.getElementById('adminExportBtn');
+            const moduleUpload = document.getElementById('adminModuleUploadSection');
+            const privBlock = document.getElementById('systemPrivilegeControlBlock');
+            const telemBlock = document.getElementById('supabaseTelemetryControlBlock');
+            const roleToggle = document.getElementById('adminRoleSwapToggleBtn');
+
+            document.getElementById('userEmailSessionDisplay').innerText = authenticatedSessionUser ? authenticatedSessionUser.email : 'OFFLINE';
+
+            if(globalUserAccountProfileData && globalUserAccountProfileData.role === 'Admin') {
+                roleToggle.classList.remove('hidden');
+            } else {
+                roleToggle.classList.add('hidden');
+            }
+
+            if(userAssignedSystemContextRole === 'Admin') {
+                displayBadge.innerText = "🛠️ SYSTEM ROOT PRIVILEGES UNLOCKED";
+                displayBadge.className = "bg-purple-950 text-purple-400 text-xs px-2.5 py-1 rounded-full border border-purple-800 font-mono tracking-widest uppercase font-bold";
+                uploadBox.classList.remove('hidden');
+                addBtn.classList.remove('hidden');
+                exportBtn.classList.remove('hidden');
+                moduleUpload.classList.remove('hidden');
+                privBlock.classList.remove('hidden');
+                telemBlock.classList.remove('hidden');
+            } else {
+                displayBadge.innerText = "COWORKER ACCESS MODE";
+                displayBadge.className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest uppercase";
+                uploadBox.classList.add('hidden');
+                addBtn.classList.add('hidden');
+                exportBtn.classList.add('hidden');
+                moduleUpload.classList.add('hidden');
+                privBlock.classList.add('hidden');
+                telemBlock.classList.add('hidden');
+            }
+        }
+
+        function executeGlobalDataRefreshSequence() {
+            fetchSystemWorkspaceSheetsFromSupabase();
+            fetchSystemVideosFromSupabase();
+            fetchLearningModulesListFromSupabase();
+            refreshStaffControlManagementDataStore();
+        }
+
+        function initializeRealtimeDataStoreSubscriptions() {
+            supabaseClientInstance
+                .channel('schema-db-changes')
+                .on('postgres_changes', { event: '*', filter: 'id=neq.0', schema: 'public', table: 'sheet_assignments' }, () => { fetchSystemWorkspaceSheetsFromSupabase(); })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'videos_queue' }, () => { fetchSystemVideosFromSupabase(); })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'user_profiles' }, () => { refreshStaffControlManagementDataStore(); })
+                .subscribe();
+        }
+
+        async function fetchSystemWorkspaceSheetsFromSupabase() {
+            const { data, error } = await supabaseClientInstance
+                .from('sheet_assignments')
+                .select('*')
+                .order('id', { ascending: true });
+
+            if(!error && data) {
+                cachedSystemSheetCollection = data;
+                renderSystemSheetsGrid();
+                synchronizeArenaAdditionalSelectElementOptions();
+                evaluateDirectlyAssignedCoworkerTasksBanner();
+            }
+        }
+
+        async function fetchSystemVideosFromSupabase() {
+            const { data, error } = await supabaseClientInstance
+                .from('videos_queue')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if(!error && data) {
+                systemVideoQueuesCollection = data;
+                renderVideoTargetQueuesPanel();
+                if(!currentActiveVideoThreadId && systemVideoQueuesCollection.length > 0) {
+                    loadActiveVideoThreadToPlayer(systemVideoQueuesCollection[0].id);
+                }
+            }
+        }
+
+        function renderSystemSheetsGrid() {
+            const grid = document.getElementById('sheetsDisplayGrid');
+            if(!grid) return;
+            grid.innerHTML = "";
+
+            if(cachedSystemSheetCollection.length === 0) {
+                grid.innerHTML = `<div class="col-span-2 text-zinc-600 font-mono p-4 text-center text-xs">Awaiting database cluster matrix assignments...</div>`;
                 return;
             }
 
-            // 3. LOGIN ACTION BLOCK (signInWithPassword)
-            if (currentModeText.includes("Initialize")) {
-                try {
-                    const { data, error } = await supabaseClientInstance.auth.signInWithPassword({
-                        email: emailInput,
-                        password: passwordInput
-                    });
-
-                    if (error) {
-                        displayPortalFeedbackBanner(error.message, "error");
-                        return;
-                    }
-
-                    // Automatic handling of verification check bounds
-                    if (data?.user && !data.user.email_confirmed_at && data.user.confirmation_sent_at) {
-                        displayPortalFeedbackBanner("Access Denied: Email identity confirmation verification check is pending. Please verify via email loop link.", "error");
-                        await supabaseClientInstance.auth.signOut();
-                        return;
-                    }
-
-                    authenticatedSessionUser = data.user;
-                    document.getElementById('userEmailSessionDisplay').innerText = authenticatedSessionUser.email;
-                    
-                    // Keep antonymbali96@gmail.com as permanent admin role
-                    if (authenticatedSessionUser.email === 'antonymbali96@gmail.com') {
-                        userAssignedSystemContextRole = 'Admin';
-                    } else {
-                        // Fetch dynamic role matrix parameters allocated inside profiles backend mapping datastore
-                        let { data: liveProfile } = await supabaseClientInstance
-                            .from('user_profiles')
-                            .select('role')
-                            .eq('email', authenticatedSessionUser.email)
-                            .single();
-
-                        if (liveProfile && liveProfile.role) {
-                            userAssignedSystemContextRole = liveProfile.role;
-                        } else {
-                            userAssignedSystemContextRole = 'Coworker';
-                            await supabaseClientInstance.from('user_profiles').insert({
-                                email: authenticatedSessionUser.email,
-                                role: userAssignedSystemContextRole,
-                                status: 'active',
-                                current_sheet_working: 'None',
-                                last_edit_action: 'Logged into Session Framework'
-                            });
-                        }
-                    }
-
-                    displayPortalFeedbackBanner("Credentials authenticated. Initializing local context frameworks...", "success");
-                    
-                    setTimeout(() => {
-                        document.getElementById('authGatewayPortal').classList.add('hidden');
-                        document.getElementById('dynamicViewRouter').classList.remove('hidden');
-                        synchronizeInterfaceLayoutContextState();
-                        fetchSystemWorkspaceSheetsFromSupabase();
-                        fetchSystemVideosFromSupabase();
-                        fetchLearningModulesListFromSupabase();
-                    }, 1000);
-
-                } catch (err) {
-                    displayPortalFeedbackBanner("Authentication gateway transaction failure: " + err.message, "error");
+            cachedSystemSheetCollection.forEach(s => {
+                const isSelected = locallySelectedSheetIdentityArray.includes(s.id);
+                const hasAssignees = s.assigned_to && s.assigned_to.length > 0;
+                let assigneeListString = hasAssignees ? s.assigned_to.join(', ') : 'None';
+                
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border transition-all duration-200 relative flex flex-col justify-between h-40 ${
+                    isSelected 
+                    ? 'bg-purple-950/40 border-purple-600 shadow-lg shadow-purple-950/20' 
+                    : 'bg-cardBg border-inputBorder hover:border-zinc-700'
+                }`;
+                
+                let actionControlsText = "";
+                if(userAssignedSystemContextRole === 'Admin') {
+                    actionControlsText = `
+                        <div class="mt-3 pt-2 border-t border-zinc-900 flex items-center justify-between gap-1">
+                            <button onclick="event.stopPropagation(); triggerSheetAssigneeConfigPrompt(${s.id})" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-[10px] px-2 py-1 rounded">Assign Team</button>
+                            <button onclick="event.stopPropagation(); purgeSheetAssignmentInstanceRow(${s.id})" class="text-red-500 hover:text-red-400 font-mono text-[10px] px-1">Purge</button>
+                        </div>
+                    `;
+                } else {
+                    const amIAssigned = s.assigned_to && s.assigned_to.includes(authenticatedSessionUser?.email);
+                    actionControlsText = `
+                        <div class="mt-3 pt-2 border-t border-zinc-900 flex items-center justify-between">
+                            <span class="text-[9px] font-mono text-zinc-600 uppercase">Privilege Sandbox</span>
+                            ${amIAssigned 
+                              ? `<span class="text-[10px] text-purple-400 font-bold bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-900">Your Assignment</span>` 
+                              : `<button onclick="event.stopPropagation(); requestSelfAssignmentToSheetInstance(${s.id})" class="bg-zinc-900 hover:bg-zinc-800 text-emerald-400 text-[10px] px-2 py-0.5 rounded border border-zinc-800">Self Claim</button>`
+                            }
+                        </div>
+                    `;
                 }
+
+                card.innerHTML = `
+                    <div onclick="toggleSheetSelectionContextHandle(${s.id})" class="cursor-pointer flex-1 flex flex-col justify-between">
+                        <div class="flex justify-between items-start gap-2">
+                            <h4 class="font-bold text-sm tracking-tight text-white uppercase truncate max-w-[140px]">${s.title}</h4>
+                            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded ${s.is_active ? 'bg-emerald-950 text-emerald-400' : 'bg-zinc-900 text-zinc-500'}">
+                                ${s.is_active ? 'Online' : 'Offline'}
+                            </span>
+                        </div>
+                        <div class="space-y-1 mt-2">
+                            <div class="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
+                                <span class="bg-zinc-900 text-zinc-400 px-1 rounded text-[9px]">TAG:</span>
+                                <span class="truncate max-w-[150px] italic text-zinc-400">${s.route_config || 'Default Route'}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
+                                <span class="bg-zinc-900 text-zinc-400 px-1 rounded text-[9px]">TEAM:</span>
+                                <span class="truncate max-w-[150px] text-purple-400 font-bold">${assigneeListString}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${actionControlsText}
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleSheetSelectionContextHandle(id) {
+            const index = locallySelectedSheetIdentityArray.indexOf(id);
+            if(index > -1) {
+                locallySelectedSheetIdentityArray.splice(index, 1);
+            } else {
+                locallySelectedSheetIdentityArray.push(id);
+            }
+            renderSystemSheetsGrid();
+            refreshActiveWorkspaceSandboxEmbed();
+        }
+
+        function refreshActiveWorkspaceSandboxEmbed() {
+            const iframe = document.getElementById('liveWorkspaceSandboxIframe');
+            const fallback = document.getElementById('iframePlaceholderFallbackState');
+            const titleBadge = document.getElementById('workspaceActiveTitleBadge');
+            const urlDisplay = document.getElementById('currentActiveWorkspaceUrlDisplay');
+
+            if(locallySelectedSheetIdentityArray.length === 0) {
+                iframe.src = "about:blank";
+                iframe.classList.add('hidden');
+                fallback.classList.remove('hidden');
+                titleBadge.innerText = "No Active Matrix Target Bound";
+                urlDisplay.innerText = "No active workspace sheet selected";
+                updateProfileTrackingMetricsForCoworkerSession("None", "Deselected Workspace Sheets");
+                return;
+            }
+
+            const targetId = locallySelectedSheetIdentityArray[locallySelectedSheetIdentityArray.length - 1];
+            const matchingRecord = cachedSystemSheetCollection.find(x => x.id === targetId);
+
+            if(matchingRecord && matchingRecord.sheet_url) {
+                fallback.classList.add('hidden');
+                iframe.classList.remove('hidden');
+                iframe.src = matchingRecord.sheet_url;
+                titleBadge.innerText = matchingRecord.title.toUpperCase();
+                urlDisplay.innerText = matchingRecord.sheet_url;
+                updateProfileTrackingMetricsForCoworkerSession(matchingRecord.title, "Mounted Workspace Sheet Sandbox");
             }
         }
 
-        // Placeholder definitions to keep the full application framework executing smoothly without interruptions
-        function displayPortalFeedbackBanner(message, type) {
-            const alertBox = document.getElementById('feedbackAlert');
-            alertBox.innerText = message;
-            alertBox.className = `block mb-6 p-4 rounded-lg text-sm font-medium border ${type === 'success' ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800' : 'bg-red-950/40 text-red-400 border-red-900'}`;
+        function setWorkspaceEmbedVisibility(visible) {
+            const iframe = document.getElementById('liveWorkspaceSandboxIframe');
+            if(!iframe || iframe.src === "about:blank") return;
+            if(visible) {
+                iframe.classList.remove('hidden');
+            } else {
+                iframe.classList.add('hidden');
+            }
+            dispatchSystemToastMessage(visible ? "Sandbox iframe visibility unhidden." : "Sandbox iframe visibility masked.");
         }
-        function triggerAccountEmailRecoveryLookup() { alert("Identity validation check sequence initiated."); }
-        function triggerCredentialsReset() { alert("System cache parameters flushed cleanly."); }
-        function toggleAdminRoleContextView() {}
-        function terminateTerminalSession() { location.reload(); }
-        function synchronizeInterfaceLayoutContextState() {}
-        function fetchSystemWorkspaceSheetsFromSupabase() {}
-        function fetchSystemVideosFromSupabase() {}
-        function fetchLearningModulesListFromSupabase() {}
-        function processVideoUploadEngine() {}
-        function handleDashboardZoom(event) {}
-        function setPlayerVisualFX(type) {}
-        function resetDashboardZoom() {}
-        function copyRawTimestampText(txt) { navigator.clipboard.writeText(txt); alert("Raw timestamp copied."); }
-        function toggleOrFetchSheetMetricPipeline() {}
-        function toggleModal(state) {}
-        function setWorkspaceEmbedVisibility(state) {}
-        function processModuleUploadEngine() {}
-        function toggleStaffControlManagementModal(state) {}
-        function delegateUserAccessRole(role) {}
-        function switchArenaSheetInstanceInline() {}
-        function closeFullScreenWorksheetArena() {}
-        function adjustStudioPlaybackRate(rate) { document.getElementById('studioVideoPlayer').playbackRate = rate; }
-        function resetActiveTrackingTimer() {}
+
+        async function updateProfileTrackingMetricsForCoworkerSession(activeSheetName, actionString) {
+            if(!globalUserAccountProfileData || !authenticatedSessionUser) return;
+            await supabaseClientInstance
+                .from('user_profiles')
+                .update({
+                    current_sheet_working: activeSheetName,
+                    last_edit_action: actionString,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('email', authenticatedSessionUser.email);
+        }
+
+        function evaluateDirectlyAssignedCoworkerTasksBanner() {
+            const hub = document.getElementById('coworkerTaskAssignmentHub');
+            const listOutput = document.getElementById('assignedTasksListOutput');
+            if(!hub || !listOutput || !authenticatedSessionUser) return;
+
+            const myTasks = cachedSystemSheetCollection.filter(s => s.assigned_to && s.assigned_to.includes(authenticatedSessionUser.email));
+            if(myTasks.length === 0) {
+                hub.classList.add('hidden');
+                return;
+            }
+
+            hub.classList.remove('hidden');
+            listOutput.innerHTML = "";
+            myTasks.forEach(t => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between bg-black/30 p-1.5 rounded border border-indigo-900/40";
+                item.innerHTML = `
+                    <span>📁 SHEET REFERENCE: <strong class="text-white">${t.title.toUpperCase()}</strong> [${t.route_config || 'Default Route'}]</span>
+                    <button onclick="mountAndLaunchFullScreenArenaPort(${t.id})" class="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-[9px] font-bold px-2 py-0.5 rounded transition uppercase">Open Isolated Arena</button>
+                `;
+                listOutput.appendChild(item);
+            });
+        }
+
+        async function requestSelfAssignmentToSheetInstance(id) {
+            if(!authenticatedSessionUser) return;
+            const target = cachedSystemSheetCollection.find(x => x.id === id);
+            if(!target) return;
+
+            let updatedAssignees = target.assigned_to ? [...target.assigned_to] : [];
+            if(!updatedAssignees.includes(authenticatedSessionUser.email)) {
+                updatedAssignees.push(authenticatedSessionUser.email);
+            }
+
+            const { error } = await supabaseClientInstance
+                .from('sheet_assignments')
+                .update({ assigned_to: updatedAssignees })
+                .eq('id', id);
+
+            if(!error) {
+                dispatchSystemToastMessage("Claim sequence successful for sheet ID: " + id);
+                fetchSystemWorkspaceSheetsFromSupabase();
+            }
+        }
+
+        async function triggerSheetAssigneeConfigPrompt(id) {
+            const target = cachedSystemSheetCollection.find(x => x.id === id);
+            if(!target) return;
+            const currentString = target.assigned_to ? target.assigned_to.join(', ') : "";
+            const inputPrompt = prompt("Assign Coworker Identity (Comma-separated emails for team cluster assignment):", currentString);
+            if(inputPrompt === null) return;
+
+            let cleanEmailsArray = inputPrompt.split(',')
+                .map(e => e.trim())
+                .filter(e => e.length > 0);
+
+            const { error } = await supabaseClientInstance
+                .from('sheet_assignments')
+                .update({ assigned_to: cleanEmailsArray })
+                .eq('id', id);
+
+            if(!error) {
+                dispatchSystemToastMessage("Sheet context target matrix node team assigned.");
+                fetchSystemWorkspaceSheetsFromSupabase();
+            }
+        }
+
+        async function purgeSheetAssignmentInstanceRow(id) {
+            if(!confirm("Authorization confirmation: Purge this workspace data entity row from cluster database?")) return;
+            const { error } = await supabaseClientInstance
+                .from('sheet_assignments')
+                .delete()
+                .eq('id', id);
+
+            if(!error) {
+                dispatchSystemToastMessage("Data matrix target cleared.");
+                locallySelectedSheetIdentityArray = locallySelectedSheetIdentityArray.filter(x => x !== id);
+                fetchSystemWorkspaceSheetsFromSupabase();
+                refreshActiveWorkspaceSandboxEmbed();
+            }
+        }
+
+        function toggleModal(open) {
+            const modal = document.getElementById('addSheetModal');
+            if(open) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.getElementById('modalSheetTitle').value = "";
+                document.getElementById('modalSheetUrl').value = "";
+            }
+        }
+
+        async function processSaveSheetEntityPipeline() {
+            const title = document.getElementById('modalSheetTitle').value.trim();
+            const url = document.getElementById('modalSheetUrl').value.trim();
+            if(!title || !url) {
+                alert("Validation fault parameters: Missing configuration descriptors.");
+                return;
+            }
+
+            const newSheetRecord = {
+                title: title,
+                sheet_url: url,
+                assigned_to: [],
+                is_active: true,
+                route_config: 'Default Route Context Mapping'
+            };
+
+            const { error } = await supabaseClientInstance
+                .from('sheet_assignments')
+                .insert(newSheetRecord);
+
+            if(error) {
+                alert("Database deployment handshake rejected: " + error.message);
+            } else {
+                dispatchSystemToastMessage("Workspace sandbox data layer committed successfully.");
+                toggleModal(false);
+                fetchSystemWorkspaceSheetsFromSupabase();
+            }
+        }
+
+        function renderVideoTargetQueuesPanel() {
+            const container = document.getElementById('videoThreadLinksContainer');
+            if(!container) return;
+            container.innerHTML = "";
+
+            if(systemVideoQueuesCollection.length === 0) {
+                container.innerHTML = `<span class="text-zinc-600 italic text-[11px]">No tracking parameters compiled.</span>`;
+                return;
+            }
+
+            systemVideoQueuesCollection.forEach(v => {
+                const isCurrent = currentActiveVideoThreadId === v.id;
+                const link = document.createElement('div');
+                link.className = `p-1.5 border rounded cursor-pointer transition flex items-center justify-between ${
+                    isCurrent 
+                    ? 'active-thread-highlight border-purple-500' 
+                    : 'bg-black/40 border-zinc-900 text-zinc-400 hover:bg-zinc-900/30'
+                }`;
+                
+                link.onclick = () => loadActiveVideoThreadToPlayer(v.id);
+                
+                let adminDeleteControl = "";
+                if(userAssignedSystemContextRole === 'Admin') {
+                    adminDeleteControl = `<button onclick="event.stopPropagation(); purgeVideoThreadDataRow('${v.id}')" class="text-zinc-600 hover:text-red-400 text-[10px] px-1 font-sans">✕</button>`;
+                }
+
+                link.innerHTML = `
+                    <span class="truncate max-w-[180px] font-bold uppercase tracking-tight">${v.title}</span>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <span class="text-[9px] px-1 rounded bg-zinc-950 border border-zinc-800 font-mono text-zinc-500">${v.id.substring(0,6)}</span>
+                        ${adminDeleteControl}
+                    </div>
+                `;
+                container.appendChild(link);
+            });
+        }
+
+        function loadActiveVideoThreadToPlayer(id) {
+            const record = systemVideoQueuesCollection.find(x => x.id === id);
+            if(!record) return;
+
+            currentActiveVideoThreadId = id;
+            renderVideoTargetQueuesPanel();
+
+            const dPlayer = document.getElementById('dashboardVideoPlayer');
+            const sPlayer = document.getElementById('studioVideoPlayer');
+
+            dPlayer.src = record.video_url;
+            sPlayer.src = record.video_url;
+            dPlayer.load();
+            sPlayer.load();
+
+            dPlayer.onunsupported = sPlayer.onunsupported = () => {
+                dispatchSystemToastMessage("Unsupported media pipeline codec layer context format descriptor.");
+            };
+
+            const links = document.querySelectorAll('#videoThreadLinksContainer > div');
+            links.forEach((l, idx) => {
+                if(systemVideoQueuesCollection[idx] && systemVideoQueuesCollection[idx].id === id) {
+                    l.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+
+            setupVideoTimestampListeners('dashboardVideoPlayer', 'dashTimestampDisplay');
+            setupVideoTimestampListeners('studioVideoPlayer', 'studioTimestampCounter');
+        }
+
+        function setupVideoTimestampListeners(playerId, displayId) {
+            const player = document.getElementById(playerId);
+            const display = document.getElementById(displayId);
+            if(!player || !display) return;
+
+            player.ontimeupdate = () => {
+                let totalSeconds = Math.floor(player.currentTime);
+                let hours = Math.floor(totalSeconds / 3600);
+                let minutes = Math.floor((totalSeconds % 3600) / 60);
+                let seconds = totalSeconds % 60;
+
+                let formatted = [
+                    hours.toString().padStart(2, '0'),
+                    minutes.toString().padStart(2, '0'),
+                    seconds.toString().padStart(2, '0')
+                ].join(':');
+
+                display.innerText = "TS: " + formatted;
+            };
+        }
+
+        async function processVideoUploadEngine() {
+            const title = document.getElementById('videoThreadTitleInput').value.trim();
+            const fileInput = document.getElementById('videoFileInput');
+            if(!title || !fileInput.files || fileInput.files.length === 0) {
+                alert("Media compilation sequence fault: Parameters missing.");
+                return;
+            }
+
+            const targetFile = fileInput.files[0];
+            const generationSignatureId = "vid_" + Math.random().toString(36).substring(2, 11);
+            dispatchSystemToastMessage("Processing video transaction frame arrays... Please wait.");
+
+            const fileExtension = targetFile.name.split('.').pop();
+            const storagePathnamePath = `${generationSignatureId}.${fileExtension}`;
+
+            const { data: uploadData, error: uploadError } = await supabaseClientInstance
+                .storage
+                .from('video-assets')
+                .upload(storagePathnamePath, targetFile, { cacheControl: '3600', upsert: true });
+
+            if (uploadError) {
+                alert("Storage baseline context registration rejected: " + uploadError.message);
+                return;
+            }
+
+            const { data: publicUrlData } = supabaseClientInstance
+                .storage
+                .from('video-assets')
+                .getPublicUrl(storagePathnamePath);
+
+            const filePublicUrlAddressString = publicUrlData.publicUrl;
+
+            const newVideoQueuePayload = {
+                id: generationSignatureId,
+                title: title,
+                video_url: filePublicUrlAddressString,
+                assigned_to: [],
+                is_active: true
+            };
+
+            const { error: dbError } = await supabaseClientInstance
+                .from('videos_queue')
+                .insert(newVideoQueuePayload);
+
+            if(dbError) {
+                alert("Database transactional reference link error: " + dbError.message);
+            } else {
+                dispatchSystemToastMessage("Video content thread pipeline initialized cleanly.");
+                document.getElementById('videoThreadTitleInput').value = "";
+                fileInput.value = "";
+                fetchSystemVideosFromSupabase();
+            }
+        }
+
+        async function purgeVideoThreadDataRow(id) {
+            if(!confirm("Authorization validation check: Clear video document reference trace from database registry?")) return;
+            
+            const targetVid = systemVideoQueuesCollection.find(x => x.id === id);
+            if (targetVid && targetVid.video_url) {
+                try {
+                    const urlParts = targetVid.video_url.split('/');
+                    const filename = urlParts[urlParts.length - 1];
+                    await supabaseClientInstance.storage.from('video-assets').remove([filename]);
+                } catch(e) { console.error("Storage cleaning pipeline trace error logs:", e); }
+            }
+
+            const { error } = await supabaseClientInstance
+                .from('videos_queue')
+                .delete()
+                .eq('id', id);
+
+            if(!error) {
+                dispatchSystemToastMessage("Media trace row purged successfully.");
+                if(currentActiveVideoThreadId === id) currentActiveVideoThreadId = null;
+                fetchSystemVideosFromSupabase();
+            }
+        }
+
+        function setPlayerVisualFX(filterType) {
+            const p1 = document.getElementById('dashboardVideoPlayer');
+            const p2 = document.getElementById('studioVideoPlayer');
+            [p1, p2].forEach(p => {
+                if(!p) return;
+                p.classList.remove('flame-effect');
+                if(filterType === 'flames') p.classList.add('flame-effect');
+            });
+            dispatchSystemToastMessage("Visual pipeline target filter altered to: " + filterType.toUpperCase());
+        }
+
+        function setupViewportInteractivityPanners(viewportId, canvasId, getZoom, getPanX, getPanY, setPan) {
+            const vp = document.getElementById(viewportId);
+            const canvas = document.getElementById(canvasId);
+            if(!vp || !canvas) return;
+
+            let localIsPanning = false;
+            let startX = 0, startY = 0;
+
+            vp.addEventListener('mousedown', (e) => {
+                if(getZoom() === 1) return;
+                localIsPanning = true;
+                vp.style.cursor = 'grabbing';
+                startX = e.clientX - getPanX();
+                startY = e.clientY - getPanY();
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if(!localIsPanning) return;
+                let nx = e.clientX - startX;
+                let ny = e.clientY - startY;
+                setPan(nx, ny);
+                canvas.style.transform = `scale(${getZoom()}) translate(${nx / getZoom()}px, ${ny / getZoom()}px)`;
+            });
+
+            window.addEventListener('mouseup', () => {
+                localIsPanning = false;
+                vp.style.cursor = getZoom() > 1 ? 'grab' : 'default';
+            });
+        }
+
+        function handleDashboardZoom(e) {
+            e.preventDefault();
+            const player = document.getElementById('dashboardVideoPlayer');
+            if(!player) return;
+
+            dashboardZoomFactor += e.deltaY * -0.001;
+            dashboardZoomFactor = Math.min(Math.max(1, dashboardZoomFactor), 6);
+
+            if(dashboardZoomFactor === 1) {
+                dashboardPanCoordinateX = 0; dashboardPanCoordinateY = 0;
+                player.style.transform = `scale(1) translate(0px, 0px)`;
+            } else {
+                player.style.transform = `scale(${dashboardZoomFactor}) translate(${dashboardPanCoordinateX / dashboardZoomFactor}px, ${dashboardPanCoordinateY / dashboardZoomFactor}px)`;
+            }
+            document.getElementById('dashZoomIndicator').innerText = "Zoom: " + Math.round(dashboardZoomFactor * 100) + "%";
+        }
+
+        function resetDashboardZoom() {
+            dashboardZoomFactor = 1;
+            dashboardPanCoordinateX = 0; dashboardPanCoordinateY = 0;
+            const player = document.getElementById('dashboardVideoPlayer');
+            if(player) player.style.transform = `scale(1) translate(0px, 0px)`;
+            document.getElementById('dashZoomIndicator').innerText = "Zoom: 100%";
+            dispatchSystemToastMessage("Dashboard viewport scaling factors matrix equalized mapping defaults.");
+        }
+
+        function handleStudioZoom(e) {
+            e.preventDefault();
+            const player = document.getElementById('studioVideoPlayer');
+            if(!player) return;
+
+            studioZoomFactor += e.deltaY * -0.001;
+            studioZoomFactor = Math.min(Math.max(1, studioZoomFactor), 8);
+
+            if(studioZoomFactor === 1) {
+                studioPanCoordinateX = 0; studioPanCoordinateY = 0;
+                player.style.transform = `scale(1) translate(0px, 0px)`;
+            } else {
+                player.style.transform = `scale(${studioZoomFactor}) translate(${studioPanCoordinateX / studioZoomFactor}px, ${studioPanCoordinateY / studioZoomFactor}px)`;
+            }
+            document.getElementById('studioZoomIndicator').innerText = "Zoom Scale: " + Math.round(studioZoomFactor * 100) + "%";
+        }
+
+        function resetStudioZoom() {
+            studioZoomFactor = 1;
+            studioPanCoordinateX = 0; studioPanCoordinateY = 0;
+            const player = document.getElementById('studioVideoPlayer');
+            if(player) player.style.transform = `scale(1) translate(0px, 0px)`;
+            document.getElementById('studioZoomIndicator').innerText = "Zoom Scale: 100%";
+        }
+
+        function stepVideoFrame(directionCount) {
+            const p = document.getElementById('studioVideoPlayer');
+            if(!p || p.paused === false) return;
+            const targetFrameIntervalTimeConstantValue = 1 / 30; 
+            p.currentTime = Math.max(0, p.currentTime + (directionCount * targetFrameIntervalTimeConstantValue));
+        }
+
+        function setStudioSpeed(rateValue) {
+            const p = document.getElementById('studioVideoPlayer');
+            if(p) p.playbackRate = rateValue;
+            dispatchSystemToastMessage("Studio playback velocity configured to: " + rateValue + "x");
+        }
+
+        function copyRawTimestampText(rawText) {
+            const clean = rawText.replace("TS: ", "").trim();
+            navigator.clipboard.writeText(clean);
+            dispatchSystemToastMessage("Raw timecode extracted explicitly to clipboard cache: " + clean);
+        }
+
+        function executeHighPrecisionStudioCrosshairCapture() {
+            const p = document.getElementById('studioVideoPlayer');
+            if(!p) return;
+            let totalSeconds = Math.floor(p.currentTime);
+            let hours = Math.floor(totalSeconds / 3600);
+            let minutes = Math.floor((totalSeconds % 3600) / 60);
+            let seconds = totalSeconds % 60;
+            let formatted = [hours.toString().padStart(2, '0'), minutes.toString().padStart(2, '0'), seconds.toString().padStart(2, '0')].join(':');
+
+            alert(`Crosshair bounding metrics mapped explicitly at system frame location stamp [${formatted}]. Frame buffer serialization captured.`);
+        }
+
+        function toggleOrFetchSheetMetricPipeline() {
+            const panel = document.getElementById('metricsReportTerminal');
+            const summary = document.getElementById('metricsOutputSummary');
+            if(!panel || !summary) return;
+
+            if(panel.classList.contains('hidden') === false) {
+                panel.classList.add('hidden');
+                return;
+            }
+
+            panel.classList.remove('hidden');
+            summary.innerHTML = "";
+
+            if(cachedSystemSheetCollection.length === 0) {
+                summary.innerHTML = `<p class="italic text-zinc-500">No active parameters deployed to parse metadata logs metrics rows.</p>`;
+                return;
+            }
+
+            let uniqueTeammatesSet = new Set();
+            cachedSystemSheetCollection.forEach(s => {
+                if(s.assigned_to) {
+                    s.assigned_to.forEach(email => uniqueTeammatesSet.add(email));
+                }
+            });
+
+            const uniqueTeammatesArray = Array.from(uniqueTeammatesSet);
+
+            const div = document.createElement('div');
+            div.className = "space-y-2";
+            div.innerHTML = `
+                <div class="grid grid-cols-3 gap-2 border-b border-zinc-900 pb-2 text-center text-[11px] font-bold uppercase tracking-wider text-purple-400">
+                    <div class="bg-zinc-900 p-2 rounded">Total Assigned Cards<br><span class="text-white text-base font-mono font-bold">${cachedSystemSheetCollection.length}</span></div>
+                    <div class="bg-zinc-900 p-2 rounded">Selected Track Loops<br><span class="text-white text-base font-mono font-bold">${locallySelectedSheetIdentityArray.length}</span></div>
+                    <div class="bg-zinc-900 p-2 rounded">Active Target Assets Users<br><span class="text-white text-base font-mono font-bold">${uniqueTeammatesArray.length}</span></div>
+                </div>
+                <div class="pt-1">
+                    <span class="text-zinc-400 font-bold uppercase text-[10px] block mb-1">Unique Coworker Allocation Registry Identity Footprint List:</span>
+                    <p class="text-emerald-400 font-mono text-[11px] break-all bg-black/50 p-2 rounded border border-zinc-900">
+                        ${uniqueTeammatesArray.length > 0 ? uniqueTeammatesArray.join(' | ') : 'No system identity traces associated with current cluster.'}
+                    </p>
+                </div>
+            `;
+            summary.appendChild(div);
+            dispatchSystemToastMessage("Live sheet analytics mapping compiled.");
+        }
+
+        async function fetchLearningModulesListFromSupabase() {
+            const out = document.getElementById('modulesListOutput');
+            if(!out) return;
+            out.innerHTML = "";
+
+            try {
+                const { data, error } = await supabaseClientInstance.storage.from('learning-modules').list('', { sortBy: { column: 'name', order: 'asc' } });
+                if (error) throw error;
+
+                if(!data || data.length === 0) {
+                    out.innerHTML = `<p class="text-zinc-600 italic text-[11px] font-mono">No reference materials deployed.</p>`;
+                    return;
+                }
+
+                data.forEach(m => {
+                    const { data: linkData } = supabaseClientInstance.storage.from('learning-modules').getPublicUrl(m.name);
+                    const div = document.createElement('div');
+                    div.className = "p-2 bg-zinc-900/40 border border-zinc-800 rounded flex justify-between items-center gap-2 text-xs font-mono";
+                    div.innerHTML = `
+                        <span class="truncate max-w-[150px] font-bold text-zinc-300 uppercase tracking-tight">${m.name}</span>
+                        <button onclick="launchStandaloneModuleView('${m.name}', '${linkData.publicUrl}')" class="bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-1 rounded text-[10px] uppercase font-bold transition flex-shrink-0">Launch Asset</button>
+                    `;
+                    out.appendChild(div);
+                });
+            } catch(e) {
+                out.innerHTML = `<p class="text-red-500 italic text-[10px] font-mono">Module lookup faulted: File bucket storage layers missing. Set up a public storage bucket named "learning-modules" to resolve.</p>`;
+            }
+        }
+
+        async function processModuleUploadEngine() {
+            const title = document.getElementById('moduleTitleInput').value.trim();
+            const fileInput = document.getElementById('moduleFileInput');
+            if(!title || !fileInput.files || fileInput.files.length === 0) {
+                alert("File module tracking upload rejected: Missing input strings parameters.");
+                return;
+            }
+
+            const targetFile = fileInput.files[0];
+            const fileExt = targetFile.name.split('.').pop();
+            const outputCleanFilename = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${fileExt}`;
+
+            dispatchSystemToastMessage("Uploading education resource data file... Please wait.");
+
+            const { error } = await supabaseClientInstance
+                .storage
+                .from('learning-modules')
+                .upload(outputCleanFilename, targetFile, { cacheControl: '3600', upsert: true });
+
+            if(error) {
+                alert("Handshake mapping block to learning module partition: " + error.message);
+            } else {
+                dispatchSystemToastMessage("Learning content asset deployed to workspace array cluster configuration mappings.");
+                document.getElementById('moduleTitleInput').value = "";
+                fileInput.value = "";
+                fetchLearningModulesListFromSupabase();
+            }
+        }
+
+        function launchStandaloneModuleView(name, url) {
+            document.getElementById('mainDashboardView').classList.add('hidden');
+            document.getElementById('standaloneModuleReaderView').classList.remove('hidden');
+            document.getElementById('standaloneModuleHeaderTitle').innerText = name.toUpperCase().replace(/_/g, ' ');
+            const trigger = document.getElementById('standaloneModuleDownloadTrigger');
+            trigger.href = url;
+            trigger.setAttribute('download', name);
+            updateProfileTrackingMetricsForCoworkerSession("Learning: " + name, "Opened Education Module Resource Asset Viewport");
+        }
+
+        function exitStandaloneModuleView() {
+            document.getElementById('standaloneModuleReaderView').classList.add('hidden');
+            document.getElementById('mainDashboardView').classList.remove('hidden');
+            updateProfileTrackingMetricsForCoworkerSession("None", "Exited Learning Context Viewport");
+        }
+
+        async function refreshStaffControlManagementDataStore() {
+            const pCount = document.getElementById('telemCountProfiles');
+            const vCount = document.getElementById('telemCountVideos');
+            const pBody = document.getElementById('telemTableBodyProfiles');
+            const vBody = document.getElementById('telemTableBodyVideos');
+            const sideContainer = document.getElementById('supabaseTelemRowsContainer');
+
+            if(!pCount || !vCount || !pBody || !vBody || !sideContainer) return;
+
+            const { data: profiles } = await supabaseClientInstance.from('user_profiles').select('*').order('email', { ascending: true });
+            const { data: videos } = await supabaseClientInstance.from('videos_queue').select('*').order('created_at', { ascending: false });
+
+            pCount.innerText = profiles ? profiles.length : 0;
+            vCount.innerText = videos ? videos.length : 0;
+
+            sideContainer.innerHTML = "";
+            if(profiles && profiles.length > 0) {
+                profiles.forEach(p => {
+                    const row = document.createElement('div');
+                    row.className = "p-1.5 bg-black/50 border border-zinc-900 rounded flex justify-between items-center gap-1 text-[10px]";
+                    row.innerHTML = `
+                        <span class="truncate max-w-[120px] text-zinc-300 font-bold">${p.email}</span>
+                        <span class="px-1 py-0.5 rounded text-[9px] font-sans ${p.status === 'active' ? 'bg-emerald-950/80 text-emerald-400' : 'bg-zinc-900 text-zinc-600'}">${p.status || 'inactive'}</span>
+                    `;
+                    sideContainer.appendChild(row);
+                });
+            } else {
+                sideContainer.innerHTML = `<p class="italic text-zinc-600">Awaiting user synchronization...</p>`;
+            }
+
+            pBody.innerHTML = "";
+            if(profiles && profiles.length > 0) {
+                profiles.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-zinc-950";
+                    tr.innerHTML = `
+                        <td class="p-2 text-zinc-600 font-mono truncate max-w-[80px] select-all">${p.id}</td>
+                        <td class="p-2 font-bold text-zinc-300">${p.email}</td>
+                        <td class="p-2"><span class="px-1.5 py-0.5 rounded text-[9px] ${p.role === 'Admin' ? 'bg-purple-950 text-purple-400 border border-purple-900' : 'bg-zinc-900 text-zinc-400'}">${p.role || 'Coworker'}</span></td>
+                        <td class="p-2 text-emerald-500 font-bold">${p.status || 'inactive'}</td>
+                        <td class="p-2 italic max-w-[140px] truncate text-zinc-500">${p.current_sheet_working || 'None'}</td>
+                    `;
+                    pBody.appendChild(tr);
+                });
+            } else {
+                pBody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-zinc-600 italic">No user node instances found.</td></tr>`;
+            }
+
+            vBody.innerHTML = "";
+            if(videos && videos.length > 0) {
+                videos.forEach(v => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-zinc-950";
+                    tr.innerHTML = `
+                        <td class="p-2 text-zinc-600 font-mono select-all">${v.id}</td>
+                        <td class="p-2 font-bold text-white max-w-[120px] truncate">${v.title}</td>
+                        <td class="p-2 text-blue-400 max-w-[140px] truncate italic select-all">${v.video_url}</td>
+                        <td class="p-2 text-purple-400">${v.assigned_to && v.assigned_to.length > 0 ? v.assigned_to.length + ' Groups' : 'None'}</td>
+                        <td class="p-2"><button onclick="event.stopPropagation(); purgeVideoThreadDataRow('${v.id}')" class="text-red-500 hover:text-red-400 uppercase font-bold text-[10px]">Purge Layer</button></td>
+                    `;
+                    vBody.appendChild(tr);
+                });
+            } else {
+                vBody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-zinc-600 italic">No media stream content records verified in database storage context partitions.</td></tr>`;
+            }
+        }
+
+        async function delegateUserAccessRole(targetRoleString) {
+            const emailInput = document.getElementById('privilegeTargetEmail').value.trim();
+            if(!emailInput) {
+                alert("Privilege context orchestration exception: Target address missing.");
+                return;
+            }
+
+            const { error } = await supabaseClientInstance
+                .from('user_profiles')
+                .update({ role: targetRoleString, updated_at: new Date().toISOString() })
+                .eq('email', emailInput);
+
+            if(error) {
+                alert("Role delegation operation failed execution layers: " + error.message);
+            } else {
+                dispatchSystemToastMessage(`User identity privileges context shifted to: [${targetRoleString}] for allocation link: ${emailInput}`);
+                document.getElementById('privilegeTargetEmail').value = "";
+                refreshStaffControlManagementDataStore();
+            }
+        }
+
+        function toggleStaffControlManagementModal(open) {
+            const modal = document.getElementById('staffControlManagementModal');
+            if(open) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                refreshStaffControlManagementDataStore();
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function synchronizeArenaAdditionalSelectElementOptions() {
+            const select = document.getElementById('arenaAdditionalSheetSelect');
+            if(!select) return;
+            select.innerHTML = `<option value="">-- Choose Sheet to Switch --</option>`;
+            cachedSystemSheetCollection.forEach(s => {
+                const op = document.createElement('option');
+                op.value = s.id;
+                op.innerText = s.title.toUpperCase();
+                select.appendChild(op);
+            });
+        }
+
+        function mountAndLaunchFullScreenArenaPort(sheetId) {
+            const matchingRecord = cachedSystemSheetCollection.find(x => x.id === sheetId);
+            if(!matchingRecord) return;
+
+            document.getElementById('mainDashboardView').classList.add('hidden');
+            document.getElementById('fullScreenWorksheetArenaView').classList.remove('hidden');
+
+            document.getElementById('arenaActiveSheetTitle').innerText = "ISOLATED CORE SANDBOX BOUND: " + matchingRecord.title.toUpperCase();
+            document.getElementById('arenaRouteConfigInput').value = matchingRecord.route_config || "Default Route Context Assignment";
+            
+            const iframe = document.getElementById('arenaFullScreenIframe');
+            iframe.src = matchingRecord.sheet_url;
+
+            updateProfileTrackingMetricsForCoworkerSession(matchingRecord.title, "Launched Isolated Full-Screen Arena Viewport Layer");
+        }
+
+        function switchArenaSheetInstanceInline() {
+            const select = document.getElementById('arenaAdditionalSheetSelect');
+            if(!select || !select.value) return;
+            mountAndLaunchFullScreenArenaPort(parseInt(select.value, 10));
+            select.value = "";
+        }
+
+        function closeFullScreenWorksheetArena() {
+            document.getElementById('arenaFullScreenIframe').src = "about:blank";
+            document.getElementById('fullScreenWorksheetArenaView').classList.add('hidden');
+            document.getElementById('mainDashboardView').classList.remove('hidden');
+            updateProfileTrackingMetricsForCoworkerSession("None", "Closed Full-Screen Isolated Arena Context Frame Workspace Layer");
+            evaluateDirectlyAssignedCoworkerTasksBanner();
+        }
+
+        function resetActiveTrackingTimer() {
+            if(activeInactivityTimerId) clearTimeout(activeInactivityTimerId);
+            activeInactivityTimerId = setTimeout(() => {
+                dispatchSystemToastMessage("Session validation timeout threshold boundary reached due to user activity logs cessation.");
+                terminateTerminalSession();
+            }, ABSOLUTE_SESSION_TIMEOUT_LIMIT);
+        }
+
+        async function terminateTerminalSession() {
+            if(authenticatedSessionUser) {
+                try {
+                    await supabaseClientInstance
+                        .from('user_profiles')
+                        .update({ status: 'offline', updated_at: new Date().toISOString() })
+                        .eq('email', authenticatedSessionUser.email);
+                } catch(e){}
+            }
+            localStorage.removeItem('RC_AUTH_USER');
+            localStorage.removeItem('RC_AUTH_PROFILE');
+            authenticatedSessionUser = null;
+            globalUserAccountProfileData = null;
+            document.getElementById('dynamicViewRouter').classList.add('hidden');
+            document.getElementById('authGatewayPortal').classList.remove('hidden');
+            switchAuthPortalContextMode('LOGIN');
+            if(activeInactivityTimerId) clearTimeout(activeInactivityTimerId);
+        }
+
+        function dispatchSystemToastMessage(textString) {
+            const toast = document.getElementById('globalNotificationToast');
+            const content = document.getElementById('toastMessageContent');
+            if(!toast || !content) return;
+
+            content.innerText = textString;
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 4500);
+        }
+
+        function renderGlobalLogsToLogContainer() {
+            const container = document.getElementById('deepLinkContainerHistory');
+            if(!container) return;
+            container.innerHTML = "";
+            let logs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
+            if(logs.length === 0) {
+                container.innerHTML = `<span class="text-zinc-600 italic text-[11px]">Awaiting transaction parameter instantiation.</span>`;
+                return;
+            }
+            logs.forEach(l => {
+                const div = document.createElement('div');
+                div.className = "p-1 bg-black/40 border border-zinc-900 rounded text-[10px] text-zinc-400 flex justify-between items-center";
+                div.innerHTML = `
+                    <span class="truncate max-w-[190px] select-all font-mono text-purple-400">${l.url}</span>
+                    <span class="text-[9px] text-zinc-600">${l.timestamp}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function savePasteInputLinkToGlobalStorage() {
+            const input = document.getElementById('internalDeepLinkPasteInput');
+            if(!input || !input.value.trim()) return;
+            let logs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
+            logs.unshift({ url: input.value.trim(), timestamp: new Date().toLocaleTimeString() });
+            localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(logs));
+            input.value = "";
+            renderGlobalLogsToLogContainer();
+            dispatchSystemToastMessage("Metadata monitoring tracking parameters appended cleanly to local persistent arrays.");
+        }
+
+        function checkUrlParametersForDeepLinkNavigation() {
+            const searchParams = new URLSearchParams(window.location.search);
+            const targetThread = searchParams.get('v_thread');
+            const targetTimeFrame = searchParams.get('t_frame');
+
+            if(targetThread) {
+                setTimeout(() => {
+                    loadActiveVideoThreadToPlayer(targetThread);
+                    if(targetTimeFrame) {
+                        setTimeout(() => {
+                            const dPlayer = document.getElementById('dashboardVideoPlayer');
+                            const sPlayer = document.getElementById('studioVideoPlayer');
+                            dPlayer.currentTime = parseInt(targetTimeFrame, 10);
+                            sPlayer.currentTime = parseInt(targetTimeFrame, 10);
+                        }, 800);
+                    }
+                }, 1000);
+            }
+        }
 
         function launchDedicatedVideoEnvironment() {
             document.getElementById('mainDashboardView').classList.add('hidden');
