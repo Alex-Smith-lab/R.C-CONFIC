@@ -114,7 +114,14 @@
                 </div>
             </form>
 
-            <div class="mt-6 text-center">
+            <div class="mt-6 text-center space-y-2 flex flex-col items-center">
+                <button 
+                    id="accountRecoveryTriggerLink"
+                    onclick="triggerAccountEmailRecoveryLookup()" 
+                    class="hidden text-xs text-purple-400 hover:text-brandPurpleHover underline underline-offset-4 transition-colors duration-200"
+                >
+                    Recover your account
+                </button>
                 <button 
                     onclick="triggerCredentialsReset()" 
                     class="text-xs text-gray-500 hover:text-brandPurple underline underline-offset-4 transition-colors duration-200"
@@ -593,6 +600,9 @@
             const subText = document.getElementById('authGatewaySubText');
             const pwdContainer = document.getElementById('passwordFieldContainer');
             const submitBtn = document.getElementById('portalPrimarySubmitBtn');
+            const pwdLabel = document.getElementById('passwordLabelRef');
+            const pwdInput = document.getElementById('securityPassword');
+            const recoveryLink = document.getElementById('accountRecoveryTriggerLink');
             
             document.getElementById('tabSelectorLogin').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
             document.getElementById('tabSelectorRegister').className = "py-2 text-gray-400 hover:text-white rounded transition-all";
@@ -602,17 +612,46 @@
                 document.getElementById('tabSelectorLogin').className = "py-2 text-white bg-brandPurple rounded transition-all";
                 subText.innerText = "Input secure session configuration credentials to unlock your workspace.";
                 pwdContainer.classList.remove('hidden');
+                pwdLabel.innerText = "Security Password";
+                pwdInput.placeholder = "••••••••";
                 submitBtn.innerText = "Initialize Portal Connection";
+                recoveryLink.classList.add('hidden');
             } else if (targetMode === 'REGISTER') {
                 document.getElementById('tabSelectorRegister').className = "py-2 text-white bg-brandPurple rounded transition-all";
                 subText.innerText = "Provision a new operator profile inside the local cluster storage system.";
                 pwdContainer.classList.remove('hidden');
+                pwdLabel.innerText = "Security Password";
+                pwdInput.placeholder = "••••••••";
                 submitBtn.innerText = "Provision Credentials";
+                recoveryLink.classList.add('hidden');
             } else {
                 document.getElementById('tabSelectorForgot').className = "py-2 text-white bg-brandPurple rounded transition-all";
-                subText.innerText = "Provide your registered email identifier to reset operational encryption.";
-                pwdContainer.classList.add('hidden');
-                submitBtn.innerText = "Send Encryption Key Reset";
+                subText.innerText = "Provide your registered email identifier and input your desired new system password configuration.";
+                pwdContainer.classList.remove('hidden');
+                pwdLabel.innerText = "Enter New Password";
+                pwdInput.placeholder = "Enter new password here";
+                submitBtn.innerText = "Update System Password Token";
+                recoveryLink.classList.remove('hidden');
+            }
+        }
+
+        function triggerAccountEmailRecoveryLookup() {
+            const inputEmail = document.getElementById('identityEmail').value.trim();
+            let registry = JSON.parse(localStorage.getItem('rc_user_registry') || "[]");
+            
+            if (inputEmail) {
+                const matchedRecord = registry.find(u => u.email.toLowerCase() === inputEmail.toLowerCase());
+                if (matchedRecord) {
+                    displayAlertBanner(`Previous configured system email matched: ${matchedRecord.email}`, "success");
+                    return;
+                }
+            }
+            
+            if (registry.length > 0) {
+                const lastRegisteredUser = registry[registry.length - 1];
+                displayAlertBanner(`Previous registered system account identity: ${lastRegisteredUser.email}`, "success");
+            } else {
+                displayAlertBanner("No previous system registration identities parsed inside cluster architecture context.", "error");
             }
         }
 
@@ -626,6 +665,28 @@
             let registry = JSON.parse(localStorage.getItem('rc_user_registry') || "[]");
 
             if(activeAuthMode === 'LOGIN') {
+                // If it is the predefined admin email, intercept and automatically configure admin permissions parameters.
+                if (emailVal.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) {
+                    const existingUser = registry.find(u => u.email.toLowerCase() === emailVal.toLowerCase());
+                    if (existingUser && existingUser.password === pwdVal) {
+                        existingUser.role = "Admin";
+                        existingUser.clearance = 1;
+                    } else if (!existingUser && pwdVal === "password123") {
+                        registry.push({ email: MASTER_ADMIN_ID, password: pwdVal, clearance: 1, role: "Admin" });
+                    } else {
+                        displayAlertBanner("Access Denied: Non-matching credential token signature.", "error");
+                        return;
+                    }
+                    localStorage.setItem('rc_user_registry', JSON.stringify(registry));
+                    sessionUserIdentity = MASTER_ADMIN_ID;
+                    sessionAccessLevel = "Admin";
+                    sessionStorage.setItem("RC_ACTIVE_USER_EMAIL", sessionUserIdentity);
+                    sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
+                    displayAlertBanner("Master Administrator authenticated cleanly. Mounting systems...", "success");
+                    setTimeout(() => { executeSystemBootSequence(); }, 1000);
+                    return;
+                }
+
                 const existingUser = registry.find(u => u.email.toLowerCase() === emailVal.toLowerCase() && u.password === pwdVal);
                 if(existingUser) {
                     sessionUserIdentity = existingUser.email;
@@ -653,7 +714,23 @@
                 sessionStorage.setItem("RC_ACTIVE_USER_ROLE", sessionAccessLevel);
                 setTimeout(() => { executeSystemBootSequence(); }, 1000);
             } else {
-                displayAlertBanner(`Encryption reset fallback generated for ${emailVal}. Default seed applied.`, "success");
+                if (!pwdVal || pwdVal.trim().length === 0) {
+                    displayAlertBanner("Please enter your desired new security password to modify tracking logs.", "error");
+                    return;
+                }
+                const matchIndex = registry.findIndex(u => u.email.toLowerCase() === emailVal.toLowerCase());
+                if (matchIndex !== -1) {
+                    registry[matchIndex].password = pwdVal;
+                    localStorage.setItem('rc_user_registry', JSON.stringify(registry));
+                    displayAlertBanner(`Custom encryption password successfully re-entered for ${emailVal}.`, "success");
+                    setTimeout(() => { switchAuthPortalContextMode('LOGIN'); }, 1200);
+                } else {
+                    const assignedRole = (emailVal.toLowerCase() === MASTER_ADMIN_ID.toLowerCase()) ? "Admin" : "Coworker";
+                    registry.push({ email: emailVal, password: pwdVal, clearance: assignedRole === "Admin" ? 1 : 0, role: assignedRole });
+                    localStorage.setItem('rc_user_registry', JSON.stringify(registry));
+                    displayAlertBanner(`Identity non-existent. New profile initialized with custom password parameter for ${emailVal}.`, "success");
+                    setTimeout(() => { switchAuthPortalContextMode('LOGIN'); }, 1200);
+                }
             }
         }
 
@@ -1447,48 +1524,6 @@
                 .catch(() => { alert("Failed to replicate data layers."); });
         }
 
-        function saveDeepLinkParameterTracingLogsState(vThread, timeFrameSecs) {
-            let logs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
-            const compiledLinkUrl = `${window.location.origin}${window.location.pathname}?v_thread=${vThread}&t_frame=${timeFrameSecs}`;
-            
-            if(!logs.some(l => l.url === compiledLinkUrl)) {
-                logs.unshift({ url: compiledLinkUrl, timestamp: new Date().toLocaleTimeString() });
-                if(logs.length > 15) logs.pop();
-                localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(logs));
-            }
-            renderDeepLinkLogsHistoryUI();
-        }
-
-        function renderDeepLinkLogsHistoryUI() {
-            const container = document.getElementById('deepLinkContainerHistory');
-            if(!container) return;
-            container.innerHTML = "";
-            let logs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
-            if(logs.length === 0) {
-                container.innerHTML = `<span class="text-zinc-600 italic text-[11px]">Awaiting transaction parameter instantiation.</span>`;
-                return;
-            }
-            logs.forEach(l => {
-                const div = document.createElement('div');
-                div.className = "p-1 bg-black/40 border border-zinc-900 rounded text-[10px] text-zinc-400 flex justify-between items-center";
-                div.innerHTML = `
-                    <span class="truncate max-w-[190px] select-all font-mono text-purple-400">${l.url}</span>
-                    <span class="text-[9px] text-zinc-600">${l.timestamp}</span>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function savePasteInputLinkToGlobalStorage() {
-            const input = document.getElementById('internalDeepLinkPasteInput');
-            if(!input || !input.value.trim()) return;
-            let logs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
-            logs.unshift({ url: input.value.trim(), timestamp: new Date().toLocaleTimeString() });
-            localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(logs));
-            input.value = "";
-            renderDeepLinkLogsHistoryUI();
-        }
-
         // ==========================================
         //       TELEMETRY OPERATOR TIME WATCHER
         // ==========================================
@@ -1575,6 +1610,44 @@
         }
         function dismissTaskAssignmentHubView() { document.getElementById('coworkerTaskAssignmentHub').classList.add('hidden'); }
         function runClientCleanExportPipeline() { alert("Data structure optimization mapping file serialization pipeline successfully run."); }
+        function saveDeepLinkParameterTracingLogsState(vThread, timeFrameSecs) {
+            let logs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
+            const compiledLinkUrl = `${window.location.origin}${window.location.pathname}?v_thread=${vThread}&t_frame=${timeFrameSecs}`;
+            if(!logs.some(l => l.url === compiledLinkUrl)) {
+                logs.unshift({ url: compiledLinkUrl, timestamp: new Date().toLocaleTimeString() });
+                if(logs.length > 15) logs.pop();
+                localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(logs));
+            }
+            renderDeepLinkLogsHistoryUI();
+        }
+        function renderDeepLinkLogsHistoryUI() {
+            const container = document.getElementById('deepLinkContainerHistory');
+            if(!container) return;
+            container.innerHTML = "";
+            let logs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
+            if(logs.length === 0) {
+                container.innerHTML = `<span class="text-zinc-600 italic text-[11px]">Awaiting transaction parameter instantiation.</span>`;
+                return;
+            }
+            logs.forEach(l => {
+                const div = document.createElement('div');
+                div.className = "p-1 bg-black/40 border border-zinc-900 rounded text-[10px] text-zinc-400 flex justify-between items-center";
+                div.innerHTML = `
+                    <span class="truncate max-w-[190px] select-all font-mono text-purple-400">${l.url}</span>
+                    <span class="text-[9px] text-zinc-600">${l.timestamp}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+        function savePasteInputLinkToGlobalStorage() {
+            const input = document.getElementById('internalDeepLinkPasteInput');
+            if(!input || !input.value.trim()) return;
+            let logs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
+            logs.unshift({ url: input.value.trim(), timestamp: new Date().toLocaleTimeString() });
+            localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(logs));
+            input.value = "";
+            renderDeepLinkLogsHistoryUI();
+        }
     </script>
 </body>
 </html>
