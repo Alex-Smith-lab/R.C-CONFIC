@@ -29,997 +29,672 @@
             animation: flicker 0.4s infinite alternate;
         }
         @keyframes flicker {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.01); box-shadow: 0 0 35px #ff3300, 0 0 60px #ffaa00; }
+            0% { transform: scale(1); opacity: 0.95; }
+            100% { transform: scale(1.01); opacity: 1; }
         }
-        .zoom-viewport {
-            position: relative;
-            overflow: hidden;
-            background: #000;
-            cursor: grab;
-        }
-        .zoom-viewport:active { cursor: grabbing; }
-        .zoom-canvas {
-            transform-origin: center center;
-            transition: transform 0.03s ease-out;
-            width: 100%;
-            height: 100%;
-        }
-        .clickable-timestamp {
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-        .clickable-timestamp:hover {
-            color: #34d399 !important;
-            text-decoration: underline;
-        }
-        .active-thread-highlight {
-            border-color: #a855f7 !important;
-            background-color: #1e1b4b !important;
-        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b0b0c; }
+        ::-webkit-scrollbar-thumb { background: #2a2a32; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9333ea; }
     </style>
 </head>
-<body class="h-screen flex flex-col justify-between overflow-x-hidden p-0 m-0" onmousemove="resetActiveTrackingTimer()">
+<body class="min-h-screen flex flex-col antialiased">
 
-    <div id="authGatewayPortal" class="fixed inset-0 bg-darkBg z-[100] flex items-center justify-center p-4">
-        <div class="w-full max-w-md bg-cardBg p-8 rounded-xl border border-inputBorder shadow-2xl">
+    <div id="mainAppLayout" class="flex flex-col flex-1 pb-16">
+        <header class="border-b border-inputBorder bg-cardBg/50 backdrop-blur px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+            <div class="flex items-center gap-3">
+                <div class="h-3 w-3 rounded-full bg-brandPurple animate-pulse"></div>
+                <h1 class="text-lg font-bold tracking-wider text-gray-100 uppercase">R.C AI Engine Dashboard</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="userBadge" class="text-xs bg-inputBg border border-inputBorder px-3 py-1.5 rounded text-gray-400 font-mono">Checking Session...</span>
+                <button onclick="handleLogout()" class="text-xs text-red-400 hover:text-red-300 transition font-medium">Disconnect</button>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto w-full px-6 mt-4">
+            <div id="globalAlert" class="hidden border p-4 rounded text-sm transition-all duration-300"></div>
+        </div>
+
+        <main class="max-w-7xl mx-auto w-full px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
             
-            <div class="text-center mb-6">
-                <h1 class="text-3xl font-black tracking-wider text-brandPurple uppercase mb-2">R.C TERMINAL ENTRY</h1>
-                <p id="authGatewaySubText" class="text-sm text-gray-400">Input secure session configuration credentials to unlock your workspace.</p>
-            </div>
-
-            <div id="feedbackAlert" class="hidden mb-6 p-4 rounded-lg text-sm font-medium border"></div>
-
-            <div class="grid grid-cols-3 gap-1 bg-black p-1 rounded-lg border border-inputBorder mb-6 text-xs font-bold uppercase tracking-wider">
-                <button id="tabSelectorLogin" onclick="switchAuthPortalContextMode('LOGIN')" class="py-2 text-white bg-brandPurple rounded transition-all">Login</button>
-                <button id="tabSelectorRegister" onclick="switchAuthPortalContextMode('REGISTER')" class="py-2 text-gray-400 hover:text-white rounded transition-all">Sign Up</button>
-                <button id="tabSelectorForgot" onclick="switchAuthPortalContextMode('FORGOT')" class="py-2 text-gray-400 hover:text-white rounded transition-all">Reset</button>
-            </div>
-
-            <form id="terminalLoginForm" onsubmit="handlePortalAuthentication(event)" class="space-y-4">
-                <div>
-                    <label for="identityEmail" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
-                        User Identity Email
-                    </label>
-                    <input 
-                        type="email" 
-                        id="identityEmail" 
-                        required
-                        placeholder="name@example.com"
-                        class="w-full bg-inputBg border border-inputBorder rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brandPurple transition-colors duration-200 text-base"
-                    >
-                </div>
-
-                <div id="passwordFieldContainer">
-                    <label id="passwordLabelRef" for="securityPassword" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
-                        Security Password
-                    </label>
-                    <input 
-                        type="password" 
-                        id="securityPassword" 
-                        placeholder="••••••••"
-                        class="w-full bg-inputBg border border-inputBorder rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brandPurple transition-colors duration-200 text-base tracking-widest"
-                    >
-                </div>
-
-                <div>
-                    <button 
-                        type="submit"
-                        id="portalPrimarySubmitBtn"
-                        class="w-full bg-brandPurple hover:bg-brandPurpleHover text-white font-bold py-3 px-6 rounded-lg uppercase tracking-wide transition-all duration-200 transform active:scale-[0.99] shadow-lg shadow-purple-900/20"
-                    >
-                        Initialize Portal Connection
-                    </button>
-                </div>
-            </form>
-
-            <div class="mt-6 text-center space-y-2 flex flex-col items-center">
-                <button 
-                    id="accountRecoveryTriggerLink"
-                    onclick="triggerAccountEmailRecoveryLookup()" 
-                    class="hidden text-xs text-purple-400 hover:text-brandPurpleHover underline underline-offset-4 transition-colors duration-200"
-                >
-                    Recover your account
-                </button>
-                <button 
-                    onclick="triggerCredentialsReset()" 
-                    class="text-xs text-gray-500 hover:text-brandPurple underline underline-offset-4 transition-colors duration-200"
-                >
-                    Reset System to Factory Defaults
-                </button>
-            </div>
-
-        </div>
-    </div>
-
-    <div id="dynamicViewRouter" class="hidden flex-1 flex flex-col justify-between">
-        
-        <div id="mainDashboardView" class="flex-1 flex flex-col justify-between">
-            <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
-                <div class="flex items-center gap-4">
-                    <span class="text-zinc-400 text-sm">Active Session Identity:</span>
-                    <span id="userEmailSessionDisplay" class="bg-black text-emerald-400 px-3 py-1.5 text-xs rounded border border-zinc-800 font-mono font-bold"></span>
+            <section id="adminPanel" class="hidden lg:col-span-5 flex flex-col gap-6">
+                <div class="bg-cardBg border border-inputBorder rounded-xl p-5 space-y-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-brandPurple">Work Dispatch Matrix</h2>
+                    <hr class="border-inputBorder">
                     
-                    <div class="flex items-center gap-2">
-                        <span class="text-zinc-500 text-xs font-mono">Working URL Reference:</span>
-                        <span id="currentActiveWorkspaceUrlDisplay" class="text-xs text-zinc-300 bg-zinc-950 px-2 py-1 rounded border border-zinc-800 font-mono max-w-xs truncate italic">No active workspace sheet selected</span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button id="adminRoleSwapToggleBtn" onclick="toggleAdminRoleContextView()" class="hidden text-xs bg-amber-600 hover:bg-amber-500 text-black font-mono font-bold px-3 py-1.5 rounded transition">
-                        🔄 Toggle View Role
-                    </button>
-                    <div id="adminBadge" class="bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest uppercase">
-                        COWORKER ACCESS MODE
-                    </div>
-                    <button onclick="terminateTerminalSession()" class="text-xs bg-zinc-800 hover:bg-red-950/40 border border-zinc-700 text-zinc-400 hover:text-red-400 px-3 py-1 rounded font-mono uppercase tracking-tight transition">Logout</button>
-                </div>
-            </header>
-
-            <main class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
-                
-                <section class="col-span-3 border-r border-zinc-800 pr-4 flex flex-col justify-between overflow-y-auto">
-                    <div class="space-y-6">
-                        <div>
-                            <h1 class="text-2xl font-black tracking-tighter uppercase text-purple-500">Welcome to <br><span class="text-zinc-400">R.C Team</span></h1>
-                            <p class="text-[11px] text-zinc-500">Internal workspace data processing and tracking.</p>
-                        </div>
-
-                        <div id="adminVideoUploadSection" class="p-4 bg-zinc-900 rounded border border-zinc-800 hidden">
-                            <h3 class="text-xs font-bold uppercase tracking-wider mb-2 text-purple-400">Publish Customer Video</h3>
-                            <input type="text" id="videoThreadTitleInput" placeholder="Video Document Thread Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
-                            <input type="file" id="videoFileInput" accept="video/*" class="w-full text-xs text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-3">
-                            <button onclick="processVideoUploadEngine()" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 rounded uppercase tracking-wide transition">Publish Video Thread</button>
-                        </div>
-
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center">
-                                <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400">Active Workspace Video</h3>
-                                <span id="dashZoomIndicator" class="text-[10px] text-zinc-500 font-mono">Zoom: 100%</span>
-                            </div>
-                            <div id="videoContainer" class="p-1 rounded bg-zinc-950 border border-zinc-800 zoom-viewport h-48" onwheel="handleDashboardZoom(event)">
-                                <video id="dashboardVideoPlayer" controls class="zoom-canvas object-contain bg-black h-full w-full" style="object-fit: fill;"></video>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="setPlayerVisualFX('normal')" class="flex-1 text-[11px] bg-zinc-800 py-1 rounded hover:bg-zinc-700">Normal</button>
-                                <button onclick="setPlayerVisualFX('flames')" class="flex-1 text-[11px] bg-orange-600 text-black font-bold py-1 rounded hover:bg-orange-500">Flames FX</button>
-                                <button onclick="resetDashboardZoom()" class="text-[11px] bg-zinc-900 px-2 rounded border border-zinc-700 hover:bg-zinc-800">Reset View</button>
-                            </div>
-                            <div class="flex gap-2 bg-zinc-900 p-2 rounded border border-zinc-800 items-center justify-between">
-                                <span id="dashTimestampDisplay" onclick="copyRawTimestampText(this.innerText)" title="Click to copy raw timestamp text" class="font-mono text-xs text-emerald-400 clickable-timestamp">TS: 00:00:00</span>
-                                <button onclick="copyDashboardScreenshotToClipboard()" class="bg-white text-black text-xs font-bold px-3 py-1 rounded uppercase tracking-tight hover:bg-zinc-200">Take Screenshot</button>
-                            </div>
-                            <button onclick="launchDedicatedVideoEnvironment()" class="w-full bg-zinc-100 hover:bg-white text-black font-bold text-xs py-2 rounded uppercase tracking-wider text-center block">Launch Full-Screen Studio</button>
-                        </div>
-
-                        <div class="pt-4 border-t border-zinc-800">
-                            <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Active Video Target Queues</h4>
-                            <div id="videoThreadLinksContainer" class="space-y-1.5 max-h-48 overflow-y-auto text-xs font-mono"></div>
-                        </div>
-
-                        <div class="pt-4 border-t border-zinc-800">
-                            <h4 class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Deep-Link Logs History</h4>
-                            <div id="deepLinkContainerHistory" class="space-y-1.5 max-h-24 overflow-y-auto text-xs font-mono"></div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="col-span-6 px-2 flex flex-col h-full overflow-hidden">
-                    <div class="flex justify-between items-center mb-4 flex-shrink-0">
-                        <h2 class="text-lg font-black tracking-tight uppercase text-blue-500">R.C Target Sheets Workspace</h2>
-                        <div class="flex gap-2">
-                            <button onclick="toggleOrFetchSheetMetricPipeline()" class="text-xs bg-emerald-600 text-black px-3 py-1.5 font-bold rounded hover:bg-emerald-500 transition">Fetch Tracking Metrics</button>
-                            <button id="adminAddSheetBtn" onclick="toggleModal(true)" class="text-xs bg-white text-black px-3 py-1.5 font-bold rounded hover:bg-zinc-200 hidden">Add Sheet Link</button>
-                            <button id="adminExportBtn" onclick="runClientCleanExportPipeline()" class="text-xs bg-blue-600 text-white px-3 py-1.5 font-bold rounded hover:bg-blue-500 transition hidden">Export Client Sheet</button>
-                        </div>
-                    </div>
-
-                    <div id="coworkerTaskAssignmentHub" class="hidden mb-3 p-3 bg-indigo-950/60 border border-indigo-800 text-indigo-300 rounded text-xs flex-shrink-0">
-                        <div class="flex justify-between items-center font-bold mb-1">
-                            <span>📌 DIRECTLY ASSIGNED LIVE TRACKING TASKS:</span>
-                            <button onclick="dismissTaskAssignmentHubView()" class="text-[10px] text-indigo-400 hover:text-white uppercase">Dismiss</button>
-                        </div>
-                        <div id="assignedTasksListOutput" class="space-y-1 font-mono text-[11px]"></div>
-                    </div>
-
-                    <div id="coworkerClaimBanner" class="block mb-3 p-3 bg-zinc-900 border border-emerald-800 text-emerald-400 rounded text-xs flex-shrink-0">
-                        <div class="flex justify-between items-center">
-                            <span><strong>System Notice:</strong> Selected sheet links will load dynamically within the live embedded workspace sandbox below.</span>
-                            <div id="sheetToggleControlsSection" class="flex gap-1">
-                                <button onclick="setWorkspaceEmbedVisibility(true)" class="bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-0.5 text-[10px] uppercase font-bold rounded border border-zinc-600">Unhide Arena</button>
-                                <button onclick="setWorkspaceEmbedVisibility(false)" class="bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-0.5 text-[10px] uppercase font-bold rounded border border-zinc-600">Hide Arena</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="metricsReportTerminal" class="hidden mb-4 p-4 bg-zinc-950 border border-purple-900 rounded-lg max-h-56 overflow-y-auto font-mono text-xs text-zinc-300">
-                        <div class="flex justify-between items-center border-b border-zinc-800 pb-1.5 mb-2">
-                            <span class="text-purple-400 font-bold uppercase tracking-wider text-[11px]">Real-Time Sheet Workspace Metrics & Unique Assignee Report</span>
-                            <button onclick="document.getElementById('metricsReportTerminal').classList.add('hidden')" class="text-zinc-500 hover:text-white text-[10px] uppercase">Hide</button>
-                        </div>
-                        <div id="metricsOutputSummary" class="space-y-3"></div>
-                    </div>
-
-                    <div id="liveWorkspaceSandboxWrapper" class="w-full h-72 bg-black border border-zinc-800 rounded-xl overflow-hidden mb-4 flex flex-col flex-shrink-0 relative">
-                        <div class="bg-zinc-900/80 px-4 py-2 border-b border-zinc-800 flex justify-between items-center text-xs font-mono">
-                            <span class="text-zinc-400">🔴 Live Embedded Workspace Engine Framework Layer:</span>
-                            <span id="workspaceActiveTitleBadge" class="text-blue-400 font-bold truncate max-w-sm">No Active Matrix Target Bound</span>
-                        </div>
-                        <iframe id="liveWorkspaceSandboxIframe" src="about:blank" class="w-full flex-1 bg-zinc-950 border-0 hidden"></iframe>
-                        <div id="iframePlaceholderFallbackState" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-950/80">
-                            <span class="text-2xl mb-2">📁</span>
-                            <p class="text-xs text-zinc-500 font-mono max-w-sm">No workspace links are currently active inside the environment viewport area canvas stack layers.</p>
-                        </div>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto pr-1 pb-4">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Select Active Cards (Supports Multi-Selection)</h3>
-                        <div id="sheetsDisplayGrid" class="grid grid-cols-2 gap-4"></div>
-                    </div>
-                </section>
-
-                <section class="col-span-3 border-l border-zinc-800 pl-4 flex flex-col justify-between overflow-y-auto">
-                    <div class="space-y-6">
-                        <div>
-                            <h2 class="text-xs font-black tracking-widest uppercase mb-4 text-purple-500">Learning Modules Engine</h2>
-                            <div id="adminModuleUploadSection" class="mb-4 p-4 bg-zinc-900 rounded border border-zinc-800 hidden">
-                                <input type="text" id="moduleTitleInput" placeholder="Module Document Name" class="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white mb-2 focus:outline-none">
-                                <input type="file" id="moduleFileInput" class="block w-full text-[10px] text-zinc-400 file:bg-zinc-800 file:text-white file:border-0 file:rounded file:py-1 file:px-2 file:mr-2 mb-2">
-                                <button onclick="processModuleUploadEngine()" class="w-full bg-purple-600 text-white text-xs font-bold py-1.5 rounded hover:bg-purple-500 transition">Save Asset Module</button>
-                            </div>
-                            <div id="modulesListOutput" class="space-y-2"></div>
-                        </div>
-
-                        <div id="supabaseTelemetryControlBlock" class="p-4 bg-zinc-950 border border-zinc-800 rounded hidden flex flex-col gap-2">
-                            <div class="flex justify-between items-center">
-                                <h3 class="text-xs font-black tracking-widest uppercase text-emerald-400">Supabase Coworker Sync</h3>
-                                <button onclick="toggleStaffControlManagementModal(true)" class="bg-emerald-600 hover:bg-emerald-500 text-black px-2 py-1 text-[9px] uppercase font-mono font-black rounded tracking-tighter transition">Open Panel Display</button>
-                            </div>
-                            <div id="supabaseTelemRowsContainer" class="space-y-2 max-h-48 overflow-y-auto font-mono text-[10px] text-zinc-400">
-                                <p class="italic text-zinc-600">Awaiting user synchronization...</p>
-                            </div>
-                        </div>
-
-                        <div id="systemPrivilegeControlBlock" class="p-4 bg-zinc-900 border border-zinc-800 rounded hidden">
-                            <h3 class="text-xs font-black tracking-widest uppercase text-amber-400 mb-3">System Access Allocation</h3>
-                            <div class="space-y-2">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-zinc-400 uppercase mb-1">Target Account Email</label>
-                                    <input type="email" id="privilegeTargetEmail" placeholder="user@example.com" class="w-full bg-black border border-zinc-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono">
-                                </div>
-                                <div class="grid grid-cols-2 gap-2 pt-1">
-                                    <button onclick="delegateUserAccessRole('Admin')" class="bg-amber-500 text-black font-bold text-[11px] py-1.5 rounded uppercase tracking-tight hover:bg-amber-400 transition">Make Admin</button>
-                                    <button onclick="delegateUserAccessRole('Coworker')" class="bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-[11px] py-1.5 rounded uppercase tracking-tight hover:bg-zinc-700 transition">Make Worker</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </main>
-        </div>
-
-        <div id="fullScreenWorksheetArenaView" class="hidden fixed inset-0 bg-darkBg z-[90] flex">
-            <div class="w-80 bg-zinc-950 border-r border-zinc-800 flex flex-col justify-between p-4 flex-shrink-0">
-                <div class="space-y-6">
-                    <div>
-                        <span class="text-purple-500 text-lg font-black tracking-widest font-mono block">R.C ROUTE CONFIG</span>
-                        <p class="text-[10px] text-zinc-500 uppercase tracking-wider">Active sheet orchestration layer</p>
-                    </div>
-                    
-                    <div class="bg-zinc-900 p-3 rounded border border-zinc-800 space-y-2">
-                        <label class="block text-[10px] font-bold uppercase tracking-wider text-purple-400">Current Assigned Config</label>
-                        <input id="arenaRouteConfigInput" type="text" class="w-full bg-black text-white font-mono text-xs p-2 rounded border border-purple-900 focus:outline-none" value="Default Route" readonly>
-                    </div>
-
-                    <div class="bg-zinc-900 p-3 rounded border border-zinc-800 space-y-3">
-                        <label class="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Stack Another Workspace Sheet</label>
-                        <select id="arenaAdditionalSheetSelect" class="w-full bg-black text-white font-mono text-xs p-2 rounded border border-zinc-700 focus:outline-none">
-                            <option value="">-- Choose Sheet to Switch --</option>
+                    <div class="space-y-3">
+                        <label class="block text-xs font-medium text-gray-400">Target Asset Type</label>
+                        <select id="assetType" onchange="toggleFormInputs()" class="w-full bg-inputBg border border-inputBorder rounded p-2.5 text-sm focus:outline-none focus:border-brandPurple">
+                            <option value="video">Workspace Video Target Stream</option>
+                            <option value="sheet">Workspace Work Routing Sheet</option>
                         </select>
-                        <button onclick="switchArenaSheetInstanceInline()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-mono text-xs font-bold py-1.5 rounded uppercase transition">
-                            Switch Active Sandbox
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Asset Title / Identifier</label>
+                            <input type="text" id="assetTitle" placeholder="e.g., Camera Batch Phase 3" class="w-full bg-inputBg border border-inputBorder rounded p-2.5 text-sm text-white focus:outline-none focus:border-brandPurple">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Resource Link URL</label>
+                            <input type="url" id="assetUrl" placeholder="https://..." class="w-full bg-inputBg border border-inputBorder rounded p-2.5 text-sm text-white focus:outline-none focus:border-brandPurple">
+                        </div>
+
+                        <div id="routeConfigContainer" class="hidden">
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Route Configuration Option</label>
+                            <input type="text" id="routeConfig" value="Default Route Config" class="w-full bg-inputBg border border-inputBorder rounded p-2.5 text-sm text-white focus:outline-none focus:border-brandPurple">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Assign Coworkers (Comma-separated emails)</label>
+                            <input type="text" id="assignedTo" placeholder="coworker1@gmail.com, coworker2@gmail.com" class="w-full bg-inputBg border border-inputBorder rounded p-2.5 text-sm text-white focus:outline-none focus:border-brandPurple">
+                        </div>
+
+                        <button onclick="dispatchAsset()" class="w-full bg-brandPurple hover:bg-brandPurpleHover text-white font-medium text-sm py-2.5 rounded transition shadow-lg shadow-brandPurple/20">
+                            Broadcast Asset to Queues
                         </button>
                     </div>
                 </div>
 
-                <div class="space-y-2">
-                    <button onclick="closeFullScreenWorksheetArena()" class="w-full bg-red-950/60 hover:bg-red-900 border border-red-800 text-red-400 text-xs font-black py-2 rounded uppercase tracking-wider transition">
-                        Return to Terminal Matrix
-                    </button>
+                <div class="bg-cardBg border border-inputBorder rounded-xl p-5 flex-1 flex flex-col min-h-[300px]">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-semibold uppercase tracking-wider text-brandPurple">Live Coworker Network Metrics</h2>
+                        <button onclick="fetchNetworkMetrics()" class="text-xs bg-inputBg hover:bg-inputBorder px-2.5 py-1 rounded text-gray-300 border border-inputBorder">Refresh</button>
+                    </div>
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-left text-xs text-gray-300">
+                            <thead>
+                                <tr class="border-b border-inputBorder text-gray-500 uppercase font-mono">
+                                    <th class="py-2">Coworker</th>
+                                    <th class="py-2">Status</th>
+                                    <th class="py-2">Active Sheet Target</th>
+                                    <th class="py-2">Last Action</th>
+                                    <th class="py-2">Role</th>
+                                </tr>
+                            </thead>
+                            <tbody id="metricsTableBody" class="divide-y divide-inputBorder/50 font-mono">
+                                </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="flex-1 bg-black flex flex-col justify-between relative h-full">
-                <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center flex-shrink-0">
-                    <div class="flex items-center gap-2">
-                        <span id="arenaActiveSheetTitle" class="text-xs bg-zinc-950 border border-zinc-800 text-blue-400 px-3 py-1 rounded font-mono font-bold">Connecting Active Instance...</span>
+            <section id="workspaceQueuePanel" class="lg:col-span-7 flex flex-col gap-6">
+                
+                <div class="bg-cardBg border border-inputBorder rounded-xl p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-300 flex items-center gap-2">
+                            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                            Active Workspace Video Screen
+                        </h2>
+                        <button onclick="launchFullStudio()" class="bg-inputBg border border-inputBorder text-xs text-brandPurple hover:text-white px-3 py-1.5 rounded transition hover:bg-brandPurple font-medium">
+                            Launch Full Studio Mode
+                        </button>
                     </div>
-                    <span class="text-[11px] font-mono text-zinc-500 italic">Isolated Environment Port Sandbox Layer</span>
-                </header>
-
-                <div class="flex-1 w-full bg-black relative">
-                    <iframe id="arenaFullScreenIframe" src="about:blank" class="w-full h-full border-0 bg-zinc-950"></iframe>
-                </div>
-
-                <footer class="w-full bg-black border-t border-zinc-900 py-1.5 overflow-hidden flex items-center shadow-lg z-[95] flex-shrink-0">
-                    <div class="whitespace-nowrap flex text-[11px] font-black tracking-widest text-emerald-500 w-full uppercase">
-                        <marquee scrollamount="6" behavior="scroll" direction="left">
-                            +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG +++ R.C AI CONFIG
-                        </marquee>
-                    </div>
-                </footer>
-            </div>
-        </div>
-
-        <div id="dedicatedVideoStudioView" class="hidden fixed inset-0 bg-black z-50 flex flex-col justify-between">
-            <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
-                <h1 class="text-green-500 font-mono font-black tracking-widest text-sm">R.C CONFIG VIDEO TEAM EXPERT</h1>
-                <button onclick="exitDedicatedStudioEnvironment()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-1.5 rounded uppercase">Close Video Studio</button>
-            </header>
-            <div class="flex-1 grid grid-cols-12 overflow-hidden">
-                <div class="col-span-9 flex flex-col bg-zinc-950 p-4 justify-between h-full relative">
-                    <div class="flex-1 rounded border border-zinc-800 overflow-hidden bg-black flex items-center justify-center">
-                        <video id="studioVideoPlayer" controls class="w-full h-full object-contain"></video>
-                    </div>
-                    <div class="mt-4 flex gap-4 items-center bg-zinc-900 p-3 rounded border border-zinc-800">
-                        <button onclick="copyStudioScreenshotToClipboard()" class="bg-emerald-600 hover:bg-emerald-500 text-black font-bold text-xs px-4 py-2 rounded uppercase tracking-wider">Capture Frame Buffer Snapshot</button>
-                        <div class="flex-1 flex gap-2 items-center">
-                            <input type="text" id="studioDeepLinkExportUrl" class="flex-1 bg-black border border-zinc-700 rounded px-3 py-1.5 text-xs text-zinc-400 font-mono focus:outline-none" readonly placeholder="Deep-link parameter trace payload target string">
-                            <button onclick="copyStudioDeepLinkMetadata()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-4 py-2 rounded uppercase tracking-wider">Generate Frame Marker Sync Route</button>
+                    
+                    <div class="relative aspect-video w-full bg-black rounded-lg overflow-hidden border border-inputBorder flex items-center justify-center group">
+                        <video id="workspaceVideoPlayer" controls class="w-full h-full object-cover hidden"></video>
+                        <div id="videoPlaceholder" class="text-center p-6 space-y-2">
+                            <p class="text-sm text-gray-500 font-medium">No target stream segment loaded into player.</p>
+                            <p class="text-xs text-gray-600">Click any interactive target stream link from the queues below to begin playing.</p>
                         </div>
                     </div>
                 </div>
-                <div class="col-span-3 border-l border-zinc-800 p-4 overflow-y-auto bg-zinc-900 space-y-4">
-                    <h2 class="text-xs font-black tracking-widest uppercase text-purple-400">Active Video Content Directory</h2>
-                    <div id="studioVideoDirectoryListingContainer" class="space-y-2 text-xs font-mono"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-cardBg border border-inputBorder rounded-xl p-5 flex flex-col h-[280px]">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 font-mono">Active Video Target Queues</h3>
+                        <div id="videoQueueLinks" class="space-y-2 overflow-y-auto flex-1 pr-1">
+                            </div>
+                    </div>
+
+                    <div class="bg-cardBg border border-inputBorder rounded-xl p-5 flex flex-col h-[280px]">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 font-mono">Active Work Routing Sheets</h3>
+                        <div id="sheetQueueCards" class="space-y-2 overflow-y-auto flex-1 pr-1">
+                            </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <div id="dedicatedWorkspacePage" class="hidden fixed inset-0 z-50 bg-darkBg flex flex-col">
+        <header class="border-b border-inputBorder bg-cardBg px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <button onclick="exitDedicatedWorkspace()" class="text-xs text-gray-400 hover:text-white flex items-center gap-1.5 transition">
+                    ← Back to Control Hub
+                </button>
+                <span class="text-gray-600">|</span>
+                <h2 id="activeSheetPageTitle" class="text-sm font-semibold tracking-wide text-brandPurple">Workspace Session Frame</h2>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="promptAddNewSheetFrame()" class="bg-brandPurple hover:bg-brandPurpleHover text-white text-xs px-3 py-1.5 rounded transition font-medium">
+                    + Embed Additional Sheet View
+                </button>
+            </div>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            <aside class="w-80 bg-cardBg border-r border-inputBorder p-5 flex flex-col justify-between">
+                <div class="space-y-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-brandPurple font-mono">Route Config Parameters</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1 font-mono">Active Working Configuration</label>
+                            <input type="text" id="wsRouteConfigDisplay" readonly class="w-full bg-inputBg border border-inputBorder rounded p-2 text-xs text-gray-300 font-mono focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1 font-mono">Operational Node Signature</label>
+                            <input type="text" placeholder="Auto Assigned Token" value="NODE-AI-99X" class="w-full bg-inputBg border border-inputBorder rounded p-2 text-xs text-gray-500 font-mono focus:outline-none" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1 font-mono">Manual Override Sequence</label>
+                            <textarea placeholder="Enter adjustments..." class="w-full bg-inputBg border border-inputBorder rounded p-2 text-xs text-white h-24 focus:outline-none focus:border-brandPurple transition" oninput="registerWorkspaceEdit()"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-inputBg border border-inputBorder rounded text-[11px] text-gray-400 leading-relaxed">
+                    Changes to this workspace context automatically broadcast tracking metrics to the admin network monitoring system.
+                </div>
+            </aside>
+
+            <main class="flex-1 bg-black p-4 flex flex-col gap-4 overflow-y-auto" id="sheetFramesContainer">
+                <div class="flex-1 w-full bg-cardBg border border-inputBorder rounded-lg overflow-hidden flex flex-col min-h-[400px]" id="primarySheetFrameWrapper">
+                    <div class="bg-inputBg px-4 py-2 text-xs border-b border-inputBorder flex items-center justify-between text-gray-400 font-mono">
+                        <span id="primarySheetUrlLabel">Loading Target Framework...</span>
+                        <span class="text-emerald-400 text-[10px] uppercase font-bold">Primary Target</span>
+                    </div>
+                    <iframe id="workspaceSheetIframe" class="w-full flex-1 bg-white border-none" src=""></iframe>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <footer class="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 z-50 flex items-center justify-center px-6 shadow-2xl flame-effect">
+        <div class="flex items-center gap-3 text-black text-xs font-black tracking-widest uppercase animate-pulse">
+            <span>🔥 R.C AI WORKSPACE SYSTEM ONLINE</span>
+            <span class="hidden md:inline">•</span>
+            <span class="hidden md:inline">PROCESSING SECURE ENTERPRISE ROUTING CONFIG DATASTREAMS</span>
+        </div>
+    </footer>
+
+    <div id="authModal" class="fixed inset-0 bg-darkBg/95 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-cardBg border border-inputBorder rounded-2xl max-w-sm w-full p-6 space-y-4">
+            <div class="text-center">
+                <h2 class="text-lg font-bold text-white tracking-wide">System Authentication Gate</h2>
+                <p class="text-xs text-gray-400 mt-1">Provide credentials to coordinate work packages</p>
+            </div>
+            <div class="space-y-3">
+                <input type="email" id="authEmail" placeholder="Enter workspace account email" class="w-full bg-inputBg border border-inputBorder rounded p-2.5 text-sm text-white focus:outline-none focus:border-brandPurple">
+                <input type="password" id="authPassword" placeholder="Enter system security access key" class="w-full bg-inputBg border border-inputBorder rounded p-2.5 text-sm text-white focus:outline-none focus:border-brandPurple">
+                <button onclick="handleAuthAction()" class="w-full bg-brandPurple hover:bg-brandPurpleHover text-white text-sm font-semibold py-2.5 rounded transition">
+                    Establish Secure Handshake
+                </button>
+                <div class="text-center pt-2">
+                    <button onclick="toggleAuthMode()" id="toggleAuthModeBtn" class="text-xs text-gray-400 hover:text-white underline">Need to register a coworker handle?</button>
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>
-        let authPortalStateMode = 'LOGIN'; 
-        let globalUserSessionObject = null;
-        let currentActiveVideoThreadId = "";
-        
-        // Mock User database storage implementation logic
-        if (!localStorage.getItem('RC_MOCK_USERS')) {
-            const initialUsers = [
-                { email: 'antonymbali@gmail.com', password: 'password123', role: 'Admin' },
-                { email: 'worker@example.com', password: 'password123', role: 'Coworker' }
-            ];
-            localStorage.setItem('RC_MOCK_USERS', JSON.stringify(initialUsers));
-        }
+        // Supabase Client Initialization Settings Configuration
+        const SUPABASE_URL = "https://qhftvfatzsogxbbqzxry.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_zR-ka-1w2TZz9nd4WP1YDQ_t8RgCuJW";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        function switchAuthPortalContextMode(targetMode) {
-            authPortalStateMode = targetMode;
-            const subText = document.getElementById('authGatewaySubText');
-            const submitBtn = document.getElementById('portalPrimarySubmitBtn');
-            const passwordContainer = document.getElementById('passwordFieldContainer');
-            const feedbackBox = document.getElementById('feedbackAlert');
-            
-            feedbackBox.classList.add('hidden');
-            
-            ['tabSelectorLogin', 'tabSelectorRegister', 'tabSelectorForgot'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.className = "py-2 text-gray-400 hover:text-white rounded transition-all";
+        // Core App Runtime Engine Memory Management States
+        let currentSessionUser = null;
+        let currentUserProfile = null;
+        let isSignUpMode = false;
+        let activeLoadedSheetUrl = "";
+        let activeSheetRecordId = null;
+
+        // LifeCycle Hooks Setup
+        window.addEventListener('DOMContentLoaded', async () => {
+            initializeSessionStateListener();
+        });
+
+        // Track Identity Handshake State
+        function initializeSessionStateListener() {
+            _supabase.auth.onAuthStateChange(async (event, session) => {
+                if (session) {
+                    currentSessionUser = session.user;
+                    document.getElementById('authModal').classList.add('hidden');
+                    await pullUserProfileAndBuildDashboard();
+                } else {
+                    currentSessionUser = null;
+                    currentUserProfile = null;
+                    document.getElementById('userBadge').innerText = "Unauthenticated Engine Node";
+                    document.getElementById('authModal').classList.remove('hidden');
+                }
             });
-
-            if (targetMode === 'LOGIN') {
-                document.getElementById('tabSelectorLogin').className = "py-2 text-white bg-brandPurple rounded transition-all";
-                subText.innerText = "Input secure session configuration credentials to unlock your workspace.";
-                submitBtn.innerText = "Initialize Portal Connection";
-                passwordContainer.innerHTML = `
-                    <label id="passwordLabelRef" for="securityPassword" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Security Password</label>
-                    <input type="password" id="securityPassword" placeholder="••••••••" required class="w-full bg-inputBg border border-inputBorder rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brandPurple transition-colors duration-200 text-base tracking-widest">
-                `;
-            } else if (targetMode === 'REGISTER') {
-                document.getElementById('tabSelectorRegister').className = "py-2 text-white bg-brandPurple rounded transition-all";
-                subText.innerText = "Provision a clean identity profile instance within the secure sync terminal layers.";
-                submitBtn.innerText = "Register System Identity Instance";
-                passwordContainer.innerHTML = `
-                    <label id="passwordLabelRef" for="securityPassword" class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Create New Security Password</label>
-                    <input type="password" id="securityPassword" placeholder="••••••••" required class="w-full bg-inputBg border border-inputBorder rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brandPurple transition-colors duration-200 text-base tracking-widest">
-                `;
-            } else if (targetMode === 'FORGOT') {
-                document.getElementById('tabSelectorForgot').className = "py-2 text-white bg-brandPurple rounded transition-all";
-                subText.innerText = "Perform credential mapping trace to fetch security settings variables.";
-                submitBtn.innerText = "Query System Password Store";
-                passwordContainer.innerHTML = ''; 
-            }
         }
 
-        function handlePortalAuthentication(event) {
-            event.preventDefault();
-            const emailInput = document.getElementById('identityEmail').value.trim().toLowerCase();
-            const passwordInput = document.getElementById('securityPassword') ? document.getElementById('securityPassword').value : '';
-            const feedbackBox = document.getElementById('feedbackAlert');
+        // Authentication Engine Process Logic
+        async function handleAuthAction() {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
 
-            if (!emailInput) return;
+            if(!email || !password) {
+                showAlert("System security exception: Missing authentication parameter requirements.", "error");
+                return;
+            }
 
-            let currentUsers = JSON.parse(localStorage.getItem('RC_MOCK_USERS') || '[]');
-
-            if (authPortalStateMode === 'LOGIN') {
-                const matchedUser = currentUsers.find(u => u.email === emailInput && u.password === passwordInput);
-                if (matchedUser) {
-                    executeSessionAuthenticationBinding(matchedUser);
+            if(isSignUpMode) {
+                const { data, error } = await _supabase.auth.signUp({ email, password });
+                if(error) {
+                    showAlert(`Registration fault: ${error.message}`, "error");
                 } else {
-                    displayPortalFeedback('Invalid systemic verification criteria. Review connection string sequence.', 'error');
+                    // Seed initial user profile metrics trace matrix
+                    await _supabase.from('user_profiles').insert([{ 
+                        id: data.user.id, 
+                        email: email, 
+                        role: 'coworker', 
+                        status: 'active' 
+                    }]);
+                    showAlert("Registration sequence success! Verified account active.", "success");
                 }
-            } else if (authPortalStateMode === 'REGISTER') {
-                const userExists = currentUsers.some(u => u.email === emailInput);
-                if (userExists) {
-                    displayPortalFeedback('Identity registry failure. Target coordinate matrix already bound inside memory allocation arrays.', 'error');
+            } else {
+                const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+                if(error) {
+                    showAlert(`Authentication fault: ${error.message}`, "error");
                 } else {
-                    const newProfile = { email: emailInput, password: passwordInput, role: 'Coworker' };
-                    currentUsers.push(newProfile);
-                    localStorage.setItem('RC_MOCK_USERS', JSON.stringify(currentUsers));
-                    displayPortalFeedback('Profile generated. Initializing secure node sequence context...', 'success');
-                    setTimeout(() => { executeSessionAuthenticationBinding(newProfile); }, 1200);
-                }
-            } else if (authPortalStateMode === 'FORGOT') {
-                const targetedUser = currentUsers.find(u => u.email === emailInput);
-                if (targetedUser) {
-                    displayPortalFeedback(`Trace successful. Password recovered: "${targetedUser.password}"`, 'success');
-                } else {
-                    displayPortalFeedback('Email coordinate point matches no active memory sector records.', 'error');
+                    showAlert("Authentication credentials matched. Handshake established.", "success");
                 }
             }
         }
 
-        function displayPortalFeedback(message, type) {
-            const box = document.getElementById('feedbackAlert');
-            box.classList.remove('hidden', 'bg-red-950/60', 'text-red-400', 'border-red-800', 'bg-emerald-950/60', 'text-emerald-400', 'border-emerald-800');
+        function toggleAuthMode() {
+            isSignUpMode = !isSignUpMode;
+            document.getElementById('toggleAuthModeBtn').innerText = isSignUpMode ? 
+                "Already registered? Access current session frame" : "Need to register a coworker handle?";
+        }
+
+        async function handleLogout() {
+            if(currentSessionUser) {
+                await _supabase.from('user_profiles').update({ status: 'inactive' }).eq('id', currentSessionUser.id);
+            }
+            await _supabase.auth.signOut();
+        }
+
+        // Build Panel Access Permissions
+        async function pullUserProfileAndBuildDashboard() {
+            document.getElementById('userBadge').innerText = `Syncing: ${currentSessionUser.email}`;
+            
+            // Check Profile state container
+            let { data: profile, error } = await _supabase.from('user_profiles').select('*').eq('id', currentSessionUser.id).single();
+            
+            if (!profile && currentSessionUser) {
+                // Self-healing check if mapping row was omitted during database migration actions
+                const { data: newProfile } = await _supabase.from('user_profiles').insert([{ 
+                    id: currentSessionUser.id, 
+                    email: currentSessionUser.email, 
+                    role: 'coworker', 
+                    status: 'active' 
+                }]).select().single();
+                profile = newProfile;
+            }
+
+            currentUserProfile = profile;
+            document.getElementById('userBadge').innerText = `Node: ${profile.email} (${profile.role.toUpperCase()})`;
+
+            // System visibility branch authorization logic
+            if(profile.role === 'admin') {
+                document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('adminPanel').classList.add('flex');
+                toggleFormInputs();
+                fetchNetworkMetrics();
+            } else {
+                document.getElementById('adminPanel').classList.add('hidden');
+                document.getElementById('adminPanel').classList.remove('flex');
+            }
+
+            // Sync user connection online status trace state
+            await _supabase.from('user_profiles').update({ status: 'active', last_login: new Date().toISOString() }).eq('id', currentSessionUser.id);
+
+            // Fetch specific real-time records matching target identity credentials
+            fetchActiveResourceQueues();
+            subscribeToLiveDataBroadcasts();
+        }
+
+        // Interface Utility Configurations
+        function toggleFormInputs() {
+            const type = document.getElementById('assetType').value;
+            const container = document.getElementById('routeConfigContainer');
+            if(type === 'sheet') {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function showAlert(message, type = 'success') {
+            const alertBox = document.getElementById('globalAlert');
+            alertBox.classList.remove('hidden', 'bg-red-950/60', 'text-red-400', 'border-red-800', 'bg-emerald-950/60', 'text-emerald-400', 'border-emerald-800');
             if (type === 'error') {
-                box.classList.add('bg-red-950/60', 'text-red-400', 'border-red-800');
+                alertBox.classList.add('bg-red-950/60', 'text-red-400', 'border-red-800');
             } else {
-                box.classList.add('bg-emerald-950/60', 'text-emerald-400', 'border-emerald-800');
+                alertBox.classList.add('bg-emerald-950/60', 'text-emerald-400', 'border-emerald-800');
             }
-            box.innerText = message;
-            box.classList.remove('hidden');
+            alertBox.innerText = message;
+            alertBox.classList.remove('hidden');
+            setTimeout(() => alertBox.classList.add('hidden'), 6000);
         }
 
-        function executeSessionAuthenticationBinding(userProfile) {
-            globalUserSessionObject = userProfile;
-            document.getElementById('authGatewayPortal').classList.add('hidden');
-            document.getElementById('dynamicViewRouter').classList.remove('hidden');
-            document.getElementById('userEmailSessionDisplay').innerText = userProfile.email;
+        // Broadcast New Assets Queue Action Handler
+        async function dispatchAsset() {
+            const type = document.getElementById('assetType').value;
+            const title = document.getElementById('assetTitle').value.trim();
+            const url = document.getElementById('assetUrl').value.trim();
+            const routeCfg = document.getElementById('routeConfig').value.trim();
+            const assignmentsRaw = document.getElementById('assignedTo').value.trim();
 
-            const roleSwapBtn = document.getElementById('adminRoleSwapToggleBtn');
-            const uploadBox = document.getElementById('adminVideoUploadSection');
-            const addSheetBtn = document.getElementById('adminAddSheetBtn');
-            const exportBtn = document.getElementById('adminExportBtn');
-            const assetUploadBox = document.getElementById('adminModuleUploadSection');
-            const telemBlock = document.getElementById('supabaseTelemetryControlBlock');
-            const privilegeBlock = document.getElementById('systemPrivilegeControlBlock');
-
-            if (userProfile.role === 'Admin') {
-                roleSwapBtn.classList.remove('hidden');
-                uploadBox.classList.remove('hidden');
-                addSheetBtn.classList.remove('hidden');
-                exportBtn.classList.remove('hidden');
-                assetUploadBox.classList.remove('hidden');
-                telemBlock.classList.remove('hidden');
-                privilegeBlock.classList.remove('hidden');
-                document.getElementById('adminBadge').innerText = "ADMIN MASTER SEGMENT";
-                document.getElementById('adminBadge').className = "bg-amber-950/60 text-amber-400 text-xs px-2.5 py-1 rounded-full border border-amber-800 font-mono tracking-widest uppercase";
-            } else {
-                roleSwapBtn.classList.add('hidden');
-                uploadBox.classList.add('hidden');
-                addSheetBtn.classList.add('hidden');
-                exportBtn.classList.add('hidden');
-                assetUploadBox.classList.add('hidden');
-                telemBlock.classList.add('hidden');
-                privilegeBlock.classList.add('hidden');
-                document.getElementById('adminBadge').innerText = "COWORKER ACCESS MODE";
-                document.getElementById('adminBadge').className = "bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full border border-zinc-700 font-mono tracking-widest uppercase";
+            if(!title || !url) {
+                showAlert("Broadcast fault: Title and Resource link URLs are mandatory payloads.", "error");
+                return;
             }
 
-            initializeCoreDataGridLayers();
-            renderVideoContentQueuesDirectory();
-            renderLearningModulesDirectory();
-            checkUrlParametersForDeepLinkNavigation();
+            // Explode assignment parameter into clean operational tracking array
+            const assignedArray = assignmentsRaw ? assignmentsRaw.split(',').map(e => e.trim().toLowerCase()).filter(e => e.length > 0) : [];
+
+            if(type === 'video') {
+                const { error } = await _supabase.from('videos_queue').insert([{
+                    title: title,
+                    video_url: url,
+                    assigned_to: assignedArray,
+                    is_active: true
+                }]);
+                if(error) showAlert(`Queue update failed: ${error.message}`, 'error');
+                else { showAlert(`Video stream payload dispatched successfully.`, 'success'); clearFormInputs(); }
+            } else {
+                const { error } = await _supabase.from('sheet_assignments').insert([{
+                    title: title,
+                    sheet_url: url,
+                    assigned_to: assignedArray,
+                    is_active: true,
+                    route_config: routeCfg
+                }]);
+                if(error) showAlert(`Sheet routing update failed: ${error.message}`, 'error');
+                else { showAlert(`Routing configuration sheet dispatched successfully.`, 'success'); clearFormInputs(); }
+            }
+            fetchActiveResourceQueues();
         }
 
-        function toggleAdminRoleContextView() {
-            if (!globalUserSessionObject || globalUserSessionObject.role !== 'Admin') return;
-            const currentBadgeText = document.getElementById('adminBadge').innerText;
-            
-            const uploadBox = document.getElementById('adminVideoUploadSection');
-            const addSheetBtn = document.getElementById('adminAddSheetBtn');
-            const exportBtn = document.getElementById('adminExportBtn');
-            const assetUploadBox = document.getElementById('adminModuleUploadSection');
-            const telemBlock = document.getElementById('supabaseTelemetryControlBlock');
-            const privilegeBlock = document.getElementById('systemPrivilegeControlBlock');
+        function clearFormInputs() {
+            document.getElementById('assetTitle').value = "";
+            document.getElementById('assetUrl').value = "";
+            document.getElementById('assignedTo').value = "";
+        }
 
-            if (currentBadgeText.includes("ADMIN")) {
-                document.getElementById('adminBadge').innerText = "VIRTUAL COWORKER VIEW";
-                document.getElementById('adminBadge').className = "bg-blue-950/60 text-blue-400 text-xs px-2.5 py-1 rounded-full border border-blue-800 font-mono tracking-widest uppercase";
+        // Render Actionable Target Lists & Workspace Assets queues
+        async function fetchActiveResourceQueues() {
+            if(!currentSessionUser) return;
+            const userEmail = currentSessionUser.email.toLowerCase();
+            const isAdmin = currentUserProfile && currentUserProfile.role === 'admin';
+
+            // Query Resource Tables
+            let videoQuery = _supabase.from('videos_queue').select('*').order('created_at', { ascending: false });
+            let sheetQuery = _supabase.from('sheet_assignments').select('*').eq('is_active', true).order('created_at', { ascending: false });
+
+            const [videosRes, sheetsRes] = await Promise.all([videoQuery, sheetQuery]);
+
+            // Render Interactive Link Queue Channels for Video Stream Targets
+            const videoContainer = document.getElementById('videoQueueLinks');
+            videoContainer.innerHTML = "";
+
+            if(videosRes.data && videosRes.data.length > 0) {
+                // Filter elements checking if user is explicitly assigned or holds admin rights overrides
+                const userVideos = videosRes.data.filter(v => isAdmin || v.assigned_to.length === 0 || v.assigned_to.includes(userEmail));
                 
-                uploadBox.classList.add('hidden');
-                addSheetBtn.classList.add('hidden');
-                exportBtn.classList.add('hidden');
-                assetUploadBox.classList.add('hidden');
-                telemBlock.classList.add('hidden');
-                privilegeBlock.classList.add('hidden');
+                if(userVideos.length === 0) {
+                    videoContainer.innerHTML = `<p class="text-xs text-gray-600 italic p-2">No video assignments allocated to this session instance.</p>`;
+                } else {
+                    userVideos.forEach(vid => {
+                        const linkRow = document.createElement('div');
+                        linkRow.className = "flex items-center justify-between p-2 rounded bg-inputBg border border-inputBorder/50 hover:border-brandPurple transition text-xs";
+                        
+                        // Interactive action deep-link text
+                        const linkButton = document.createElement('button');
+                        linkButton.className = "text-left text-gray-300 hover:text-brandPurple transition font-mono font-medium flex-1 truncate mr-2";
+                        linkButton.innerText = `🔗 ${vid.title}`;
+                        linkButton.onclick = () => loadTargetVideoToActivePlayer(vid.video_url);
+
+                        linkRow.appendChild(linkButton);
+
+                        // If user is administrator, offer contextual inline delete operation trace capability
+                        if(isAdmin) {
+                            const delBtn = document.createElement('button');
+                            delBtn.className = "text-[10px] text-red-500 hover:text-red-400 font-bold uppercase font-mono px-1.5 py-0.5 rounded border border-red-900/50 hover:bg-red-950/40 transition";
+                            delBtn.innerText = "Delete";
+                            delBtn.onclick = async (e) => {
+                                e.stopPropagation();
+                                if(confirm(`Confirm deletion processing for target video stream sequence: ${vid.title}?`)) {
+                                    await _supabase.from('videos_queue').delete().eq('id', vid.id);
+                                    fetchActiveResourceQueues();
+                                }
+                            };
+                            linkRow.appendChild(delBtn);
+                        }
+
+                        videoContainer.appendChild(linkRow);
+                    });
+                }
             } else {
-                document.getElementById('adminBadge').innerText = "ADMIN MASTER SEGMENT";
-                document.getElementById('adminBadge').className = "bg-amber-950/60 text-amber-400 text-xs px-2.5 py-1 rounded-full border border-amber-800 font-mono tracking-widest uppercase";
-                
-                uploadBox.classList.remove('hidden');
-                addSheetBtn.classList.remove('hidden');
-                exportBtn.classList.remove('hidden');
-                assetUploadBox.classList.remove('hidden');
-                telemBlock.classList.remove('hidden');
-                privilegeBlock.classList.remove('hidden');
+                videoContainer.innerHTML = `<p class="text-xs text-gray-600 italic p-2">No videos broadcasted to runtime server.</p>`;
+            }
+
+            // Render Dynamic Interactive Cards for Active Work Authorization Sheets
+            const sheetContainer = document.getElementById('sheetQueueCards');
+            sheetContainer.innerHTML = "";
+
+            if(sheetsRes.data && sheetsRes.data.length > 0) {
+                // Filter matching explicit assignments
+                const userSheets = sheetsRes.data.filter(s => isAdmin || s.assigned_to.length === 0 || s.assigned_to.includes(userEmail));
+
+                if(userSheets.length === 0) {
+                    renderEmptySheetsState(sheetContainer);
+                } else {
+                    userSheets.forEach(sheet => {
+                        const card = document.createElement('div');
+                        card.className = "p-3 rounded-lg bg-inputBg border border-inputBorder flex flex-col gap-2 hover:border-brandPurple/60 transition";
+                        
+                        card.innerHTML = `
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-gray-200">${sheet.title}</span>
+                                <span class="text-[10px] font-mono text-gray-500 mt-0.5">Route Config: ${sheet.route_config}</span>
+                            </div>
+                            <div class="flex items-center justify-between mt-1">
+                                <span class="text-[9px] bg-brandPurple/10 border border-brandPurple/30 text-brandPurple px-2 py-0.5 rounded uppercase font-mono font-bold tracking-tight">Active Route Config Work</span>
+                                <button onclick="launchDedicatedWorkspacePage('${sheet.title}', '${sheet.sheet_url}', '${sheet.route_config}', ${sheet.id})" class="bg-brandPurple hover:bg-brandPurpleHover text-white text-[11px] font-medium px-2.5 py-1 rounded transition flex items-center gap-1 font-mono">
+                                    Start Work ↗
+                                </button>
+                            </div>
+                        `;
+                        sheetContainer.appendChild(card);
+                    });
+                }
+            } else {
+                renderEmptySheetsState(sheetContainer);
             }
         }
 
-        function terminateTerminalSession() {
-            globalUserSessionObject = null;
-            document.getElementById('dynamicViewRouter').classList.add('hidden');
-            document.getElementById('authGatewayPortal').classList.remove('hidden');
-            switchAuthPortalContextMode('LOGIN');
+        function renderEmptySheetsState(container) {
+            container.innerHTML = `
+                <div class="flex-1 flex flex-col items-center justify-center border border-dashed border-inputBorder/60 rounded-lg p-4 text-center space-y-1 my-auto">
+                    <span class="text-xl">oops</span>
+                    <p class="text-xs font-medium text-gray-400">Working hard to get more work for you...</p>
+                    <p class="text-[10px] text-gray-600 max-w-[180px]">New routing packages appear instantaneously when allocated by operations leads.</p>
+                </div>
+            `;
         }
 
-        // Mock Storage Setup for Worksheets, Videos and Assets
-        if (!localStorage.getItem('RC_WORKSPACE_SHEETS')) {
-            const defaultSheets = [
-                { id: 'sheet_1', title: '1ST PASS CAMERA LEVEL Alpha Matrix', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT1-Z8vNnJ8W-Vb8hD5fK/pubhtml?widget=true&headers=false', assignees: ['antonymbali@gmail.com', 'worker@example.com'], totalTasks: 140, completedTasks: 92 },
-                { id: 'sheet_2', title: '3D LiDAR Object Track Calibration Cube', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_MhYxX0bY9oZ7D-tA/pubhtml?widget=true&headers=false', assignees: ['worker@example.com'], totalTasks: 85, completedTasks: 41 }
-            ];
-            localStorage.setItem('RC_WORKSPACE_SHEETS', JSON.stringify(defaultSheets));
-        }
+        // Active Screen Video Interface Actions Engine
+        function loadTargetVideoToActivePlayer(url) {
+            const player = document.getElementById('workspaceVideoPlayer');
+            const placeholder = document.getElementById('videoPlaceholder');
 
-        if (!localStorage.getItem('RC_VIDEO_THREADS')) {
-            const defaultVideos = [
-                { id: 'vid_1', title: 'Camera Level Tracking Calibration Capture.mp4', url: 'https://www.w3schools.com/html/mov_bbb.mp4' },
-                { id: 'vid_2', title: 'LiDAR Sensor Sweep Point-Cloud Array.mp4', url: 'https://www.w3schools.com/html/movie.mp4' }
-            ];
-            localStorage.setItem('RC_VIDEO_THREADS', JSON.stringify(defaultVideos));
-        }
+            if(!url) return;
 
-        if (!localStorage.getItem('RC_ASSET_MODULES')) {
-            const defaultModules = [
-                { id: 'mod_1', title: '2D Bounding Box Occlusion Mapping Guidelines.pdf' },
-                { id: 'mod_2', title: '3D Point Cloud Ground Segmentation Rules.docx' }
-            ];
-            localStorage.setItem('RC_ASSET_MODULES', JSON.stringify(defaultModules));
-        }
-
-        function initializeCoreDataGridLayers() {
-            const sheets = JSON.parse(localStorage.getItem('RC_WORKSPACE_SHEETS') || '[]');
-            const grid = document.getElementById('sheetsDisplayGrid');
-            const arenaSelect = document.getElementById('arenaAdditionalSheetSelect');
-            
-            grid.innerHTML = '';
-            arenaSelect.innerHTML = '<option value="">-- Choose Sheet to Switch --</option>';
-
-            sheets.forEach(sheet => {
-                const card = document.createElement('div');
-                card.id = `sheetCard_${sheet.id}`;
-                card.className = "p-4 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-zinc-700 transition flex flex-col justify-between cursor-pointer";
-                card.onclick = () => { bindActiveWorkspaceTargetToEmbed(sheet.id); };
-
-                card.innerHTML = `
-                    <div>
-                        <h4 class="text-xs font-bold text-white font-mono line-clamp-2 mb-2">${sheet.title}</h4>
-                        <p class="text-[10px] text-zinc-500 font-mono truncate max-w-full mb-1">Matrix Ref: ${sheet.id}</p>
-                        <div class="space-y-1 text-[11px] font-mono text-zinc-400">
-                            <div class="flex justify-between"><span>Tasks Bound:</span><span class="text-zinc-200 font-bold">${sheet.totalTasks}</span></div>
-                            <div class="flex justify-between"><span>Processed Units:</span><span class="text-emerald-400 font-bold">${sheet.completedTasks}</span></div>
-                        </div>
-                    </div>
-                    <div class="mt-3 pt-2 border-t border-zinc-800/60 flex items-center justify-between">
-                        <span class="text-[9px] bg-purple-950/50 text-purple-400 px-1.5 py-0.5 rounded border border-purple-900 font-mono">Live Matrix</span>
-                        <button onclick="event.stopPropagation(); launchArenaFullScreenSandbox('${sheet.id}')" class="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-0.5 rounded text-white font-mono">Arena Screen ↗</button>
-                    </div>
-                `;
-                grid.appendChild(card);
-
-                const opt = document.createElement('option');
-                opt.value = sheet.id;
-                opt.innerText = sheet.title;
-                arenaSelect.appendChild(opt);
+            placeholder.classList.add('hidden');
+            player.classList.remove('hidden');
+            player.src = url;
+            player.preload = "auto";
+            player.load();
+            player.play().catch(() => {
+                console.log("Autoplay blocked by browser policy guidelines context.");
             });
-
-            renderAssignedTasksBannerLog();
+            showAlert("Target asset datastream successfully injected into primary workspace active screen player.");
         }
 
-        function renderAssignedTasksBannerLog() {
-            if (!globalUserSessionObject) return;
-            const sheets = JSON.parse(localStorage.getItem('RC_WORKSPACE_SHEETS') || '[]');
-            const assignedHub = document.getElementById('coworkerTaskAssignmentHub');
-            const listOutput = document.getElementById('assignedTasksListOutput');
-            
-            const matchedTasks = sheets.filter(s => s.assignees.includes(globalUserSessionObject.email));
+        function launchFullStudio() {
+            const player = document.getElementById('workspaceVideoPlayer');
+            if(player && player.src && !player.classList.contains('hidden')) {
+                if(player.requestFullscreen) { player.requestFullscreen(); }
+                else if(player.webkitRequestFullscreen) { player.webkitRequestFullscreen(); }
+                else if(player.msRequestFullscreen) { player.msRequestFullscreen(); }
+            } else {
+                showAlert("Launch restricted: Load an active workspace video stream link target before attempting full studio mode scaling operations.", "error");
+            }
+        }
 
-            if (matchedTasks.length > 0) {
-                assignedHub.classList.remove('hidden');
-                listOutput.innerHTML = '';
-                matchedTasks.forEach(task => {
-                    const d = document.createElement('div');
-                    d.className = "flex justify-between items-center bg-black/30 p-1.5 rounded border border-indigo-900/40";
-                    d.innerHTML = `
-                        <span class="text-indigo-200 truncate max-w-[280px]">⚡ ${task.title}</span>
-                        <button onclick="bindActiveWorkspaceTargetToEmbed('${task.id}')" class="text-[9px] bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2 py-0.5 rounded tracking-tighter uppercase font-mono">Initialize Canvas</button>
+        // Dedicated Full Page Workspace Viewport Controls Engine
+        async function launchDedicatedWorkspacePage(title, url, routeConfig, recordId) {
+            activeLoadedSheetUrl = url;
+            activeSheetRecordId = recordId;
+
+            document.getElementById('activeSheetPageTitle').innerText = `Workspace Module Frame: ${title}`;
+            document.getElementById('wsRouteConfigDisplay').value = routeConfig;
+            document.getElementById('primarySheetUrlLabel').innerText = `Embedded Route Target Link Source: ${url}`;
+            
+            // Set dynamic IFrame Target Target Content Location Address safely
+            document.getElementById('workspaceSheetIframe').src = url;
+
+            // Hide Dashboard Shell & Scale Environment Full Screen Layer Frame
+            document.getElementById('mainAppLayout').classList.add('hidden');
+            document.getElementById('dedicatedWorkspacePage').classList.remove('hidden');
+
+            // Emit live work context switch trace modification to administrative tracking layer
+            if(currentSessionUser) {
+                await _supabase.from('user_profiles').update({
+                    current_sheet_working: title,
+                    last_edit_action: `Initialized session environment for sheet tracking sequence.`
+                }).eq('id', currentSessionUser.id);
+            }
+        }
+
+        async function registerWorkspaceEdit() {
+            if(currentSessionUser && activeSheetRecordId) {
+                await _supabase.from('user_profiles').update({
+                    last_edit_action: `Modified parameters on configuration panel input element at ${new Date().toLocaleTimeString()}`
+                }).eq('id', currentSessionUser.id);
+            }
+        }
+
+        function promptAddNewSheetFrame() {
+            const url = prompt("Input full structured target sheet framework or alternative routing resource link URL to append:", "https://docs.google.com/spreadsheets/d/...");
+            if(url && url.trim().startsWith('http')) {
+                const container = document.getElementById('sheetFramesContainer');
+                
+                const newFrameWrapper = document.createElement('div');
+                newFrameWrapper.className = "flex-1 w-full bg-cardBg border border-inputBorder rounded-lg overflow-hidden flex flex-col min-h-[400px]";
+                
+                newFrameWrapper.innerHTML = `
+                    <div class="bg-inputBg px-4 py-2 text-xs border-b border-inputBorder flex items-center justify-between text-gray-400 font-mono">
+                        <span class="truncate max-w-md">Appended Resource Structure: ${url}</span>
+                        <button onclick="this.parentElement.parentElement.remove()" class="text-red-400 hover:text-red-300 text-[10px] uppercase font-bold tracking-tight">Close Frame ×</button>
+                    </div>
+                    <iframe class="w-full flex-1 bg-white border-none" src="${url}"></iframe>
+                `;
+                container.appendChild(newFrameWrapper);
+                showAlert("Secondary dynamic tracking sheet frame successfully attached to structural grid space.");
+            } else if (url) {
+                showAlert("Malformed structural routing reference parameter rejected.", "error");
+            }
+        }
+
+        async function exitDedicatedWorkspace() {
+            // Unwind environment page presentation layer displays
+            document.getElementById('dedicatedWorkspacePage').classList.add('hidden');
+            document.getElementById('mainAppLayout').classList.remove('hidden');
+            
+            // Reset Target Reference Buffers
+            document.getElementById('workspaceSheetIframe').src = "";
+            
+            // Re-sync worker memory profile target indicators to database storage architecture
+            if(currentSessionUser) {
+                await _supabase.from('user_profiles').update({
+                    current_sheet_working: null,
+                    last_edit_action: "Returned to primary workspace hub interface dashboard dashboard."
+                }).eq('id', currentSessionUser.id);
+            }
+            fetchNetworkMetrics();
+        }
+
+        // Administrative Network Monitor Metrics Engine Trace Core Data fetching 
+        async function fetchNetworkMetrics() {
+            const tbody = document.getElementById('metricsTableBody');
+            if(!tbody) return;
+
+            let { data: profiles, error } = await _supabase.from('user_profiles').select('*').order('last_login', { ascending: false });
+            
+            if(error) {
+                console.log(`Metrics fetch sequence error: ${error.message}`);
+                return;
+            }
+
+            tbody.innerHTML = "";
+            if(profiles && profiles.length > 0) {
+                profiles.forEach(user => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-inputBg/40 border-b border-inputBorder/30 transition text-gray-300";
+                    
+                    const isOnline = user.status === 'active';
+                    const statusDotColor = isOnline ? 'bg-emerald-500' : 'bg-gray-600';
+                    const lastLoginParsed = user.last_login ? new Date(user.last_login).toLocaleDateString() : 'N/A';
+
+                    tr.innerHTML = `
+                        <td class="py-3 font-semibold text-gray-100 max-w-[160px] truncate" title="${user.email}">${user.email}</td>
+                        <td class="py-3">
+                            <span class="inline-flex items-center gap-1.5 capitalize text-[11px]">
+                                <span class="h-2 w-2 rounded-full ${statusDotColor}"></span>
+                                ${user.status || 'inactive'}
+                            </span>
+                        </td>
+                        <td class="py-3 text-gray-400 italic">${user.current_sheet_working || 'None (Idle Frame)'}</td>
+                        <td class="py-3 text-[11px] text-gray-500 max-w-[150px] truncate" title="${user.last_edit_action || 'No trace recorded'}">
+                            ${user.last_edit_action || `Logged input on ${lastLoginParsed}`}
+                        </td>
+                        <td class="py-3">
+                            <span class="text-[10px] px-2 py-0.5 rounded border ${user.role === 'admin' ? 'border-brandPurple/40 bg-brandPurple/10 text-brandPurple' : 'border-inputBorder bg-inputBg text-gray-400'} uppercase font-bold font-mono">
+                                ${user.role || 'coworker'}
+                            </span>
+                        </td>
                     `;
-                    listOutput.appendChild(d);
+                    tbody.appendChild(tr);
                 });
             } else {
-                assignedHub.classList.add('hidden');
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-600 italic">No nodes registered on connection array mapping matrices.</td></tr>`;
             }
         }
 
-        function bindActiveWorkspaceTargetToEmbed(sheetId) {
-            const sheets = JSON.parse(localStorage.getItem('RC_WORKSPACE_SHEETS') || '[]');
-            const target = sheets.find(s => s.id === sheetId);
-            if (!target) return;
-
-            const sheetsGrid = document.getElementById('sheetsDisplayGrid');
-            Array.from(sheetsGrid.children).forEach(child => {
-                child.classList.remove('border-purple-600', 'bg-purple-950/10');
-            });
-            const selectedCard = document.getElementById(`sheetCard_${sheetId}`);
-            if (selectedCard) selectedCard.classList.add('border-purple-600', 'bg-purple-950/10');
-
-            document.getElementById('currentActiveWorkspaceUrlDisplay').innerText = target.url;
-            document.getElementById('currentActiveWorkspaceUrlDisplay').title = target.url;
-            document.getElementById('workspaceActiveTitleBadge').innerText = target.title;
-            
-            const iframe = document.getElementById('liveWorkspaceSandboxIframe');
-            const fallback = document.getElementById('iframePlaceholderFallbackState');
-            
-            iframe.src = target.url;
-            iframe.classList.remove('hidden');
-            fallback.classList.add('hidden');
-
-            const trackingLogs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || '[]');
-            const alreadyLogged = trackingLogs.some(log => log.url === target.url);
-            if (!alreadyLogged) {
-                trackingLogs.unshift({ url: target.url, timestamp: new Date().toLocaleTimeString() });
-                localStorage.setItem('RC_PASTED_LINKS', JSON.stringify(trackingLogs));
-                renderDeepLinkLogsHistory();
-            }
-        }
-
-        function setWorkspaceEmbedVisibility(visible) {
-            const wrapper = document.getElementById('liveWorkspaceSandboxWrapper');
-            if (visible) {
-                wrapper.style.display = 'flex';
-            } else {
-                wrapper.style.display = 'none';
-            }
-        }
-
-        function renderVideoContentQueuesDirectory() {
-            const videos = JSON.parse(localStorage.getItem('RC_VIDEO_THREADS') || '[]');
-            const container = document.getElementById('videoThreadLinksContainer');
-            const studioContainer = document.getElementById('studioVideoDirectoryListingContainer');
-            
-            container.innerHTML = '';
-            studioContainer.innerHTML = '';
-
-            videos.forEach(v => {
-                const link = document.createElement('div');
-                link.id = `videoLinkRow_${v.id}`;
-                link.className = "p-1.5 bg-zinc-900 border border-zinc-800 rounded flex justify-between items-center hover:border-purple-500 cursor-pointer transition";
-                link.onclick = () => { loadActiveVideoThreadToPlayer(v.id); };
-                link.innerHTML = `
-                    <span class="truncate max-w-[170px] text-zinc-300">📹 ${v.title}</span>
-                    <span class="text-[9px] text-purple-400 font-bold uppercase">Load</span>
-                `;
-                container.appendChild(link);
-
-                const studioRow = document.createElement('div');
-                studioRow.className = "p-2 bg-zinc-950 border border-zinc-800 rounded hover:border-green-500 cursor-pointer transition flex items-center justify-between";
-                studioRow.onclick = () => { loadActiveVideoThreadToPlayer(v.id); };
-                studioRow.innerHTML = `
-                    <span class="truncate max-w-[160px] text-zinc-400">🎞️ ${v.title}</span>
-                    <span class="text-[9px] text-green-400 font-bold">Mount</span>
-                `;
-                studioContainer.appendChild(studioRow);
-            });
-        }
-
-        function loadActiveVideoThreadToPlayer(videoId) {
-            const videos = JSON.parse(localStorage.getItem('RC_VIDEO_THREADS') || '[]');
-            const match = videos.find(v => v.id === videoId);
-            if (!match) return;
-
-            currentActiveVideoThreadId = videoId;
-
-            ['videoThreadLinksContainer'].forEach(contId => {
-                const cont = document.getElementById(contId);
-                if (cont) {
-                    Array.from(cont.children).forEach(child => child.classList.remove('active-thread-highlight'));
+        // Live Realtime Subscriptions Synchronization Broadcaster Pipeline
+        function subscribeToLiveDataBroadcasts() {
+            _supabase.channel('public:user_profiles')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'user_profiles' }, payload => {
+                if(currentUserProfile && currentUserProfile.role === 'admin') {
+                    fetchNetworkMetrics();
                 }
-            });
-            const targetedRow = document.getElementById(`videoLinkRow_${videoId}`);
-            if (targetedRow) targetedRow.classList.add('active-thread-highlight');
+            })
+            .subscribe();
 
-            const dPlayer = document.getElementById('dashboardVideoPlayer');
-            const sPlayer = document.getElementById('studioVideoPlayer');
-
-            dPlayer.src = match.url;
-            sPlayer.src = match.url;
-
-            dPlayer.load();
-            sPlayer.load();
-
-            dPlayer.ontimeupdate = () => { syncInternalTrackingTimestamps(dPlayer.currentTime); };
-            sPlayer.ontimeupdate = () => { syncInternalTrackingTimestamps(sPlayer.currentTime); };
+            _supabase.channel('public:queues')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'videos_queue' }, () => { fetchActiveResourceQueues(); })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'sheet_assignments' }, () => { fetchActiveResourceQueues(); })
+            .subscribe();
         }
-
-        function syncInternalTrackingTimestamps(secs) {
-            const hrs = Math.floor(secs / 3600).toString().padStart(2, '0');
-            const mins = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
-            const remainingSecs = Math.floor(secs % 60).toString().padStart(2, '0');
-            const formatted = `TS: ${hrs}:${mins}:${remainingSecs}`;
-            
-            document.getElementById('dashTimestampDisplay').innerText = formatted;
-        }
-
-        function copyRawTimestampText(txt) {
-            const raw = txt.replace('TS: ', '');
-            navigator.clipboard.writeText(raw);
-            alert(`Raw parameter frame marker sequence [ ${raw} ] duplicated successfully.`);
-        }
-
-        let dashZoomFactorScale = 1;
-        function handleDashboardZoom(e) {
-            e.preventDefault();
-            const canvas = document.querySelector('#videoContainer .zoom-canvas');
-            if (!canvas) return;
-
-            dashZoomFactorScale += e.deltaY * -0.001;
-            dashZoomFactorScale = Math.min(Math.max(0.5, dashZoomFactorScale), 4);
-
-            canvas.style.transform = `scale(${dashZoomFactorScale})`;
-            document.getElementById('dashZoomIndicator').innerText = `Zoom: ${Math.round(dashZoomFactorScale * 100)}%`;
-        }
-
-        function resetDashboardZoom() {
-            const canvas = document.querySelector('#videoContainer .zoom-canvas');
-            if (!canvas) return;
-            dashZoomFactorScale = 1;
-            canvas.style.transform = `scale(1)`;
-            document.getElementById('dashZoomIndicator').innerText = `Zoom: 100%`;
-        }
-
-        function setPlayerVisualFX(fx) {
-            const container = document.getElementById('videoContainer');
-            if (fx === 'flames') {
-                container.classList.add('flame-effect');
-            } else {
-                container.classList.remove('flame-effect');
-            }
-        }
-
-        function launchDedicatedVideoEnvironment() {
-            document.getElementById('mainDashboardView').classList.add('hidden');
-            document.getElementById('dedicatedVideoStudioView').classList.remove('hidden');
-        }
-
-        function exitDedicatedStudioEnvironment() {
-            document.getElementById('dedicatedVideoStudioView').classList.add('hidden');
-            document.getElementById('mainDashboardView').classList.remove('hidden');
-        }
-
-        function copyDashboardScreenshotToClipboard() { alert("Screenshot canvas buffer stream mirrored cleanly to clipboard cache layers."); }
-        function copyStudioScreenshotToClipboard() { alert("Studio screenshot frame logic sequence executed cleanly."); }
-        
-        function copyStudioDeepLinkMetadata() {
-            const p = document.getElementById('studioVideoPlayer');
-            if (!currentActiveVideoThreadId) {
-                alert("Please select and load an active video thread prior to generating metrics links.");
-                return;
-            }
-            const url = `${window.location.origin}${window.location.pathname}?v_thread=${currentActiveVideoThreadId}&t_frame=${Math.round(p.currentTime)}`;
-            document.getElementById('studioDeepLinkExportUrl').value = url;
-            navigator.clipboard.writeText(url);
-            alert("Deep-link metrics tracking parameter sequence copied explicitly.");
-        }
-
-        function launchArenaFullScreenSandbox(sheetId) {
-            const sheets = JSON.parse(localStorage.getItem('RC_WORKSPACE_SHEETS') || '[]');
-            const match = sheets.find(s => s.id === sheetId);
-            if (!match) return;
-
-            document.getElementById('fullScreenWorksheetArenaView').classList.remove('hidden');
-            document.getElementById('arenaActiveSheetTitle').innerText = match.title;
-            document.getElementById('arenaFullScreenIframe').src = match.url;
-            document.getElementById('arenaRouteConfigInput').value = `Route Bound: ${match.id}`;
-        }
-
-        function switchArenaSheetInstanceInline() {
-            const id = document.getElementById('arenaAdditionalSheetSelect').value;
-            if (!id) return;
-            launchArenaFullScreenSandbox(id);
-        }
-
-        function closeFullScreenWorksheetArena() {
-            document.getElementById('fullScreenWorksheetArenaView').classList.add('hidden');
-            document.getElementById('arenaFullScreenIframe').src = 'about:blank';
-        }
-
-        function renderLearningModulesDirectory() {
-            const modules = JSON.parse(localStorage.getItem('RC_ASSET_MODULES') || '[]');
-            const out = document.getElementById('modulesListOutput');
-            out.innerHTML = '';
-            
-            modules.forEach(m => {
-                const div = document.createElement('div');
-                div.className = "p-2 bg-zinc-950 border border-zinc-800 rounded text-[11px] font-mono text-zinc-400 flex items-center justify-between";
-                div.innerHTML = `
-                    <span class="truncate max-w-[190px]">📄 ${m.title}</span>
-                    <button onclick="alert('Asset module download sequence instantiated via browser fallback sandbox.')" class="text-purple-400 hover:text-white uppercase text-[9px]">Open</button>
-                `;
-                out.appendChild(div);
-            });
-        }
-
-        function renderDeepLinkLogsHistory() {
-            const container = document.getElementById('deepLinkContainerHistory');
-            if(!container) return;
-            container.innerHTML = "";
-            let logs = JSON.parse(localStorage.getItem('RC_PASTED_LINKS') || "[]");
-            if(logs.length === 0) {
-                container.innerHTML = `<span class="text-zinc-600 italic text-[11px]">Awaiting transaction parameter instantiation.</span>`;
-                return;
-            }
-            logs.forEach(l => {
-                const div = document.createElement('div');
-                div.className = "p-1 bg-black/40 border border-zinc-900 rounded text-[10px] text-zinc-400 flex justify-between items-center";
-                div.innerHTML = `
-                    <span class="truncate max-w-[190px] select-all font-mono text-purple-400">${l.url}</span>
-                    <span class="text-[9px] text-zinc-600">${l.timestamp}</span>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function toggleOrFetchSheetMetricPipeline() {
-            const terminal = document.getElementById('metricsReportTerminal');
-            if (!terminal.classList.contains('hidden')) {
-                terminal.classList.add('hidden');
-                return;
-            }
-
-            const sheets = JSON.parse(localStorage.getItem('RC_WORKSPACE_SHEETS') || '[]');
-            const output = document.getElementById('metricsOutputSummary');
-            output.innerHTML = '';
-
-            sheets.forEach(s => {
-                const div = document.createElement('div');
-                div.className = "p-2 bg-black/50 border border-zinc-800 rounded space-y-1";
-                
-                let usersJoined = s.assignees && s.assignees.length > 0 ? s.assignees.join(', ') : 'None';
-                let rawRatio = s.totalTasks > 0 ? (s.completedTasks / s.totalTasks) * 100 : 0;
-                let percent = Math.round(rawRatio);
-
-                div.innerHTML = `
-                    <div class="flex justify-between font-bold text-white text-[11px]">
-                        <span class="text-blue-400 truncate max-w-[260px]">${s.title}</span>
-                        <span>${percent}%</span>
-                    </div>
-                    <div class="w-full bg-zinc-800 h-1 rounded overflow-hidden">
-                        <div class="bg-purple-500 h-full" style="width: ${percent}%"></div>
-                    </div>
-                    <div class="flex justify-between text-[10px] text-zinc-500">
-                        <span>Bound Vector Assignees: <strong class="text-zinc-300 font-mono">${usersJoined}</strong></span>
-                        <span>${s.completedTasks}/${s.totalTasks} Done</span>
-                    </div>
-                `;
-                output.appendChild(div);
-            });
-
-            terminal.classList.remove('hidden');
-        }
-
-        function processVideoUploadEngine() {
-            const title = document.getElementById('videoThreadTitleInput').value.trim();
-            const fileInput = document.getElementById('videoFileInput');
-            if (!title || !fileInput.files[0]) {
-                alert("Provide valid thread name titles and map video file assets to process streaming arrays.");
-                return;
-            }
-            let videos = JSON.parse(localStorage.getItem('RC_VIDEO_THREADS') || '[]');
-            const newId = `vid_${Date.now()}`;
-            videos.push({ id: newId, title: title + " (" + fileInput.files[0].name + ")", url: "https://www.w3schools.com/html/mov_bbb.mp4" });
-            localStorage.setItem('RC_VIDEO_THREADS', JSON.stringify(videos));
-            alert("Video document sequence parsed. Binding live catalog listings.");
-            document.getElementById('videoThreadTitleInput').value = '';
-            fileInput.value = '';
-            renderVideoContentQueuesDirectory();
-        }
-
-        function processModuleUploadEngine() {
-            const title = document.getElementById('moduleTitleInput').value.trim();
-            const fileInput = document.getElementById('moduleFileInput');
-            if (!title || !fileInput.files[0]) {
-                alert("Define clean structural document labels and allocate asset resource attachments.");
-                return;
-            }
-            let modules = JSON.parse(localStorage.getItem('RC_ASSET_MODULES') || '[]');
-            modules.push({ id: `mod_${Date.now()}`, title: title });
-            localStorage.setItem('RC_ASSET_MODULES', JSON.stringify(modules));
-            alert("Structural guideline module successfully allocated into system directory.");
-            document.getElementById('moduleTitleInput').value = '';
-            fileInput.value = '';
-            renderLearningModulesDirectory();
-        }
-
-        function delegateUserAccessRole(roleType) {
-            const email = document.getElementById('privilegeTargetEmail').value.trim().toLowerCase();
-            if (!email) {
-                alert("Input validation failure. Target matrix email vector required.");
-                return;
-            }
-            let users = JSON.parse(localStorage.getItem('RC_MOCK_USERS') || '[]');
-            const target = users.find(u => u.email === email);
-            if (!target) {
-                alert("Specified identity coordinates matches no record across existing cluster frames.");
-                return;
-            }
-            target.role = roleType;
-            localStorage.setItem('RC_MOCK_USERS', JSON.stringify(users));
-            alert(`Privilege allocation updated cleanly. Node target assigned [${roleType}] privileges.`);
-            document.getElementById('privilegeTargetEmail').value = '';
-            if (globalUserSessionObject && globalUserSessionObject.email === email) {
-                alert("Active authorization context modifications identified. Re-routing initialization session pipeline.");
-                executeSessionAuthenticationBinding(target);
-            }
-        }
-
-        function dismissTaskAssignmentHubView() { document.getElementById('coworkerTaskAssignmentHub').classList.add('hidden'); }
-        function runClientCleanExportPipeline() { alert("Data structure optimization mapping file serialization pipeline successfully run."); }
-        function toggleStaffControlManagementModal(state) { alert("Supabase user synchronization dashboard state mapping is live."); }
-        function triggerAccountEmailRecoveryLookup() { alert("Recovery sequence diagnostics executed. Awaiting email cluster route maps."); }
-        function triggerCredentialsReset() {
-            if(confirm("Are you sure you want to revert configuration keys to factory defaults? All mock runtime states will be flushed.")) {
-                localStorage.clear();
-                alert("Cluster cache flushed. Re-instantiating engine configuration runtime variables...");
-                window.location.reload();
-            }
-        }
-
-        let terminalTrackingActiveTimeoutRef = null;
-        function resetActiveTrackingTimer() {
-            clearTimeout(terminalTrackingActiveTimeoutRef);
-            terminalTrackingActiveTimeoutRef = setTimeout(() => {
-                if (globalUserSessionObject) {
-                    console.log("System idle timeout thresholds broken. Securing session layer arrays.");
-                }
-            }, 300000);
-        }
-
-        function checkUrlParametersForDeepLinkNavigation() {
-            const searchParams = new URLSearchParams(window.location.search);
-            const targetThread = searchParams.get('v_thread');
-            const targetTimeFrame = searchParams.get('t_frame');
-
-            if(targetThread) {
-                setTimeout(() => {
-                    loadActiveVideoThreadToPlayer(targetThread);
-                    if(targetTimeFrame) {
-                        setTimeout(() => {
-                            const dPlayer = document.getElementById('dashboardVideoPlayer');
-                            const sPlayer = document.getElementById('studioVideoPlayer');
-                            dPlayer.currentTime = parseInt(targetTimeFrame, 10);
-                            sPlayer.currentTime = parseInt(targetTimeFrame, 10);
-                        }, 800);
-                    }
-                }, 500);
-            }
-        }
-
-        // Auto render historical link records on DOM context generation lifecycle hooks
-        window.addEventListener('DOMContentLoaded', () => {
-            renderDeepLinkLogsHistory();
-        });
     </script>
 </body>
 </html>
